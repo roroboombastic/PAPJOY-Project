@@ -1,0 +1,18 @@
+[Unit]
+Description=PAPJOY Node.js Backend
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/papjoy/backend
+EnvironmentFile=/etc/papjoy/papjoy.env
+ExecStart=/usr/bin/node index.js
+Restart=on-failure
+RestartSec=5s
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=papjoy
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,141 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PAP-JOY | Cart</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+</head>
+<body data-page="cart">
+  <!-- Global Error Notification -->
+  <div id="global-error" class="global-error" style="display: none;"></div>
+  <aside class="site-sidebar">
+    <div class="sidebar-brand"><a href="index.html">PAP-JOY</a></div>
+    <nav class="sidebar-nav">
+      <a href="index.html" class="nav-link"><i class="fas fa-home"></i><span>Home</span></a>
+      <a href="product.html" class="nav-link"><i class="fas fa-store"></i><span>Shop</span></a>
+      <a href="cart.html" class="nav-link active"><i class="fas fa-shopping-cart"></i><span>Cart</span><span class="cart-badge" id="sidebar-cart-count">0</span></a>
+      <a href="tracking.html" class="nav-link"><i class="fas fa-truck"></i><span>Track Order</span></a>
+      <a href="account.html" class="nav-link"><i class="fas fa-user"></i><span>Account</span></a>
+      <a href="signin.html" class="nav-link"><i class="fas fa-sign-in-alt"></i><span>Sign In</span></a>
+    </nav>
+    <div class="sidebar-stats">
+      <div class="stat-item"><div class="stat-number">12</div><div class="stat-label">Products</div></div>
+      <div class="stat-item"><div class="stat-number">2.5K+</div><div class="stat-label">Premium styles</div></div>
+      
+    </div>
+    <div class="sidebar-actions">
+      
+      <button class="action-btn" onclick="showCart()"><i class="fas fa-shopping-bag"></i><span>Quick Cart</span></button>
+    </div>
+  </aside>
+  <button class="mobile-menu-toggle" id="mobile-menu-toggle"><i class="fas fa-bars"></i></button>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <main class="product-section">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow" data-i18n="cart.eyebrow">Your cart</p>
+        <h2 data-i18n="cart.heading">Confirm your selection</h2>
+      </div>
+    </div>
+
+    <div class="cart-panel">
+      <div class="cart-content">
+        <ul id="cart-items" class="cart-items"></ul>
+        <div class="saved-items-section" id="saved-items-section" style="display: none;">
+          <h3><i class="fas fa-bookmark"></i> Saved for Later</h3>
+          <ul id="saved-items" class="saved-items"></ul>
+        </div>
+        <div class="cart-summary">
+          <div class="cart-summary-row">
+            <span data-i18n="cart.subtotal">Subtotal</span>
+            <strong><span id="subtotal">0</span></strong>
+          </div>
+          <div class="cart-summary-row">
+            <span data-i18n="cart.shipping">Shipping</span>
+            <strong id="shipping">FREE</strong>
+          </div>
+          <div class="cart-summary-row">
+            <span data-i18n="cart.tax">Tax</span>
+            <strong><span id="tax">0</span></strong>
+          </div>
+
+          <div class="promo-section">
+            <div class="promo-input-wrap">
+              <input type="text" id="promo-code" placeholder="Enter promo code" class="promo-code-input" />
+              <button class="promo-btn" onclick="applyPromoCode()"><i class="fas fa-tag"></i> Apply</button>
+            </div>
+            <p id="promo-message" class="promo-message"></p>
+            <div id="promo-discount" class="cart-summary-row promo-discount" style="display: none;">
+              <span>Promo Discount</span>
+              <strong>-<span id="discount-amount">0</span></strong>
+            </div>
+          </div>
+
+          <div class="cart-summary-row total-row">
+            <span data-i18n="cart.total">Total</span>
+            <strong><span id="total">0</span></strong>
+          </div>
+          <p id="shipping-note" class="cart-shipping-note"></p>
+          <a class="secondary-button" href="tracking.html">Track Your Order</a>
+          <button class="checkout-button" onclick="checkout()" data-i18n="cart.continue">Continue to payment</button>
+          <button class="clear-cart" onclick="clearCart()" data-i18n="cart.clear">Clear cart</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="connect-with-us">
+      <h3>Connect With Us</h3>
+    </div>
+    
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="brand"><a href="index.html">PAP-JOY</a></div>
+        <p>Premium footwear for every journey.</p>
+      </div>
+      
+      <div class="social-section">
+        <h4>Follow Us</h4>
+        <div class="social-links">
+          <a href="#" class="social-link" title="Instagram" aria-label="Follow us on Instagram">
+            <i class="fab fa-instagram"></i>
+          </a>
+          <a href="#" class="social-link" title="Facebook" aria-label="Follow us on Facebook">
+            <i class="fab fa-facebook-f"></i>
+          </a>
+          <a href="#" class="social-link" title="YouTube" aria-label="Subscribe on YouTube">
+            <i class="fab fa-youtube"></i>
+          </a>
+        </div>
+      </div>
+      
+      <div class="contact-info">
+        <h4>Contact Us</h4>
+        <div class="contact-item">
+          <i class="fas fa-envelope"></i>
+          <a href="mailto:hello@papjoy.com">hello@papjoy.com</a>
+        </div>
+        <div class="contact-item">
+          <i class="fas fa-phone"></i>
+          <a href="tel:+1234567890">+1 (234) 567-8900</a>
+        </div>
+      </div>
+    </div>
+    
+    <div class="copyright">
+      <p>&copy; 2026 PAP-JOY. Crafted for every journey. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
+

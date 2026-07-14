@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PAP-JOY | Shop Collection</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+</head>
+<body data-page="shop">
+  <!-- Global Error Notification -->
+  <div id="global-error" class="global-error" style="display: none;"></div>
+  <aside class="site-sidebar">
+    <div class="sidebar-brand"><a href="index.html">PAP-JOY</a></div>
+    <nav class="sidebar-nav">
+      <a href="index.html" class="nav-link"><i class="fas fa-home"></i><span>Home</span></a>
+      <a href="product.html" class="nav-link active"><i class="fas fa-store"></i><span>Shop</span></a>
+      <a href="cart.html" class="nav-link"><i class="fas fa-shopping-cart"></i><span>Cart</span><span class="cart-badge" id="sidebar-cart-count">0</span></a>
+      <a href="tracking.html" class="nav-link"><i class="fas fa-truck"></i><span>Track Order</span></a>
+      <a href="account.html" class="nav-link"><i class="fas fa-user"></i><span>Account</span></a>
+      <a href="signin.html" class="nav-link"><i class="fas fa-sign-in-alt"></i><span>Sign In</span></a>
+    </nav>
+    <div class="sidebar-stats">
+      <div class="stat-item"><div class="stat-number">12</div><div class="stat-label">Products</div></div>
+      <div class="stat-item"><div class="stat-number">2.5K+</div><div class="stat-label">Premium styles</div></div>
+      
+    </div>
+    <div class="sidebar-actions">
+      
+      <button class="action-btn" onclick="showCart()"><i class="fas fa-shopping-bag"></i><span>Quick Cart</span></button>
+    </div>
+  </aside>
+  <button class="mobile-menu-toggle" id="mobile-menu-toggle"><i class="fas fa-bars"></i></button>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <main class="product-section">
+    <div class="section-header product-filter-header">
+      <div>
+        <p class="eyebrow" data-i18n="product.eyebrow">Full collection</p>
+        <h2 data-i18n="product.heading">Shop all styles</h2>
+      </div>
+      <div class="product-status" id="product-status"></div>
+    </div>
+    <div class="product-intro-wrap">
+      <p class="product-intro" data-i18n="product.intro">Browse every shoe, compare features, and add your favorites to the cart.</p>
+      <div class="product-filters" id="product-filters">
+        <input id="search-products" type="search" placeholder="Search style, category or material" />
+        <select id="sort-filter">
+          <option value="newest">Newest First</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+          <option value="rating">Best Rated</option>
+        </select>
+        <label class="filter-checkbox">
+          <input type="checkbox" id="in-stock-filter" /> In Stock Only
+        </label>
+      </div>
+      
+      <!-- Advanced Filter Sidebar -->
+      <div class="filter-sidebar" id="filter-sidebar">
+        <div class="filter-section">
+          <h4>Price Range</h4>
+          <div class="price-range-container">
+            <input type="range" id="price-min" min="0" max="500000" value="0" step="1000" />
+            <input type="range" id="price-max" min="0" max="500000" value="500000" step="1000" />
+            <div class="price-display">
+              <span id="price-min-display">₹0</span> - <span id="price-max-display">₹500000</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="filter-section">
+          <h4>Brand</h4>
+          <div id="brand-filters"></div>
+        </div>
+        
+        <div class="filter-section">
+          <h4>Size</h4>
+          <div id="size-filters"></div>
+        </div>
+        
+        <div class="filter-section">
+          <h4>Color</h4>
+          <div id="color-filters"></div>
+        </div>
+      </div>
+    </div>
+    <div class="product-grid" id="product-grid"></div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="connect-with-us">
+      <h3>Connect With Us</h3>
+    </div>
+    
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="brand"><a href="index.html">PAP-JOY</a></div>
+        <p>Premium footwear for every journey.</p>
+      </div>
+      
+      <div class="social-section">
+        <h4>Follow Us</h4>
+        <div class="social-links">
+          <a href="#" class="social-link" title="Instagram" aria-label="Follow us on Instagram">
+            <i class="fab fa-instagram"></i>
+          </a>
+          <a href="#" class="social-link" title="Facebook" aria-label="Follow us on Facebook">
+            <i class="fab fa-facebook-f"></i>
+          </a>
+          <a href="#" class="social-link" title="YouTube" aria-label="Subscribe on YouTube">
+            <i class="fab fa-youtube"></i>
+          </a>
+        </div>
+      </div>
+      
+      <div class="contact-info">
+        <h4>Contact Us</h4>
+        <div class="contact-item">
+          <i class="fas fa-envelope"></i>
+          <a href="mailto:hello@papjoy.com">hello@papjoy.com</a>
+        </div>
+        <div class="contact-item">
+          <i class="fas fa-phone"></i>
+          <a href="tel:+1234567890">+1 (234) 567-8900</a>
+        </div>
+      </div>
+    </div>
+    
+    <div class="copyright">
+      <p>&copy; 2026 PAP-JOY. Crafted for every journey. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
+

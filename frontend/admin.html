@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - PAP-JOY</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="admin-container">
+    <!-- Sidebar Navigation -->
+    <aside class="admin-sidebar">
+      <div class="admin-logo">
+        <h2>PAP-JOY Admin</h2>
+      </div>
+      <nav class="admin-nav">
+        <button class="admin-nav-item active" data-page="dashboard">
+          📊 Dashboard
+        </button>
+        <button class="admin-nav-item" data-page="products">
+          📦 Products
+        </button>
+        <button class="admin-nav-item" data-page="orders">
+          📋 Orders
+        </button>
+        <button class="admin-nav-item" data-page="users">
+          👥 Users
+        </button>
+        <button class="admin-nav-item" data-page="analytics">
+          📈 Analytics
+        </button>
+        <button class="admin-nav-item" data-page="categories">
+          🏷️ Categories
+        </button>
+      </nav>
+      <div class="admin-user-info">
+        <div id="admin-user-name">Admin</div>
+        <button class="btn-logout" onclick="logoutAdmin()">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="admin-main">
+      <!-- Dashboard Page -->
+      <section id="dashboard-page" class="admin-page active">
+        <h1>Dashboard</h1>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-content">
+              <div class="stat-label">Total Revenue</div>
+              <div class="stat-value" id="stat-revenue">₹0</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📦</div>
+            <div class="stat-content">
+              <div class="stat-label">Total Orders</div>
+              <div class="stat-value" id="stat-orders">0</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🛍️</div>
+            <div class="stat-content">
+              <div class="stat-label">Total Products</div>
+              <div class="stat-value" id="stat-products">0</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-content">
+              <div class="stat-label">Total Users</div>
+              <div class="stat-value" id="stat-users">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <section class="dashboard-section">
+          <h2>Recent Orders</h2>
+          <div class="orders-table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="recent-orders-list">
+                <tr><td colspan="6" class="text-center">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Order Status Distribution -->
+        <section class="dashboard-section">
+          <h2>Order Status Distribution</h2>
+          <div class="status-distribution" id="order-status-dist">
+            <p class="text-center">Loading...</p>
+          </div>
+        </section>
+      </section>
+
+      <!-- Products Page -->
+      <section id="products-page" class="admin-page">
+        <div class="admin-header">
+          <h1>Products Management</h1>
+          <button class="btn btn-primary" onclick="showProductForm()">➕ Add Product</button>
+        </div>
+
+        <!-- Search & Filters -->
+        <div class="admin-filters">
+          <input
+            type="text"
+            id="product-search"
+            placeholder="Search products..."
+            onkeyup="debounce(() => loadAdminProducts(), 300)"
+          />
+          <select id="product-status" onchange="loadAdminProducts()">
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+
+        <!-- Products Table -->
+        <div class="admin-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Product Name</th>
+                <th>SKU</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="products-list">
+              <tr><td colspan="6" class="text-center">Loading products...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="admin-pagination" id="products-pagination"></div>
+      </section>
+
+      <!-- Orders Page -->
+      <section id="orders-page" class="admin-page">
+        <div class="admin-header">
+          <h1>Orders Management</h1>
+        </div>
+
+        <!-- Filters -->
+        <div class="admin-filters">
+          <select id="order-status-filter" onchange="loadAdminOrders()">
+            <option value="all">All Orders</option>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="processing">Processing</option>
+            <option value="shipped">Shipped</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <select id="order-sort" onchange="loadAdminOrders()">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="highest-value">Highest Value</option>
+            <option value="lowest-value">Lowest Value</option>
+          </select>
+        </div>
+
+        <!-- Orders Table -->
+        <div class="admin-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Order #</th>
+                <th>Customer</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Payment</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="orders-list">
+              <tr><td colspan="7" class="text-center">Loading orders...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="admin-pagination" id="orders-pagination"></div>
+      </section>
+
+      <!-- Users Page -->
+      <section id="users-page" class="admin-page">
+        <div class="admin-header">
+          <h1>Users Management</h1>
+        </div>
+
+        <!-- Search -->
+        <div class="admin-filters">
+          <input
+            type="text"
+            id="user-search"
+            placeholder="Search users by name or email..."
+            onkeyup="debounce(() => loadAdminUsers(), 300)"
+          />
+          <select id="user-role-filter" onchange="loadAdminUsers()">
+            <option value="all">All Users</option>
+            <option value="user">Customers</option>
+            <option value="admin">Admins</option>
+          </select>
+        </div>
+
+        <!-- Users Table -->
+        <div class="admin-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Created</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="users-list">
+              <tr><td colspan="6" class="text-center">Loading users...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="admin-pagination" id="users-pagination"></div>
+      </section>
+
+      <!-- Analytics Page -->
+      <section id="analytics-page" class="admin-page">
+        <h1>Analytics</h1>
+        
+        <!-- Revenue Chart -->
+        <section class="dashboard-section">
+          <h2>Revenue (Last 30 Days)</h2>
+          <div id="revenue-chart" class="chart-container">
+            <p class="text-center">Loading chart data...</p>
+          </div>
+        </section>
+
+        <!-- Top Products -->
+        <section class="dashboard-section">
+          <h2>Top Selling Products</h2>
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Units Sold</th>
+                  <th>Revenue</th>
+                </tr>
+              </thead>
+              <tbody id="top-products-list">
+                <tr><td colspan="3" class="text-center">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <!-- Categories Page -->
+      <section id="categories-page" class="admin-page">
+        <div class="admin-header">
+          <h1>Categories Management</h1>
+          <button class="btn btn-primary" onclick="showCategoryForm()">➕ Add Category</button>
+        </div>
+
+        <!-- Categories Table -->
+        <div class="admin-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Slug</th>
+                <th>Status</th>
+                <th>Sort Order</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="categories-list">
+              <tr><td colspan="5" class="text-center">Loading categories...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Product Modal -->
+  <div id="product-modal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeProductModal()">&times;</span>
+      <h2>Product Form</h2>
+      <form id="product-form" onsubmit="saveProduct(event)">
+        <input type="hidden" id="product-id" />
+        <div class="form-group">
+          <label>Product Name *</label>
+          <input type="text" id="product-name" required />
+        </div>
+        <div class="form-group">
+          <label>Slug *</label>
+          <input type="text" id="product-slug" required />
+        </div>
+        <div class="form-group">
+          <label>Description *</label>
+          <textarea id="product-description" required></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Price (₹) *</label>
+            <input type="number" id="product-price" min="0" step="0.01" required />
+          </div>
+          <div class="form-group">
+            <label>Category *</label>
+            <select id="product-category" required></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>SKU</label>
+            <input type="text" id="product-sku" />
+          </div>
+          <div class="form-group">
+            <label>Brand</label>
+            <input type="text" id="product-brand" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Stock Quantity</label>
+          <input type="number" id="product-stock" min="0" />
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="product-active" checked />
+            Active
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save Product</button>
+          <button type="button" class="btn btn-secondary" onclick="closeProductModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Order Modal -->
+  <div id="order-modal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeOrderModal()">&times;</span>
+      <h2>Update Order Status</h2>
+      <form id="order-form" onsubmit="updateOrderStatus(event)">
+        <input type="hidden" id="order-id" />
+        <div class="form-group">
+          <label>Order Status *</label>
+          <select id="order-status-update" required>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="processing">Processing</option>
+            <option value="shipped">Shipped</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="refunded">Refunded</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Tracking Number</label>
+          <input type="text" id="order-tracking-number" />
+        </div>
+        <div class="form-group">
+          <label>Carrier</label>
+          <input type="text" id="order-carrier" />
+        </div>
+        <div class="form-group">
+          <label>Tracking URL</label>
+          <input type="url" id="order-tracking-url" />
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Update Order</button>
+          <button type="button" class="btn btn-secondary" onclick="closeOrderModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Category Modal -->
+  <div id="category-modal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeCategoryModal()">&times;</span>
+      <h2>Category Form</h2>
+      <form id="category-form" onsubmit="saveCategory(event)">
+        <input type="hidden" id="category-id" />
+        <div class="form-group">
+          <label>Category Name *</label>
+          <input type="text" id="category-name" required />
+        </div>
+        <div class="form-group">
+          <label>Slug *</label>
+          <input type="text" id="category-slug" required />
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="category-description"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Sort Order</label>
+            <input type="number" id="category-sort-order" min="0" />
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="category-active" checked />
+              Active
+            </label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save Category</button>
+          <button type="button" class="btn btn-secondary" onclick="closeCategoryModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    // Initialize admin page
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = getCurrentUser();
+      if (!user || !user.token) {
+        window.location.href = 'signin.html';
+        return;
+      }
+
+      document.getElementById('admin-user-name').textContent = user.name || 'Admin';
+      
+      // Load dashboard
+      loadAdminDashboard();
+
+      // Setup navigation
+      document.querySelectorAll('.admin-nav-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.admin-nav-item').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.admin-page').forEach(p => p.classList.remove('active'));
+          
+          btn.classList.add('active');
+          const page = btn.dataset.page;
+          document.getElementById(`${page}-page`).classList.add('active');
+
+          if (page === 'dashboard') loadAdminDashboard();
+          else if (page === 'products') loadAdminProducts();
+          else if (page === 'orders') loadAdminOrders();
+          else if (page === 'users') loadAdminUsers();
+          else if (page === 'analytics') loadAnalytics();
+          else if (page === 'categories') loadAdminCategories();
+        });
+      });
+    });
+
+    function logoutAdmin() {
+      localStorage.removeItem('user');
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PAP-JOY | Invoice Preview</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+</head>
+<body data-page="invoice-preview">
+  <aside class="site-sidebar">
+    <div class="sidebar-brand"><a href="index.html">PAP-JOY</a></div>
+    <nav class="sidebar-nav">
+      <a href="index.html" class="nav-link"><i class="fas fa-home"></i><span>Home</span></a>
+      <a href="product.html" class="nav-link"><i class="fas fa-store"></i><span>Shop</span></a>
+      <a href="cart.html" class="nav-link"><i class="fas fa-shopping-cart"></i><span>Cart</span></a>
+      <a href="account.html" class="nav-link"><i class="fas fa-user"></i><span>Account</span></a>
+      <a href="tracking.html" class="nav-link"><i class="fas fa-truck"></i><span>Track Order</span></a>
+    </nav>
+  </aside>
+
+  <main class="product-section">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">Invoice</p>
+        <h2>Invoice Preview</h2>
+      </div>
+    </div>
+
+    <div class="invoice-preview-card">
+      <h3 id="invoice-preview-title">Loading invoice...</h3>
+      <div id="invoice-preview-message" class="auth-message"></div>
+      <div id="invoice-preview-container"></div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>© 2026 PAP-JOY. Crafted for every journey.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

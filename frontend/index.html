@@ -1,0 +1,335 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PAP-JOY | Premium Shoe Store</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+</head>
+<body data-page="home">
+  <!-- Global Error Notification -->
+  <div id="global-error" class="global-error" style="display: none;"></div>
+
+  <!-- Side Navigation Bar -->
+  <aside class="site-sidebar">
+    <div class="sidebar-brand">
+      <a href="index.html">PAP-JOY</a>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="index.html" class="nav-link active" data-i18n="nav.home">
+        <i class="fas fa-home"></i>
+        <span>Home</span>
+      </a>
+      <a href="product.html" class="nav-link" data-i18n="nav.shop">
+        <i class="fas fa-store"></i>
+        <span>Shop</span>
+      </a>
+      <a href="cart.html" class="nav-link" data-i18n="nav.cart">
+        <i class="fas fa-shopping-cart"></i>
+        <span>Cart</span>
+        <span class="cart-badge" id="sidebar-cart-count">0</span>
+      </a>
+      <a href="tracking.html" class="nav-link">
+        <i class="fas fa-truck"></i>
+        <span>Track Order</span>
+      </a>
+      <a href="account.html" class="nav-link" data-i18n="nav.account">
+        <i class="fas fa-user"></i>
+        <span>Account</span>
+      </a>
+      <a href="signin.html" class="nav-link" data-i18n="nav.signin">
+        <i class="fas fa-sign-in-alt"></i>
+        <span>Sign In</span>
+      </a>
+    </nav>
+
+    <!-- Dynamic Stats -->
+    <div class="sidebar-stats">
+      <div class="stat-item">
+        <div class="stat-number" id="total-products">12</div>
+        <div class="stat-label">Products</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number" id="premium-styles">3</div>
+        <div class="stat-label">Collections</div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="sidebar-actions">
+      <button class="action-btn" onclick="showCart()">
+        <i class="fas fa-shopping-bag"></i>
+        <span>Quick Cart</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Mobile Menu Toggle -->
+  <button class="mobile-menu-toggle" id="mobile-menu-toggle">
+    <i class="fas fa-bars"></i>
+  </button>
+
+  <!-- Edit Mode Toggle -->
+  <button class="edit-toggle" id="edit-toggle" title="Toggle Edit Mode">
+    <i class="fas fa-edit"></i>
+  </button>
+
+  <!-- Overlay for mobile -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <main>
+    <!-- Dynamic Hero Section -->
+    <section class="hero">
+      <div class="hero-bg">
+        <div class="hero-bg-shape shape-1"></div>
+        <div class="hero-bg-shape shape-2"></div>
+        <div class="hero-bg-shape shape-3"></div>
+      </div>
+
+      <div class="hero-content">
+        <div class="hero-badge">
+          <i class="fas fa-shoe-prints"></i>
+          <span>Designed for every step</span>
+        </div>
+        <p class="eyebrow" data-i18n="hero.eyebrow">Precision Footwear</p>
+        <h1 class="hero-title" data-i18n="hero.heading">
+          Move with confidence in shoes made for performance.
+        </h1>
+        <p class="hero-text" data-i18n="hero.text">
+          Explore premium footwear crafted with clean lines, durable materials, and balanced comfort.
+        </p>
+
+        <!-- Dynamic Stats -->
+        <div class="hero-stats">
+          <div class="stat">
+            <div class="stat-value">12+</div>
+            <div class="stat-label">Premium styles</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">3</div>
+            <div class="stat-label">Curated collections</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">5+</div>
+            <div class="stat-label">Years craft</div>
+          </div>
+        </div>
+
+        <div class="hero-actions">
+          <a href="product.html" class="btn btn-primary pulse" data-i18n="hero.cta">
+            <i class="fas fa-shopping-bag"></i>
+            Shop the collection
+          </a>
+          <a href="signin.html#signup" class="btn btn-secondary" data-i18n="hero.join">
+            <i class="fas fa-user-plus"></i>
+            Join PAP-JOY
+          </a>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Interactive Categories Section -->
+    <section class="categories-section">
+      <div class="section-header">
+        <p class="eyebrow">Explore Categories</p>
+        <h2>Find Your Perfect Style</h2>
+      </div>
+
+      <div class="categories-grid">
+        <div class="category-card" data-category="Street Performance">
+          <div class="category-image">
+            <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=300&fit=crop" alt="Street Performance" loading="lazy" />
+          </div>
+          <div class="category-content">
+            <h3>Street Performance</h3>
+            <p>Urban style meets athletic performance</p>
+            <span class="category-count">4 products</span>
+          </div>
+        </div>
+
+        <div class="category-card" data-category="Casual Comfort">
+          <div class="category-image">
+            <img src="https://images.unsplash.com/photo-1528701800489-20db3000e734?w=400&h=300&fit=crop" alt="Casual Comfort" loading="lazy" />
+          </div>
+          <div class="category-content">
+            <h3>Casual Comfort</h3>
+            <p>Everyday comfort without compromise</p>
+            <span class="category-count">3 products</span>
+          </div>
+        </div>
+
+        <div class="category-card" data-category="Active Explorer">
+          <div class="category-image">
+            <img src="https://images.unsplash.com/photo-1551107696-a4b0c5a0d9a2?w=400&h=300&fit=crop" alt="Active Explorer" loading="lazy" />
+          </div>
+          <div class="category-content">
+            <h3>Active Explorer</h3>
+            <p>Durable footwear for outdoor adventures</p>
+            <span class="category-count">2 products</span>
+          </div>
+        </div>
+
+        <div class="category-card" data-category="Modern Streetwear">
+          <div class="category-image">
+            <img src="https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=300&fit=crop" alt="Modern Streetwear" loading="lazy" />
+          </div>
+          <div class="category-content">
+            <h3>Modern Streetwear</h3>
+            <p>Bold designs for urban fashion</p>
+            <span class="category-count">3 products</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Featured Products Section -->
+    <section class="featured-section">
+      <div class="section-header">
+        <p class="eyebrow" data-i18n="featured.eyebrow">Featured styles</p>
+        <h2 data-i18n="featured.heading">Explore featured styles</h2>
+        <div class="section-controls">
+          <button class="control-btn active" data-filter="all">All</button>
+          <button class="control-btn" data-filter="featured">Featured</button>
+          <button class="control-btn" data-filter="new">New Arrivals</button>
+        </div>
+      </div>
+      <div class="product-grid" id="featured-products">
+        <!-- Featured products will be loaded here by JavaScript -->
+      </div>
+      <div class="section-actions">
+        <a href="product.html" class="btn btn-primary" data-i18n="featured.viewall">
+          <i class="fas fa-arrow-right"></i>
+          View all products
+        </a>
+      </div>
+    </section>
+
+    <!-- Design Principles -->
+    <section class="insights-section">
+      <div class="section-header">
+        <p class="eyebrow">Design Principles</p>
+        <h2>Built for reliable performance</h2>
+      </div>
+
+      <div class="insights-grid">
+        <div class="insight-card">
+          <h3>Precision fit</h3>
+          <p>Each style is refined for dependable fit and modern comfort.</p>
+        </div>
+        <div class="insight-card">
+          <h3>Refined materials</h3>
+          <p>Durable fabrics and premium construction for everyday wear.</p>
+        </div>
+        <div class="insight-card">
+          <h3>Balanced design</h3>
+          <p>Sleek silhouettes with thoughtful detail for a coherent aesthetic.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Enhanced Info Panels -->
+    <section class="info-panels">
+      <div class="info-panel">
+        <div class="panel-icon">
+          <i class="fas fa-shoe-prints"></i>
+        </div>
+        <div class="panel-content">
+          <h3>Premium Craftsmanship</h3>
+          <p>Every pair is handcrafted with attention to detail and built to last a lifetime.</p>
+        </div>
+      </div>
+      <div class="info-panel">
+        <div class="panel-icon">
+          <i class="fas fa-truck"></i>
+        </div>
+        <div class="panel-content">
+          <h3>Free Shipping</h3>
+          <p>Complimentary delivery on all orders over $100. Fast, reliable shipping worldwide.</p>
+        </div>
+      </div>
+      <div class="info-panel">
+        <div class="panel-icon">
+          <i class="fas fa-undo"></i>
+        </div>
+        <div class="panel-content">
+          <h3>Easy Returns</h3>
+          <p>30-day return policy for a confident fit and hassle-free exchange.</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Newsletter Section -->
+    <section class="newsletter-section">
+      <div class="newsletter-content">
+        <div class="newsletter-icon">
+          <i class="fas fa-envelope-open-text"></i>
+        </div>
+        <h3>Stay in Style</h3>
+        <p>Subscribe to get exclusive deals, new arrivals, and style tips delivered to your inbox.</p>
+        <div class="newsletter-form">
+          <input type="email" placeholder="Enter your email address" id="newsletter-email">
+          <button class="btn btn-primary" onclick="subscribeNewsletter()">
+            <i class="fas fa-paper-plane"></i>
+            Subscribe
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="connect-with-us">
+      <h3>Connect With Us</h3>
+    </div>
+
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="brand"><a href="index.html">PAP-JOY</a></div>
+        <p>Premium footwear for every journey.</p>
+      </div>
+
+      <div class="social-section">
+        <h4>Follow Us</h4>
+        <div class="social-links">
+          <a href="#" class="social-link" title="Instagram" aria-label="Follow us on Instagram">
+            <i class="fab fa-instagram"></i>
+          </a>
+          <a href="#" class="social-link" title="Facebook" aria-label="Follow us on Facebook">
+            <i class="fab fa-facebook-f"></i>
+          </a>
+          <a href="#" class="social-link" title="YouTube" aria-label="Subscribe on YouTube">
+            <i class="fab fa-youtube"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="contact-info">
+        <h4>Contact Us</h4>
+        <div class="contact-item">
+          <i class="fas fa-envelope"></i>
+          <a href="mailto:hello@papjoy.com">hello@papjoy.com</a>
+        </div>
+        <div class="contact-item">
+          <i class="fas fa-phone"></i>
+          <a href="tel:+1234567890">+1 (234) 567-8900</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="copyright">
+      <p>&copy; 2026 PAP-JOY. Crafted for every journey. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
+

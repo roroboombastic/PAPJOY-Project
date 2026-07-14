@@ -1,0 +1,50 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PAP-JOY | Product Detail</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body data-page="product-detail">
+  <!-- Global Error Notification -->
+  <div id="global-error" class="global-error" style="display: none;"></div>
+  <aside class="site-sidebar">
+    <div class="sidebar-brand"><a href="index.html">PAP-JOY</a></div>
+    <nav class="sidebar-nav">
+      <a href="index.html" class="nav-link"><i class="fas fa-home"></i><span>Home</span></a>
+      <a href="product.html" class="nav-link"><i class="fas fa-store"></i><span>Shop</span></a>
+      <a href="cart.html" class="nav-link"><i class="fas fa-shopping-cart"></i><span>Cart</span><span class="cart-badge" id="sidebar-cart-count">0</span></a>
+      <a href="tracking.html" class="nav-link"><i class="fas fa-truck"></i><span>Track Order</span></a>
+      <a href="account.html" class="nav-link"><i class="fas fa-user"></i><span>Account</span></a>
+      <a href="signin.html" class="nav-link"><i class="fas fa-sign-in-alt"></i><span>Sign In</span></a>
+    </nav>
+    <div class="sidebar-stats">
+      <div class="stat-item"><div class="stat-number">12</div><div class="stat-label">Products</div></div>
+      <div class="stat-item"><div class="stat-number">2.5K+</div><div class="stat-label">Premium styles</div></div>
+      
+    </div>
+    <div class="sidebar-actions">
+      
+      <button class="action-btn" onclick="showCart()"><i class="fas fa-shopping-bag"></i><span>Quick Cart</span></button>
+    </div>
+  </aside>
+  <button class="mobile-menu-toggle" id="mobile-menu-toggle"><i class="fas fa-bars"></i></button>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <main class="product-section">
+    <div id="product-detail"></div>
+  </main>
+
+  <footer class="site-footer">
+    <p data-i18n="footer.text">Â© 2026 PAP-JOY. Crafted for every journey.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
+

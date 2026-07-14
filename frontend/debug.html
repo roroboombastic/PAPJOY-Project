@@ -1,0 +1,63 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PAP-JOY | Debug Test</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+</head>
+<body data-page="debug">
+  <aside class="site-sidebar">
+    <div class="sidebar-brand"><a href="index.html">PAP-JOY</a></div>
+    <nav class="sidebar-nav">
+      <a href="index.html" class="nav-link"><i class="fas fa-home"></i><span>Home</span></a>
+      <a href="product.html" class="nav-link"><i class="fas fa-store"></i><span>Shop</span></a>
+      <a href="cart.html" class="nav-link"><i class="fas fa-shopping-cart"></i><span>Cart</span><span class="cart-badge" id="sidebar-cart-count">0</span></a>
+      <a href="tracking.html" class="nav-link"><i class="fas fa-truck"></i><span>Track Order</span></a>
+      <a href="account.html" class="nav-link"><i class="fas fa-user"></i><span>Account</span></a>
+      <a href="signin.html" class="nav-link"><i class="fas fa-sign-in-alt"></i><span>Sign In</span></a>
+    </nav>
+  </aside>
+  <button class="mobile-menu-toggle" id="mobile-menu-toggle"><i class="fas fa-bars"></i></button>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <main class="product-section">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">Debug</p>
+        <h2>Theme and Connectivity Test</h2>
+      </div>
+    </div>
+
+    <div class="tracking-form-container">
+      <div class="status-card">
+        <h3>✅ HTML & CSS Status</h3>
+        <p>If you can see this page styled by <code>style.css</code>, the theme is applied correctly.</p>
+      </div>
+      <div class="status-card">
+        <h3>🔍 Script Status</h3>
+        <p id="js-status">Testing JavaScript...</p>
+      </div>
+      <div class="status-card">
+        <h3>📁 Static File Status</h3>
+        <p id="script-check">Checking static assets...</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>© 2026 PAP-JOY. Crafted for every journey.</p>
+  </footer>
+
+  <script>
+    document.getElementById('js-status').textContent = '✅ JavaScript is working!';
+    document.getElementById('script-check').textContent = '✅ Static layout loaded successfully.';
+  </script>
+</body>
+</html>
+
+

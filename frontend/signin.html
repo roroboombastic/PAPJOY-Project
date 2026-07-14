@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PAP-JOY | Sign In / Sign Up</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body data-page="signin">
+  <!-- Global Error Notification -->
+  <div id="global-error" class="global-error" style="display: none;"></div>
+  <aside class="site-sidebar">
+    <div class="sidebar-brand"><a href="index.html">PAP-JOY</a></div>
+    <nav class="sidebar-nav">
+      <a href="index.html" class="nav-link"><i class="fas fa-home"></i><span>Home</span></a>
+      <a href="product.html" class="nav-link"><i class="fas fa-store"></i><span>Shop</span></a>
+      <a href="cart.html" class="nav-link"><i class="fas fa-shopping-cart"></i><span>Cart</span><span class="cart-badge" id="sidebar-cart-count">0</span></a>
+      <a href="tracking.html" class="nav-link"><i class="fas fa-truck"></i><span>Track Order</span></a>
+      <a href="account.html" class="nav-link"><i class="fas fa-user"></i><span>Account</span></a>
+      <a href="signin.html" class="nav-link active"><i class="fas fa-sign-in-alt"></i><span>Sign In</span></a>
+    </nav>
+    <div class="sidebar-stats">
+      <div class="stat-item"><div class="stat-number">12</div><div class="stat-label">Products</div></div>
+      <div class="stat-item"><div class="stat-number">2.5K+</div><div class="stat-label">Premium styles</div></div>
+      
+    </div>
+    <div class="sidebar-actions">
+      
+      <button class="action-btn" onclick="showCart()"><i class="fas fa-shopping-bag"></i><span>Quick Cart</span></button>
+    </div>
+  </aside>
+  <button class="mobile-menu-toggle" id="mobile-menu-toggle"><i class="fas fa-bars"></i></button>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <main class="product-section auth-page">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow" data-i18n="signin.eyebrow">Member access</p>
+        <h2 data-i18n="signin.heading">Sign in to your PAP-JOY account</h2>
+      </div>
+    </div>
+
+    <div class="auth-panel">
+      <div class="auth-panel-intro">
+        <p class="eyebrow">Secure access</p>
+        <h3>Welcome back to PAP-JOY</h3>
+        <p>Sign in to unlock saved shipping details, fast checkout, and personalized recommendations from our premium footwear collection.</p>
+      </div>
+      <form id="auth-form" class="auth-form">
+        <label for="email" data-i18n="signin.emailLabel">Email address</label>
+        <input id="email" type="email" autocomplete="email" placeholder="you@example.com" data-i18n-placeholder="signin.emailPlaceholder" required />
+
+        <label for="password" data-i18n="signin.passwordLabel">Password</label>
+        <div class="password-field">
+          <input id="password" type="password" autocomplete="current-password" placeholder="Enter password" data-i18n-placeholder="signin.passwordPlaceholder" required />
+          <button type="button" id="password-toggle" class="password-toggle" data-i18n="signin.showPassword">Show</button>
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" id="remember" />
+          <label for="remember">Remember me</label>
+        </div>
+
+        <p class="auth-footnote">
+          <a href="forgot-password.html">Forgot your password?</a>
+        </p>
+
+        <button type="submit" class="checkout-button" data-i18n="signin.continue">Continue</button>
+        <p id="auth-message" class="auth-message" aria-live="polite"></p>
+        <div id="google-signin-button" class="oauth-button"></div>
+      </form>
+
+      <div class="security-notice">
+        <p>Your information is secure. We use industry-standard encryption to protect your data.</p>
+      </div>
+      <p class="auth-footnote">New to PAP-JOY? <a href="signup.html">Create an account</a></p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p data-i18n="footer.signin">© 2026 PAP-JOY. Ready for your next step.</p>
+  </footer>
+
+  <!-- Cookie Consent Modal -->
+  <div id="cookie-consent-modal" class="cookie-modal">
+    <div class="cookie-modal-content">
+      <div class="cookie-header">
+        <h3>Cookie Preferences</h3>
+        <button id="cookie-close" class="cookie-close">&times;</button>
+      </div>
+      <div class="cookie-body">
+        <p>We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By continuing to use our site, you agree to our use of cookies.</p>
+        
+        <div class="cookie-options">
+          <div class="cookie-option">
+            <input type="checkbox" id="essential-cookies" checked disabled />
+            <label for="essential-cookies">
+              <strong>Essential Cookies</strong><br>
+              <small>Required for the website to function properly. Cannot be disabled.</small>
+            </label>
+          </div>
+          
+          <div class="cookie-option">
+            <input type="checkbox" id="analytics-cookies" checked />
+            <label for="analytics-cookies">
+              <strong>Analytics Cookies</strong><br>
+              <small>Help us understand how visitors interact with our website.</small>
+            </label>
+          </div>
+          
+          <div class="cookie-option">
+            <input type="checkbox" id="marketing-cookies" />
+            <label for="marketing-cookies">
+              <strong>Marketing Cookies</strong><br>
+              <small>Used to deliver personalized advertisements and track campaign performance.</small>
+            </label>
+          </div>
+        </div>
+        
+        <div class="cookie-links">
+          <a href="#" id="privacy-link">Privacy Policy</a> | 
+          <a href="#" id="terms-link">Terms of Service</a> | 
+          <a href="#" id="cookies-link">Cookie Policy</a>
+        </div>
+      </div>
+      <div class="cookie-footer">
+        <button id="cookie-accept-all" class="cookie-btn primary">Accept All</button>
+        <button id="cookie-accept-selected" class="cookie-btn secondary">Accept Selected</button>
+        <button id="cookie-reject" class="cookie-btn secondary">Reject All</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
+

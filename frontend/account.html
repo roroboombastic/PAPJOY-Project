@@ -1,0 +1,752 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PAP-JOY | My Account</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    .account-header {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+      color: white;
+      padding: 40px 28px;
+      border-radius: 16px;
+      margin-bottom: 32px;
+      box-shadow: 0 10px 40px rgba(92, 124, 99, 0.2);
+    }
+
+    .account-header-content {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .account-avatar-large {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .account-intro {
+      flex: 1;
+    }
+
+    .account-intro h1 {
+      margin: 0 0 4px;
+      font-size: 1.8rem;
+      font-family: 'Playfair Display', serif;
+    }
+
+    .account-intro p {
+      margin: 0;
+      opacity: 0.95;
+      font-size: 0.95rem;
+    }
+
+    .account-actions-header {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .account-actions-header button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 200ms ease;
+    }
+
+    .account-actions-header .btn-primary {
+      background: white;
+      color: var(--accent);
+    }
+
+    .account-actions-header .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .account-actions-header .btn-secondary {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .account-actions-header .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .loyalty-summary-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      padding: 18px 22px;
+      margin-top: 24px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .loyalty-tier {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .loyalty-text {
+      margin: 8px 0 0;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .loyalty-progress {
+      flex: 0 0 160px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.2);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .loyalty-progress::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      width: var(--progress-width, 32%);
+      background: var(--accent-strong);
+      border-radius: 999px;
+      transition: width 240ms ease;
+    }
+
+    .order-status-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 500;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .status-badge i {
+      color: var(--accent);
+      width: 18px;
+      text-align: center;
+    }
+
+    .status-badge.completed {
+      background: rgba(92, 124, 99, 0.12);
+      border-color: rgba(92, 124, 99, 0.2);
+    }
+
+    .status-badge.pending {
+      background: rgba(255, 180, 0, 0.12);
+      border-color: rgba(255, 180, 0, 0.25);
+    }
+
+    .status-badge.shipped {
+      background: rgba(75, 129, 255, 0.12);
+      border-color: rgba(75, 129, 255, 0.25);
+    }
+
+    .status-badge.cancelled {
+      background: rgba(255, 90, 90, 0.12);
+      border-color: rgba(255, 90, 90, 0.22);
+    }
+
+    .account-main {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 28px;
+    }
+
+    .account-content {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .account-section {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 24px;
+      border: 1px solid var(--border);
+    }
+
+    .account-section h3 {
+      margin: 0 0 16px;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text);
+    }
+
+    .account-section h3 i {
+      color: var(--accent);
+      font-size: 1.2rem;
+    }
+
+    .order-item {
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 200ms ease;
+    }
+
+    .order-item:hover {
+      border-color: var(--accent);
+      background: var(--surface-soft);
+    }
+
+    .order-details {
+      flex: 1;
+    }
+
+    .order-id {
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .order-date {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .order-status {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .order-total {
+      font-weight: 600;
+      color: var(--accent);
+      margin-left: 16px;
+    }
+
+    .address-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      position: relative;
+      transition: all 200ms ease;
+    }
+
+    .address-card:hover {
+      border-color: var(--accent);
+      background: var(--surface-soft);
+    }
+
+    .address-card.default {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .address-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: var(--accent);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .address-name {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .address-text {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+
+    .address-actions {
+      display: flex;
+      gap: 8px;
+      font-size: 0.9rem;
+    }
+
+    .address-actions button {
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 200ms ease;
+    }
+
+    .address-actions button:hover {
+      color: var(--accent-strong);
+    }
+
+    .account-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .sidebar-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .sidebar-card h4 {
+      margin: 0 0 12px;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    .sidebar-card p {
+      margin: 0 0 12px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .sidebar-card button {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text);
+      font-weight: 500;
+      transition: all 200ms ease;
+    }
+
+    .sidebar-card button:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-muted);
+    }
+
+    .empty-state i {
+      font-size: 2rem;
+      display: block;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 28px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      color: var(--text);
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      transition: all 200ms ease;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    @media (max-width: 768px) {
+      .account-main {
+        grid-template-columns: 1fr;
+      }
+
+      .account-header {
+        padding: 24px;
+      }
+
+      .account-header-content {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .account-actions-header {
+        justify-content: center;
+      }
+
+      .order-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .order-total {
+        margin-left: 0;
+        margin-top: 8px;
+      }
+    }
+  </style>
+</head>
+<body data-page="account">
+  <div id="global-error" class="global-error" style="display: none;"></div>
+  
+  <aside class="site-sidebar">
+    <div class="sidebar-brand"><a href="index.html">PAP-JOY</a></div>
+    <nav class="sidebar-nav">
+      <a href="index.html" class="nav-link"><i class="fas fa-home"></i><span>Home</span></a>
+      <a href="product.html" class="nav-link"><i class="fas fa-store"></i><span>Shop</span></a>
+      <a href="cart.html" class="nav-link"><i class="fas fa-shopping-cart"></i><span>Cart</span><span class="cart-badge" id="sidebar-cart-count">0</span></a>
+      <a href="tracking.html" class="nav-link"><i class="fas fa-truck"></i><span>Track Order</span></a>
+      <a href="account.html" class="nav-link active"><i class="fas fa-user"></i><span>Account</span></a>
+      <a href="signin.html" class="nav-link"><i class="fas fa-sign-in-alt"></i><span>Sign In</span></a>
+    </nav>
+  </aside>
+  
+  <button class="mobile-menu-toggle" id="mobile-menu-toggle"><i class="fas fa-bars"></i></button>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <main class="product-section">
+    <!-- Account Header -->
+    <div class="account-header">
+      <div class="account-header-content">
+        <div class="account-avatar-large" id="account-avatar-large">P</div>
+        <div class="account-intro">
+          <h1 id="account-name-header">Welcome to Your Account</h1>
+          <p id="account-email-header">Sign in to access your profile</p>
+          <div class="account-actions-header">
+            <button class="btn-primary" id="edit-profile-btn"><i class="fas fa-edit"></i> Edit Profile</button>
+            <button class="btn-secondary" id="account-signout-btn"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
+          </div>
+        </div>
+      </div>
+      <div class="loyalty-summary-card" id="loyalty-summary-card">
+        <div>
+          <div class="loyalty-tier" id="loyalty-tier">Bronze Member</div>
+          <p class="loyalty-text" id="loyalty-message">Welcome back! Complete more purchases to unlock Silver status.</p>
+        </div>
+        <div class="loyalty-progress" id="loyalty-progress"></div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="account-main">
+      <!-- Left Column -->
+      <div class="account-content">
+        <!-- Orders Section -->
+        <div class="account-section">
+          <h3><i class="fas fa-shopping-bag"></i> Recent Orders</h3>
+          <div class="order-status-badges" id="order-status-badges"></div>
+          <div id="orders-container">
+            <div class="empty-state">
+              <i class="fas fa-inbox"></i>
+              <p>No orders yet. Start shopping!</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Wishlist Section -->
+        <div class="account-section">
+          <h3><i class="fas fa-heart"></i> Wishlist</h3>
+          <div id="wishlist-container">
+            <div class="empty-state">
+              <i class="fas fa-heart"></i>
+              <p>No wishlist items yet. Save your favorites for faster checkout.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="account-section">
+          <h3><i class="fas fa-file-invoice-dollar"></i> Invoices</h3>
+          <div id="invoices-container">
+            <div class="empty-state">
+              <i class="fas fa-file-invoice-dollar"></i>
+              <p>No invoices available yet.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="account-section">
+          <h3><i class="fas fa-credit-card"></i> Saved Payment Methods</h3>
+          <div id="payment-methods-container">
+            <div class="empty-state">
+              <i class="fas fa-credit-card"></i>
+              <p>No saved payment methods yet.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Addresses Section -->
+        <div class="account-section">
+          <h3><i class="fas fa-map-marker-alt"></i> Shipping Addresses</h3>
+          <div id="addresses-container">
+            <div class="empty-state">
+              <i class="fas fa-location-dot"></i>
+              <p>No saved addresses yet.</p>
+            </div>
+          </div>
+          <button onclick="openAddressModal()" style="width: 100%; padding: 10px; margin-top: 16px; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent); border-radius: 6px; cursor: pointer; font-weight: 500;">
+            <i class="fas fa-plus"></i> Add New Address
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Sidebar -->
+      <div class="account-sidebar">
+        <!-- Account Info Card -->
+        <div class="sidebar-card">
+          <h4><i class="fas fa-user"></i> Account Info</h4>
+          <p id="sidebar-name">Name: —</p>
+          <p id="sidebar-email">Email: —</p>
+          <p id="sidebar-phone">Phone: —</p>
+          <button onclick="document.getElementById('edit-profile-btn').click()">Edit Account</button>
+        </div>
+
+        <!-- Quick Links Card -->
+        <div class="sidebar-card">
+          <h4><i class="fas fa-link"></i> Quick Links</h4>
+          <p>Easy access to common actions</p>
+          <button onclick="window.location.href='cart.html'"><i class="fas fa-shopping-cart"></i> View Cart</button>
+          <button onclick="window.location.href='product.html'" style="margin-top: 8px;"><i class="fas fa-store"></i> Continue Shopping</button>
+        </div>
+
+        <div class="sidebar-card">
+          <h4><i class="fas fa-truck"></i> Order Tracking</h4>
+          <p>Track your latest shipments and delivery updates in one place.</p>
+          <button onclick="window.location.href='tracking.html'"><i class="fas fa-map-marker-alt"></i> Track Order</button>
+        </div>
+
+        <!-- Help Card -->
+        <div class="sidebar-card">
+          <h4><i class="fas fa-question-circle"></i> Need Help?</h4>
+          <p>Contact our support team for assistance</p>
+          <button><i class="fas fa-envelope"></i> Contact Support</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Edit Profile Modal -->
+  <div id="edit-profile-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Edit Profile</h2>
+        <button class="modal-close" onclick="closeEditModal()">&times;</button>
+      </div>
+      <form id="edit-profile-form">
+        <div class="form-group">
+          <label for="edit-name">Full Name</label>
+          <input type="text" id="edit-name" required>
+        </div>
+        <div class="form-group">
+          <label for="edit-email">Email Address</label>
+          <input type="email" id="edit-email" disabled>
+        </div>
+        <div class="form-group">
+          <label for="edit-phone">Phone Number</label>
+          <input type="tel" id="edit-phone">
+        </div>
+        <button type="submit" class="checkout-button" style="width: 100%;">Save Changes</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Address Modal -->
+  <div id="add-address-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add New Address</h2>
+        <button class="modal-close" onclick="closeAddressModal()">&times;</button>
+      </div>
+      <form id="add-address-form">
+        <div class="form-group">
+          <label for="addr-name">Full Name</label>
+          <input type="text" id="addr-name" required>
+        </div>
+        <div class="form-group">
+          <label for="addr-line1">Street Address</label>
+          <input type="text" id="addr-line1" required>
+        </div>
+        <div class="form-group">
+          <label for="addr-line2">Apartment, Suite (Optional)</label>
+          <input type="text" id="addr-line2">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label for="addr-city">City</label>
+            <input type="text" id="addr-city" required>
+          </div>
+          <div class="form-group">
+            <label for="addr-state">State</label>
+            <input type="text" id="addr-state" required>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label for="addr-postal">Postal Code</label>
+            <input type="text" id="addr-postal" required>
+          </div>
+          <div class="form-group">
+            <label for="addr-country">Country</label>
+            <input type="text" id="addr-country" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="addr-type">Address Type</label>
+          <select id="addr-type">
+            <option value="shipping">Shipping</option>
+            <option value="billing">Billing</option>
+          </select>
+        </div>
+        <div class="form-group checkbox">
+          <input type="checkbox" id="addr-default" />
+          <label for="addr-default">Set as default address</label>
+        </div>
+        <div class="form-group">
+          <label for="addr-phone">Phone Number</label>
+          <input type="tel" id="addr-phone">
+        </div>
+        <button type="submit" class="checkout-button" style="width: 100%;">Add Address</button>
+      </form>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="copyright">
+      <p>&copy; 2026 PAP-JOY. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script>
+    function openAddressModal() {
+      const user = getCurrentUser?.() || {};
+      const address = user.shippingAddress || {};
+      document.getElementById('addr-name').value = address.fullName || user.name || '';
+      document.getElementById('addr-type').value = address.type || 'shipping';
+      document.getElementById('addr-line1').value = address.line1 || '';
+      document.getElementById('addr-line2').value = address.line2 || '';
+      document.getElementById('addr-city').value = address.city || '';
+      document.getElementById('addr-state').value = address.state || '';
+      document.getElementById('addr-postal').value = address.postalCode || '';
+      document.getElementById('addr-country').value = address.country || '';
+      document.getElementById('addr-phone').value = address.phone || '';
+      document.getElementById('addr-default').checked = address.isDefault || false;
+      document.getElementById('add-address-modal').classList.add('active');
+    }
+
+    function closeAddressModal() {
+      document.getElementById('add-address-modal').classList.remove('active');
+      document.getElementById('add-address-form').reset();
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-profile-modal').classList.remove('active');
+    }
+
+    // Close modals when clicking outside
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.addEventListener('click', e => {
+        if (e.target === modal) modal.classList.remove('active');
+      });
+    });
+  </script>
+</body>
+</html>
+
+

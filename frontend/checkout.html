@@ -1,0 +1,280 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PAP-JOY | Checkout</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+</head>
+<body data-page="checkout">
+  <!-- Global Error Notification -->
+  <div id="global-error" class="global-error" style="display: none;"></div>
+  <aside class="site-sidebar">
+    <div class="sidebar-brand"><a href="index.html">PAP-JOY</a></div>
+    <nav class="sidebar-nav">
+      <a href="index.html" class="nav-link"><i class="fas fa-home"></i><span>Home</span></a>
+      <a href="product.html" class="nav-link"><i class="fas fa-store"></i><span>Shop</span></a>
+      <a href="cart.html" class="nav-link"><i class="fas fa-shopping-cart"></i><span>Cart</span><span class="cart-badge" id="sidebar-cart-count">0</span></a>
+      <a href="tracking.html" class="nav-link"><i class="fas fa-truck"></i><span>Track Order</span></a>
+      <a href="account.html" class="nav-link"><i class="fas fa-user"></i><span>Account</span></a>
+      <a href="signin.html" class="nav-link"><i class="fas fa-sign-in-alt"></i><span>Sign In</span></a>
+    </nav>
+    <div class="sidebar-stats">
+      <div class="stat-item"><div class="stat-number">12</div><div class="stat-label">Products</div></div>
+      <div class="stat-item"><div class="stat-number">2.5K+</div><div class="stat-label">Premium styles</div></div>
+      
+    </div>
+    <div class="sidebar-actions">
+      
+      <button class="action-btn" onclick="showCart()"><i class="fas fa-shopping-bag"></i><span>Quick Cart</span></button>
+    </div>
+  </aside>
+  <button class="mobile-menu-toggle" id="mobile-menu-toggle"><i class="fas fa-bars"></i></button>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <main class="product-section checkout-page">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow" data-i18n="checkout.eyebrow">Secure Checkout</p>
+        <h2 data-i18n="checkout.heading">Complete your order with delivery details</h2>
+      </div>
+      <p class="product-intro" data-i18n="checkout.text">Enter your delivery information and choose from multiple secure payment options.</p>
+    </div>
+
+    <div class="checkout-layout">
+      <section class="checkout-summary">
+        <h3 data-i18n="checkout.summary">Order summary</h3>
+        <div id="checkout-items" class="checkout-items"></div>
+        <div class="checkout-totals">
+          <div class="checkout-row"><span data-i18n="checkout.items">Items</span><strong id="checkout-count">0</strong></div>
+          <div class="checkout-row"><span data-i18n="checkout.subtotal">Subtotal</span><strong id="checkout-subtotal">â‚¹0</strong></div>
+          <div class="checkout-row"><span data-i18n="checkout.shipping">Shipping</span><strong id="checkout-shipping">FREE</strong></div>
+          <div class="checkout-row" id="checkout-discount-row" style="display:none;"><span>Promo discount</span><strong id="checkout-discount">0</strong></div>
+          <div class="checkout-row"><span data-i18n="checkout.tax">Tax</span><strong id="checkout-tax">â‚¹0</strong></div>
+          <div class="checkout-row total-row"><span data-i18n="checkout.total">Total</span><strong id="checkout-total">â‚¹0</strong></div>
+        </div>
+      </section>
+
+      <section class="checkout-actions">
+        <!-- Delivery Information Form -->
+        <div class="delivery-section">
+          <h3>Delivery Information</h3>
+          <form id="delivery-form" class="delivery-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="delivery-fullname">Full Name</label>
+                <input type="text" id="delivery-fullname" required />
+              </div>
+              <div class="form-group">
+                <label for="delivery-phone">Phone Number</label>
+                <input type="tel" id="delivery-phone" required />
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="delivery-address">Street Address</label>
+              <input type="text" id="delivery-address" placeholder="Street address" required />
+              <button type="button" id="fill-delivery-address-btn" class="checkout-button secondary" style="margin-top: 0.75rem;">Autofill with GPS</button>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="delivery-city">City</label>
+                <input type="text" id="delivery-city" required />
+              </div>
+              <div class="form-group">
+                <label for="delivery-state">State</label>
+                <input type="text" id="delivery-state" required />
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="delivery-postal">Postal Code</label>
+                <input type="text" id="delivery-postal" required />
+              </div>
+              <div class="form-group">
+                <label for="delivery-country">Country</label>
+                <input type="text" id="delivery-country" value="India" required />
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="delivery-instructions">Delivery Instructions (Optional)</label>
+              <textarea id="delivery-instructions" rows="3" placeholder="Any special delivery instructions..."></textarea>
+            </div>
+          </form>
+        </div>
+
+        <!-- Payment Methods -->
+        <div class="payment-methods">
+          <h3>Select Payment Method</h3>
+          <div id="checkout-message" class="checkout-notice"></div>
+          
+          <!-- Sign In Option -->
+          <div class="signin-prompt" id="signin-prompt" style="display: none;">
+            <p>Please sign in to continue with payment</p>
+            <button class="checkout-button secondary" onclick="window.location.href='signin.html'">Sign In to Pay</button>
+          </div>
+
+          <div class="payment-options">
+            <div class="payment-card">
+              <h3 data-i18n="checkout.stripe.title">Pay with Stripe</h3>
+              <p data-i18n="checkout.stripe.text">Fast checkout with card payments and secure hosted sessions.</p>
+              <button class="checkout-button" onclick="startStripeCheckout()" data-i18n="checkout.stripe.button">Pay with Stripe</button>
+            </div>
+            <div class="payment-card">
+              <h3 data-i18n="checkout.paypal.title">Pay with PayPal</h3>
+              <p data-i18n="checkout.paypal.text">Use PayPal to complete the purchase quickly and safely.</p>
+              <button class="checkout-button" onclick="startPayPalCheckout()" data-i18n="checkout.paypal.button">Pay with PayPal</button>
+            </div>
+            <div class="payment-card">
+              <h3 data-i18n="checkout.razorpay.title">Pay with Razorpay</h3>
+              <p data-i18n="checkout.razorpay.text">Pay securely in INR with Razorpay's checkout experience.</p>
+              <button class="checkout-button" onclick="startRazorpayCheckout()" data-i18n="checkout.razorpay.button">Pay with Razorpay</button>
+            </div>
+            
+            <!-- COD Option -->
+            <div class="payment-card cod-card">
+              <h3>Cash on Delivery (COD)</h3>
+              <p>Pay when your order arrives at your doorstep. Additional â‚¹50 COD fee applies.</p>
+              <div class="cod-form" id="cod-form" style="display: none;">
+                <div class="form-group">
+                  <label for="cod-amount">Amount to be collected</label>
+                  <input type="text" id="cod-amount" readonly />
+                </div>
+                <div class="form-group">
+                  <label for="cod-notes">Additional Notes</label>
+                  <textarea id="cod-notes" rows="2" placeholder="Any notes for COD delivery..."></textarea>
+                </div>
+                <button class="checkout-button" onclick="startCODCheckout()">Confirm COD Order</button>
+              </div>
+              <button class="checkout-button" onclick="showCODForm()">Toggle COD details</button>
+            </div>
+            
+            <!-- Credit Card Option -->
+            <div class="payment-card card-card">
+              <h3>Credit Card Payment</h3>
+              <p>Secure payment with your credit card.</p>
+              <div class="card-form" id="credit-form" style="display: none;">
+                <div class="form-group">
+                  <label for="credit-number">Card Number</label>
+                  <input type="text" id="credit-number" placeholder="1234 5678 9012 3456" maxlength="19" />
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="credit-expiry">Expiry Date</label>
+                    <input type="text" id="credit-expiry" placeholder="MM/YY" maxlength="5" />
+                  </div>
+                  <div class="form-group">
+                    <label for="credit-cvv">CVV</label>
+                    <input type="text" id="credit-cvv" placeholder="123" maxlength="4" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="credit-name">Cardholder Name</label>
+                  <input type="text" id="credit-name" placeholder="John Doe" />
+                </div>
+                <button class="checkout-button" onclick="startCreditCardCheckout()">Pay with Credit Card</button>
+              </div>
+              <button class="checkout-button" onclick="showCreditForm()">Toggle Credit Form</button>
+            </div>
+            
+            <!-- Debit Card Option -->
+            <div class="payment-card card-card">
+              <h3>Debit Card Payment</h3>
+              <p>Secure payment with your debit card.</p>
+              <div class="card-form" id="debit-form" style="display: none;">
+                <div class="form-group">
+                  <label for="debit-number">Card Number</label>
+                  <input type="text" id="debit-number" placeholder="1234 5678 9012 3456" maxlength="19" />
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="debit-expiry">Expiry Date</label>
+                    <input type="text" id="debit-expiry" placeholder="MM/YY" maxlength="5" />
+                  </div>
+                  <div class="form-group">
+                    <label for="debit-cvv">CVV</label>
+                    <input type="text" id="debit-cvv" placeholder="123" maxlength="4" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="debit-name">Cardholder Name</label>
+                  <input type="text" id="debit-name" placeholder="John Doe" />
+                </div>
+                <button class="checkout-button" onclick="startDebitCardCheckout()">Pay with Debit Card</button>
+              </div>
+              <button class="checkout-button" onclick="showDebitForm()">Toggle Debit Form</button>
+            </div>
+            
+            <div class="payment-card">
+              <h3>Pay with Paytm</h3>
+              <p>Fast and secure payment via Paytm wallet.</p>
+              <button class="checkout-button" onclick="startPaytmCheckout()">Pay with Paytm</button>
+            </div>
+            <div class="payment-card">
+              <h3>UPI ID</h3>
+              <p>Pay instantly using your UPI ID.</p>
+              <button class="checkout-button" onclick="startUPICheckout()">Pay with UPI</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="connect-with-us">
+      <h3>Connect With Us</h3>
+    </div>
+    
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="brand"><a href="index.html">PAP-JOY</a></div>
+        <p>Premium footwear for every journey.</p>
+      </div>
+      
+      <div class="social-section">
+        <h4>Follow Us</h4>
+        <div class="social-links">
+          <a href="#" class="social-link" title="Instagram" aria-label="Follow us on Instagram">
+            <i class="fab fa-instagram"></i>
+          </a>
+          <a href="#" class="social-link" title="Facebook" aria-label="Follow us on Facebook">
+            <i class="fab fa-facebook-f"></i>
+          </a>
+          <a href="#" class="social-link" title="YouTube" aria-label="Subscribe on YouTube">
+            <i class="fab fa-youtube"></i>
+          </a>
+        </div>
+      </div>
+      
+      <div class="contact-info">
+        <h4>Contact Us</h4>
+        <div class="contact-item">
+          <i class="fas fa-envelope"></i>
+          <a href="mailto:hello@papjoy.com">hello@papjoy.com</a>
+        </div>
+        <div class="contact-item">
+          <i class="fas fa-phone"></i>
+          <a href="tel:+1234567890">+1 (234) 567-8900</a>
+        </div>
+      </div>
+    </div>
+    
+    <div class="copyright">
+      <p>&copy; 2026 PAP-JOY. Crafted for every journey. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
+
+

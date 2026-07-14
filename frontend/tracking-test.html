@@ -1,0 +1,280 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GPS Tracking Test</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+</head>
+<body>
+  <h1>GPS Tracking Test</h1>
+
+  <div class="tracking-form-container">
+    <h3>Enter Your Order Details</h3>
+    <form id="tracking-form" class="tracking-form">
+      <div class="form-group">
+        <label for="order-id">Order ID</label>
+        <input type="text" id="order-id" placeholder="Enter your order ID" required />
+      </div>
+      <div class="form-group">
+        <label for="tracking-email">Email Address</label>
+        <input type="email" id="tracking-email" placeholder="Email used for order" required />
+      </div>
+      <button type="submit" class="checkout-button">Track Order</button>
+    </form>
+    <div id="tracking-message" class="auth-message"></div>
+  </div>
+
+  <div id="tracking-results" class="tracking-results" style="display: none;">
+    <h3>Order Tracking</h3>
+    <div id="order-info">
+      <p><strong id="order-number">Order #12345</strong></p>
+      <p id="order-date">Placed on: 12/15/2024</p>
+    </div>
+
+    <div class="timeline">
+      <div class="timeline-item completed">Order Placed</div>
+      <div class="timeline-item active">Out for Delivery</div>
+      <div class="timeline-item pending">Delivered</div>
+    </div>
+
+    <div class="tracking-details">
+      <p><strong>Current Location:</strong> <span id="current-location">Sector 18, Noida</span></p>
+      <p><strong>Distance Remaining:</strong> <span id="distance-remaining">2.3 km</span></p>
+      <p><strong>Estimated Delivery:</strong> <span id="eta">2:30 PM</span></p>
+    </div>
+
+    <div class="updates">
+      <h4>Recent Updates</h4>
+      <div id="updates-list">
+        <div class="update-item">
+          <div class="update-time">2:15 PM</div>
+          <div class="update-content">
+            <p>ðŸ“ Delivery vehicle has entered your area.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // GPS Tracking Functions
+    let trackingInterval;
+
+    function initTrackingPage() {
+      const trackingForm = document.getElementById('tracking-form');
+      const trackingMessage = document.getElementById('tracking-message');
+
+      if (!trackingForm) return;
+
+      trackingForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const orderId = document.getElementById('order-id').value.trim();
+        const email = document.getElementById('tracking-email').value.trim();
+
+        if (!orderId || !email) {
+          showTrackingMessage('Please enter both Order ID and Email.', true);
+          return;
+        }
+
+        showTrackingMessage('Searching for your order...');
+
+        try {
+          // Simulate API call to find order
+          const order = await findOrder(orderId, email);
+          if (order) {
+            displayTrackingResults(order);
+            startGPSTracking();
+          } else {
+            showTrackingMessage('Order not found. Please check your Order ID and Email.', true);
+          }
+        } catch (error) {
+          console.error('Tracking error:', error);
+          showTrackingMessage('Unable to track order. Please try again later.', true);
+        }
+      });
+    }
+
+    async function findOrder(orderId, email) {
+      // Simulate order lookup - in real app, this would be an API call
+      // For demo purposes, we'll create a mock order if the ID contains numbers
+
+      if (orderId.match(/\d/)) {
+        // Create mock order data
+        const mockOrder = {
+          id: orderId,
+          email: email,
+          status: 'out_for_delivery',
+          placedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+          estimatedDelivery: new Date(Date.now() + 45 * 60 * 1000), // 45 minutes from now
+          currentLocation: {
+            lat: 28.5355,
+            lng: 77.3910,
+            address: 'Sector 18, Noida'
+          },
+          distance: 2.3,
+          driver: {
+            name: 'Rajesh Kumar',
+            phone: '+91 98765 43210'
+          }
+        };
+
+        return mockOrder;
+      }
+
+      return null;
+    }
+
+    function displayTrackingResults(order) {
+      const resultsDiv = document.getElementById('tracking-results');
+      const orderNumber = document.getElementById('order-number');
+      const orderDate = document.getElementById('order-date');
+
+      // Update order info
+      orderNumber.textContent = `Order #${order.id}`;
+      orderDate.textContent = `Placed on: ${order.placedAt.toLocaleDateString()}`;
+
+      // Update timeline based on status
+      updateTimelineStatus(order.status);
+
+      // Show results
+      resultsDiv.style.display = 'block';
+      resultsDiv.scrollIntoView({ behavior: 'smooth' });
+
+      // Update tracking details
+      updateTrackingDetails(order);
+    }
+
+    function updateTimelineStatus(status) {
+      const timelineItems = document.querySelectorAll('.timeline-item');
+
+      // Reset all items
+      timelineItems.forEach(item => {
+        item.classList.remove('completed', 'active', 'pending');
+        item.classList.add('pending');
+      });
+
+      // Set status based on order status
+      const statusMap = {
+        'placed': 0,
+        'processing': 1,
+        'out_for_delivery': 2,
+        'delivered': 3
+      };
+
+      const currentStep = statusMap[status] || 0;
+
+      timelineItems.forEach((item, index) => {
+        if (index < currentStep) {
+          item.classList.remove('pending');
+          item.classList.add('completed');
+        } else if (index === currentStep) {
+          item.classList.remove('pending');
+          item.classList.add('active');
+        }
+      });
+    }
+
+    function updateTrackingDetails(order) {
+      const currentLocation = document.getElementById('current-location');
+      const distanceRemaining = document.getElementById('distance-remaining');
+      const eta = document.getElementById('eta');
+
+      currentLocation.textContent = order.currentLocation.address;
+      distanceRemaining.textContent = `${order.distance} km`;
+      eta.textContent = order.estimatedDelivery.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+
+    function startGPSTracking() {
+      // Clear any existing interval
+      if (trackingInterval) {
+        clearInterval(trackingInterval);
+      }
+
+      // Simulate GPS movement every 30 seconds
+      trackingInterval = setInterval(() => {
+        updateGPSPosition();
+      }, 30000);
+
+      // Initial update
+      updateGPSPosition();
+    }
+
+    function updateGPSPosition() {
+      // Simulate movement towards destination
+      const currentLocation = document.getElementById('current-location');
+      const distanceRemaining = document.getElementById('distance-remaining');
+      const eta = document.getElementById('eta');
+
+      // Simulate decreasing distance
+      const currentDistance = parseFloat(distanceRemaining.textContent);
+      const newDistance = Math.max(0, currentDistance - 0.1);
+
+      distanceRemaining.textContent = `${newDistance.toFixed(1)} km`;
+
+      // Update location based on distance
+      const locations = [
+        'Sector 18, Noida',
+        'Sector 15, Noida',
+        'Sector 12, Noida',
+        'Crossing Republic, Ghaziabad',
+        'Your Location'
+      ];
+
+      const locationIndex = Math.min(4, Math.floor((2.3 - newDistance) / 0.5));
+      currentLocation.textContent = locations[locationIndex];
+
+      // Update ETA
+      const minutesRemaining = Math.max(1, Math.round(newDistance * 15)); // ~15 min per km
+      const etaTime = new Date(Date.now() + minutesRemaining * 60 * 1000);
+      eta.textContent = etaTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+      // Add tracking update
+      if (newDistance < 2.2 && newDistance > 2.0) {
+        addTrackingUpdate('ðŸ“ Delivery vehicle has entered your area.');
+      } else if (newDistance < 1.0 && newDistance > 0.8) {
+        addTrackingUpdate('ðŸšš Your order is very close! Driver will arrive soon.');
+      } else if (newDistance < 0.1) {
+        addTrackingUpdate('âœ… Order delivered successfully!');
+        clearInterval(trackingInterval);
+      }
+    }
+
+    function addTrackingUpdate(message) {
+      const updatesList = document.getElementById('updates-list');
+      const updateItem = document.createElement('div');
+      updateItem.className = 'update-item';
+
+      const now = new Date();
+      const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+      updateItem.innerHTML = `
+        <div class="update-time">${timeString}</div>
+        <div class="update-content">
+          <p>${message}</p>
+        </div>
+      `;
+
+      // Insert at the beginning
+      updatesList.insertBefore(updateItem, updatesList.firstChild);
+    }
+
+    function showTrackingMessage(message, isError = false) {
+      const messageEl = document.getElementById('tracking-message');
+      if (messageEl) {
+        messageEl.textContent = message;
+        messageEl.className = isError ? 'message error' : 'message success';
+        messageEl.style.display = 'block';
+      }
+    }
+
+    // Initialize tracking page
+    document.addEventListener('DOMContentLoaded', initTrackingPage);
+  </script>
+</body>
+</html>
+
