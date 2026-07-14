@@ -35,3 +35,16 @@ module.exports = {
   getPaymentProviderStatus,
   isPaymentConfigured
 };
+
+const paymentProviders = {
+  paypal:
+    !!PAYPAL_CLIENT_ID &&
+    !!PAYPAL_CLIENT_SECRET,
+
+  razorpay:
+    !!RAZORPAY_KEY &&
+    !!RAZORPAY_SECRET,
+
+  stripe:
+    !!STRIPE_SECRET_KEY
+};
