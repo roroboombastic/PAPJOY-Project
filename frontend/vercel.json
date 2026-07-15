@@ -2,5 +2,23 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "buildCommand": "npm run build",
-  "outputDirectory": "dist"
+  "outputDirectory": ".",
+  "rewrites": [
+    { "source": "/product", "destination": "/product.html" },
+    { "source": "/product/:path*", "destination": "/product.html" },
+    { "source": "/account", "destination": "/account.html" },
+    { "source": "/account/:path*", "destination": "/account.html" },
+    { "source": "/cart", "destination": "/cart.html" },
+    { "source": "/checkout", "destination": "/checkout.html" },
+    { "source": "/signin", "destination": "/signin.html" },
+    { "source": "/signup", "destination": "/signup.html" },
+    { "source": "/forgot-password", "destination": "/forgot-password.html" },
+    { "source": "/reset-password", "destination": "/reset-password.html" },
+    { "source": "/tracking", "destination": "/tracking.html" },
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/terms", "destination": "/terms.html" },
+    { "source": "/success", "destination": "/success.html" },
+    { "source": "/cookies", "destination": "/cookies.html" },
+    { "source": "/admin", "destination": "/admin.html" }
+  ]
 }
