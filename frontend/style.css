@@ -3516,19 +3516,17 @@ textarea {
   color: var(--text-muted);
   margin-top: 4px;
 }
-  }
 
-  .btn,
-  .checkout-button,
-  .secondary-button,
-  .view-all {
-    width: 100%;
-  }
+.btn,
+.checkout-button,
+.secondary-button,
+.view-all {
+  width: 100%;
+}
 
-  .site-footer,
-  .checkout-summary,
-  .checkout-actions {
-    padding: 24px;
-  }
+.site-footer,
+.checkout-summary,
+.checkout-actions {
+  padding: 24px;
 }
 

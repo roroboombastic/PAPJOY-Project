@@ -2,7 +2,5 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "buildCommand": "npm run build",
-  "outputDirectory": "root directory",
-  "framework": "react",
-  "installCommand": "npm install"
+  "outputDirectory": "dist"
 }
