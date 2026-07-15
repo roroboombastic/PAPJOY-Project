@@ -3,6 +3,6 @@
   "trailingSlash": false,
   "buildCommand": "npm run build",
   "outputDirectory": "root directory",
-  "framework": "React",
+  "framework": "react",
   "installCommand": "npm install"
 }
