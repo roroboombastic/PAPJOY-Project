@@ -3,7 +3,7 @@ const path = require('path');
 const https = require('https');
 const crypto = require('crypto');
 const express = require('express');
-const { APP_URL, API_BASE_PATH, NODE_ENV, HTTPS_ENABLED, SSL_KEY_PATH, SSL_CERT_PATH, SSL_CA_PATH, PORT, MONGO_URI } = require('./config');
+const config = require('./config');
 const { initializeDatabase } = require('./db');
 const { createSecurityMiddleware } = require('./middlewares/security');
 const errorHandler = require('./middlewares/errorHandler');
@@ -33,14 +33,14 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
-  if (req.originalUrl.startsWith('/api/') && !req.originalUrl.startsWith(API_BASE_PATH)) {
-    req.url = `${API_BASE_PATH}${req.url.slice(4)}`;
+  if (req.originalUrl.startsWith('/api/') && !req.originalUrl.startsWith(config.apiBasePath)) {
+    req.url = `${config.apiBasePath}${req.url.slice(4)}`;
   }
   next();
 });
 
 app.use((req, res, next) => {
-  if (req.method !== 'GET' && req.originalUrl.startsWith(API_BASE_PATH) && mongoose.connection.readyState !== 1) {
+  if (req.method !== 'GET' && req.originalUrl.startsWith(config.apiBasePath) && mongoose.connection.readyState !== 1) {
     return res.status(503).json({
       success: false,
       error: 'Database unavailable',
@@ -50,8 +50,9 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(`${API_BASE_PATH}`, routes);
-logger.info('Routes mounted', { apiBasePath: API_BASE_PATH });
+app.use(`${config.apiBasePath}`, routes);
+logger.info('Routes mounted', { apiBasePath: config.apiBasePath });
+
 app.get('/health', (req, res) => {
   const readyStates = {
     0: 'disconnected',
@@ -72,13 +73,13 @@ app.get('/health', (req, res) => {
 
 const staticRoot = path.join(__dirname, '../frontend');
 app.use(express.static(staticRoot, {
-  maxAge: NODE_ENV === 'production' ? '30d' : 0,
-  immutable: NODE_ENV === 'production',
+  maxAge: config.isProd ? '30d' : 0,
+  immutable: config.isProd,
   etag: true
 }));
 
 app.use((req, res, next) => {
-  if (req.originalUrl.startsWith(API_BASE_PATH) || req.path.startsWith('/api/')) {
+  if (req.originalUrl.startsWith(config.apiBasePath) || req.path.startsWith('/api/')) {
     return res.status(404).json({ error: 'Route not found' });
   }
   next();
@@ -87,7 +88,7 @@ app.use((req, res, next) => {
 app.use(errorHandler);
 
 function handleServerError(error) {
-  const meta = { port: PORT, code: error.code, message: error.message, timestamp: new Date().toISOString() };
+  const meta = { port: config.port, code: error.code, message: error.message, timestamp: new Date().toISOString() };
   if (error.code === 'EADDRINUSE') {
     logger.error('Port already in use', meta);
   } else if (error.code === 'EACCES') {
@@ -100,7 +101,7 @@ function handleServerError(error) {
 
 function startHttpServer(port) {
   const httpServer = app.listen(port, '0.0.0.0', () => {
-    logger.info('Server listening', { port, appUrl: APP_URL });
+    logger.info('Server listening', { port, appUrl: config.appUrl });
   });
 
   httpServer.on('error', (error) => {
@@ -124,31 +125,31 @@ function getMongoHost(uri) {
 
 async function start() {
   await initializeDatabase();
-  const mongoHost = mongoose.connection.host || getMongoHost(MONGO_URI);
+  const mongoHost = mongoose.connection.host || getMongoHost(config.database.mongoUri);
   const dbName = mongoose.connection.name || 'papjoy';
   logger.info('Startup diagnostics', {
-    PORT,
-    APP_URL,
-    NODE_ENV,
+    port: config.port,
+    appUrl: config.appUrl,
+    nodeEnv: config.nodeEnv,
     mongoHost,
     dbName,
     timestamp: new Date().toISOString()
   });
 
-  if (HTTPS_ENABLED) {
+  if (config.https.enabled) {
     try {
       const sslOptions = {
-        key: fs.readFileSync(path.resolve(SSL_KEY_PATH)),
-        cert: fs.readFileSync(path.resolve(SSL_CERT_PATH))
+        key: fs.readFileSync(path.resolve(config.https.keyPath)),
+        cert: fs.readFileSync(path.resolve(config.https.certPath))
       };
-      if (SSL_CA_PATH) {
-        sslOptions.ca = fs.readFileSync(path.resolve(SSL_CA_PATH));
+      if (config.https.caPath) {
+        sslOptions.ca = fs.readFileSync(path.resolve(config.https.caPath));
       }
 
       const httpsServer = https.createServer(sslOptions, app);
       httpsServer.on('error', handleServerError);
-      httpsServer.on('listening', () => logger.info('HTTPS server listening', { port: PORT, appUrl: APP_URL }));
-      httpsServer.listen(PORT, '0.0.0.0');
+      httpsServer.on('listening', () => logger.info('HTTPS server listening', { port: config.port, appUrl: config.appUrl }));
+      httpsServer.listen(config.port, '0.0.0.0');
       return;
     } catch (err) {
       logger.error('Failed to start HTTPS server', { error: err.message, stack: err.stack });
@@ -156,7 +157,7 @@ async function start() {
     }
   }
 
-  startHttpServer(PORT);
+  startHttpServer(config.port);
 }
 
 start().catch((err) => {
