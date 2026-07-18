@@ -48,7 +48,11 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(email => em
 const requiredEnvVars = [
   'MONGO_URI',
   'JWT_SECRET',
-  
+  'PAYPAL_CLIENT_ID',
+  'PAYPAL_CLIENT_SECRET',
+  'STRIPE_SECRET_KEY',
+  'RAZORPAY_KEY',
+  'RAZORPAY_SECRET'
 ];
 
 function validateEnvironment() {
