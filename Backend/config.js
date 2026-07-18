@@ -15,16 +15,18 @@ function getEnv(key, defaultValue = undefined, options = {}) {
   const value = process.env[key];
   const finalValue = value !== undefined ? value : defaultValue;
 
-  // Check if required but missing
+  // Check if required but missing - don't throw here, let validateConfiguration handle it
   if (options.required && !finalValue) {
-    throw new Error(`❌ CRITICAL: Missing required environment variable: ${key}`);
+    console.warn(`⚠️ WARNING: Missing required environment variable: ${key}`);
+    return undefined;
   }
 
   // Custom validation
   if (options.validate && finalValue) {
     const validationResult = options.validate(finalValue);
     if (!validationResult.valid) {
-      throw new Error(`❌ CRITICAL: Invalid value for ${key}: ${validationResult.message}`);
+      console.error(`❌ CRITICAL: Invalid value for ${key}: ${validationResult.message}`);
+      return undefined;
     }
   }
 
@@ -37,7 +39,8 @@ function getEnv(key, defaultValue = undefined, options = {}) {
 function getPositiveNumber(key, defaultValue = 3000) {
   const value = Number(process.env[key] || defaultValue);
   if (isNaN(value) || value <= 0 || !Number.isInteger(value)) {
-    throw new Error(`❌ CRITICAL: ${key} must be a positive integer, got: ${value}`);
+    console.error(`❌ CRITICAL: ${key} must be a positive integer, got: ${value}`);
+    return defaultValue;
   }
   return value;
 }
@@ -162,10 +165,12 @@ const config = {
       .filter(e => e.length > 0)
       .map(e => {
         if (!isValidEmail(e)) {
-          throw new Error(`❌ CRITICAL: Invalid admin email format: ${e}`);
+          console.error(`❌ CRITICAL: Invalid admin email format: ${e}`);
+          return null;
         }
         return e.toLowerCase();
       })
+      .filter(e => e !== null)
   },
 
   // ========== GOOGLE OAUTH ==========
@@ -180,6 +185,17 @@ const config = {
 
 function validateConfiguration() {
   const errors = [];
+
+  // Essential variables check
+  if (!config.database.mongoUri) {
+    errors.push('MONGO_URI must be set');
+  }
+
+  if (!config.jwt.secret || config.jwt.secret === 'dev-secret-key-do-not-use-in-production') {
+    if (isProd) {
+      errors.push('JWT_SECRET must be set to a secure value in production');
+    }
+  }
 
   // Production-specific validations
   if (isProd) {
