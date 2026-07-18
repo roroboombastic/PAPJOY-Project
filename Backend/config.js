@@ -132,27 +132,6 @@ const config = {
     refreshExpire: getEnv('JWT_REFRESH_EXPIRE', '30d')
   },
 
-  // ========== PAYMENTS ==========
-  payments: {
-    paypal: {
-      clientId: getEnv('PAYPAL_CLIENT_ID', '', { required: isProd }),
-      clientSecret: getEnv('PAYPAL_CLIENT_SECRET', process.env.PAYPAL_SECRET || '', {
-        required: isProd
-      }),
-      mode: getEnv('PAYPAL_MODE', 'sandbox'),
-      successUrl: getEnv('PAYPAL_SUCCESS_URL', `${APP_URL}/success.html?provider=paypal`),
-      cancelUrl: getEnv('PAYPAL_CANCEL_URL', `${APP_URL}/checkout.html?paypal=canceled`)
-    },
-    razorpay: {
-      key: getEnv('RAZORPAY_KEY', '', { required: isProd }),
-      secret: getEnv('RAZORPAY_SECRET', '', { required: isProd }),
-      currency: getEnv('RAZORPAY_CURRENCY', 'INR')
-    },
-    stripe: {
-      secretKey: getEnv('STRIPE_SECRET_KEY', '', { required: isProd })
-    }
-  },
-
   // ========== BUSINESS ==========
   business: {
     name: getEnv('BUSINESS_NAME', 'PAP-JOY'),
@@ -204,17 +183,6 @@ function validateConfiguration() {
 
   // Production-specific validations
   if (isProd) {
-    // Critical payment credentials
-    if (!config.payments.paypal.clientId || !config.payments.paypal.clientSecret) {
-      errors.push('PayPal credentials are missing');
-    }
-    if (!config.payments.razorpay.key || !config.payments.razorpay.secret) {
-      errors.push('Razorpay credentials are missing');
-    }
-    if (!config.payments.stripe.secretKey) {
-      errors.push('Stripe secret key is missing');
-    }
-
     // Business information
     if (!config.business.gstin) {
       errors.push('BUSINESS_GSTIN must be set in production');
