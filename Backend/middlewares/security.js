@@ -4,10 +4,10 @@ const cors = require('cors');
 const compression = require('compression');
 const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
-const { TRUST_PROXY, CORS_ORIGIN, NODE_ENV, FORCE_HTTPS, DEFAULT_DEV_ORIGINS } = require('../config');
+const config = require('../config');
 
 function createSecurityMiddleware(app) {
-  if (TRUST_PROXY) {
+  if (config.trustProxy) {
     app.set('trust proxy', 1);
   }
 
@@ -35,16 +35,13 @@ function createSecurityMiddleware(app) {
     }
   }));
 
-  const origins = Array.from(new Set([
-    ...DEFAULT_DEV_ORIGINS,
-    ...(Array.isArray(CORS_ORIGIN) ? CORS_ORIGIN : String(CORS_ORIGIN || '').split(',').map((value) => value.trim()).filter(Boolean))
-  ]));
+  const corsOrigins = config.cors.origin;
   const corsOptions = {
     origin: (origin, callback) => {
       if (!origin) {
         return callback(null, true);
       }
-      if (origins.length === 0 || origins.includes('*') || origins.includes(origin)) {
+      if (corsOrigins.length === 0 || corsOrigins.includes('*') || corsOrigins.includes(origin)) {
         return callback(null, true);
       }
       callback(new Error(`Origin not allowed by CORS: ${origin}`));
@@ -53,7 +50,7 @@ function createSecurityMiddleware(app) {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
   };
-  console.log('[INFO] CORS origins configured', JSON.stringify({ origins }));
+  console.log('[INFO] CORS origins configured', JSON.stringify({ origins: corsOrigins }));
   app.use(cors(corsOptions));
   app.use(compression());
   
@@ -65,7 +62,7 @@ function createSecurityMiddleware(app) {
   // app.use(mongoSanitize({ replaceWith: '_' }));
   app.use(hpp());
 
-  if (FORCE_HTTPS) {
+  if (config.https.force) {
     app.use((req, res, next) => {
       const secure = req.secure || req.headers['x-forwarded-proto'] === 'https';
       if (!secure && req.hostname && !req.hostname.startsWith('localhost')) {
