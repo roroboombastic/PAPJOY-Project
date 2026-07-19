@@ -186,9 +186,9 @@ const config = {
 function validateConfiguration() {
   const errors = [];
 
-  // Essential variables check
-  if (!config.database.mongoUri) {
-    errors.push('MONGO_URI must be set');
+  // Essential variables check (enforced in production only)
+  if (isProd && !config.database.mongoUri) {
+    errors.push('MONGO_URI must be set in production');
   }
 
   if (!config.jwt.secret || config.jwt.secret === 'dev-secret-key-do-not-use-in-production') {
