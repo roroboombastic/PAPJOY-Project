@@ -21,11 +21,26 @@ function getEnv(key, defaultValue = undefined, options = {}) {
     return undefined;
   }
 
-  // Custom validation
+  // Custom validation - accept boolean or { valid, message }
   if (options.validate && finalValue) {
-    const validationResult = options.validate(finalValue);
-    if (!validationResult.valid) {
-      console.error(`❌ CRITICAL: Invalid value for ${key}: ${validationResult.message}`);
+    const rawResult = options.validate(finalValue);
+
+    // Boolean validator
+    if (typeof rawResult === 'boolean') {
+      if (!rawResult) {
+        console.error(`❌ CRITICAL: Invalid value for ${key}`);
+        return undefined;
+      }
+    } else if (rawResult && typeof rawResult === 'object') {
+      const valid = Boolean(rawResult.valid);
+      const message = rawResult.message || '';
+      if (!valid) {
+        console.error(`❌ CRITICAL: Invalid value for ${key}: ${message}`);
+        return undefined;
+      }
+    } else {
+      // unexpected validator result
+      console.error(`❌ CRITICAL: Validator for ${key} returned an unexpected result`);
       return undefined;
     }
   }
@@ -238,3 +253,11 @@ console.log('[INFO] Environment loaded', JSON.stringify({
 // ============================================================================
 
 module.exports = config;
+// expose internals for testing
+module.exports._internals = {
+  getEnv,
+  getPositiveNumber,
+  isValidEmail,
+  parseCorsOrigins,
+  validateConfiguration
+};
