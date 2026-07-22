@@ -47,23 +47,34 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(email => em
 
 const requiredEnvVars = [
   'MONGO_URI',
-  'JWT_SECRET',
+  'JWT_SECRET'
+];
+
+const optionalIntegrationEnvVars = [
   'PAYPAL_CLIENT_ID',
   'PAYPAL_CLIENT_SECRET',
-  'STRIPE_SECRET_KEY',
   'RAZORPAY_KEY',
-  'RAZORPAY_SECRET'
+  'RAZORPAY_SECRET',
+  'STRIPE_SECRET_KEY',
+  'GOOGLE_CLIENT_ID'
 ];
 
 function validateEnvironment() {
-  const missing = requiredEnvVars.filter((name) => !process.env[name] || process.env[name].trim() === '');
-  if (missing.length > 0) {
-    console.warn(`⚠️ Missing environment variables: ${missing.join(', ')}`);
+  const missingRequired = requiredEnvVars.filter((name) => !process.env[name] || process.env[name].trim() === '');
+  const missingOptionalIntegrations = optionalIntegrationEnvVars.filter((name) => !process.env[name] || process.env[name].trim() === '');
+
+  if (missingRequired.length > 0) {
+    console.warn(`⚠️ Missing required environment variables: ${missingRequired.join(', ')}`);
     if (NODE_ENV === 'production') {
       console.error('❌ FATAL: Required environment variables are not set for production.');
       process.exit(1);
     }
   }
+
+  if (missingOptionalIntegrations.length > 0) {
+    console.warn(`⚠️ Optional integrations not configured: ${missingOptionalIntegrations.join(', ')}`);
+  }
+
   if (NODE_ENV === 'production' && (!JWT_SECRET || JWT_SECRET === 'supersecretkey_dev_only')) {
     console.error('❌ CRITICAL: JWT_SECRET must be set securely in production.');
     process.exit(1);
