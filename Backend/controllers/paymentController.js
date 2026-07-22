@@ -1,7 +1,7 @@
 const paypal = require('@paypal/checkout-server-sdk');
 const Stripe = require('stripe');
 const Razorpay = require('razorpay');
-const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_MODE, PAYPAL_SUCCESS_URL, PAYPAL_CANCEL_URL, STRIPE_SECRET_KEY, RAZORPAY_KEY, RAZORPAY_SECRET, RAZORPAY_CURRENCY, APP_URL } = require('../config');
+const { PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_MODE, PAYPAL_SUCCESS_URL, PAYPAL_CANCEL_URL, STRIPE_SECRET_KEY, RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_CURRENCY, APP_URL } = require('../config');
 const { Notification } = require('../models');
 const { createOrderFromData } = require('../services/orderService');
 const { calculateOrderTotals } = require('../utils/gst');
@@ -10,15 +10,15 @@ const logger = require('../utils/logger');
 const { getPaymentProviderStatus } = require('../utils/paymentConfig');
 
 const paymentStatus = getPaymentProviderStatus({
-  razorpayKey: RAZORPAY_KEY,
-  razorpaySecret: RAZORPAY_SECRET,
+  razorpayKey: RAZORPAY_KEY_ID,
+  razorpaySecret: RAZORPAY_KEY_SECRET,
   stripeSecretKey: STRIPE_SECRET_KEY,
   paypalClientId: PAYPAL_CLIENT_ID,
   paypalClientSecret: PAYPAL_CLIENT_SECRET
 });
 
 const stripe = paymentStatus.stripe.enabled ? new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2023-11-15' }) : null;
-const razorpayClient = paymentStatus.razorpay.enabled ? new Razorpay({ key_id: RAZORPAY_KEY, key_secret: RAZORPAY_SECRET }) : null;
+const razorpayClient = paymentStatus.razorpay.enabled ? new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET }) : null;
 
 function getPaypalClient() {
   const env = PAYPAL_MODE === 'live'
@@ -218,7 +218,7 @@ async function createRazorpayOrder(req, res) {
     const amount = totals ? totals.total : Number(req.body.amount || 0);
     if (!amount || amount <= 0) return res.status(400).json({ error: 'Invalid order amount' });
     const order = await razorpayClient.orders.create({ amount: Math.round(amount * 100), currency: RAZORPAY_CURRENCY, receipt: `receipt_${Date.now()}`, payment_capture: 1, notes: { userId: req.userId ? String(req.userId) : 'guest' } });
-    res.json({ order, key_id: RAZORPAY_KEY });
+    res.json({ order, key_id: RAZORPAY_KEY_ID });
   } catch (err) {
     logger.error('Create Razorpay order failed', { error: err.message });
     res.status(500).json({ error: 'Unable to create Razorpay order' });
@@ -232,7 +232,7 @@ async function verifyRazorpayPayment(req, res) {
     }
     const { paymentId, orderId, signature, products = [], amount } = req.body;
     if (!paymentId || !orderId || !signature) return res.status(400).json({ error: 'Missing Razorpay payment details' });
-    const generated = require('crypto').createHmac('sha256', RAZORPAY_SECRET).update(`${orderId}|${paymentId}`).digest('hex');
+    const generated = require('crypto').createHmac('sha256', RAZORPAY_KEY_SECRET).update(`${orderId}|${paymentId}`).digest('hex');
     if (generated !== signature) return res.status(400).json({ error: 'Signature mismatch' });
     const lineItems = [];
     for (const item of products) {

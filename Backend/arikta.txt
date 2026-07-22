@@ -323,8 +323,8 @@ app.get('/api/webhook-status', async (req, res) => {
 
 // ================== RAZORPAY ==================
 const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY,
-    key_secret: process.env.RAZORPAY_SECRET
+    key_id: process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY,
+    key_secret: process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_SECRET
 });
 
 // ================== ROUTES ==================
@@ -507,8 +507,8 @@ app.put('/api/auth/account/:id', async (req, res) => {
 
 // Create Razorpay Order
 app.post("/api/create-order", async (req, res) => {
-    if (!process.env.RAZORPAY_KEY || !process.env.RAZORPAY_SECRET) {
-        return res.status(500).json({ error: 'Razorpay is not configured. Missing RAZORPAY_KEY or RAZORPAY_SECRET.' });
+    if (!process.env.RAZORPAY_KEY_ID && !process.env.RAZORPAY_KEY || !process.env.RAZORPAY_KEY_SECRET && !process.env.RAZORPAY_SECRET) {
+        return res.status(500).json({ error: 'Razorpay is not configured. Missing RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET.' });
     }
 
     const { amount } = req.body;
@@ -536,8 +536,8 @@ app.post("/api/create-order", async (req, res) => {
 
 // Save Order
 app.post("/api/verify-payment", async (req, res) => {
-    if (!process.env.RAZORPAY_KEY || !process.env.RAZORPAY_SECRET) {
-        return res.status(500).json({ error: 'Razorpay is not configured. Missing RAZORPAY_KEY or RAZORPAY_SECRET.' });
+    if (!process.env.RAZORPAY_KEY_ID && !process.env.RAZORPAY_KEY || !process.env.RAZORPAY_KEY_SECRET && !process.env.RAZORPAY_SECRET) {
+        return res.status(500).json({ error: 'Razorpay is not configured. Missing RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET.' });
     }
 
     const { products, amount, paymentId, orderId, userId, deliveryInfo } = req.body;

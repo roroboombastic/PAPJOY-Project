@@ -131,8 +131,8 @@ PORT=5000
 APP_URL=https://www.papjoy.com
 MONGO_URI=mongodb+srv://your-username:your-password@cluster0.xxxxx.mongodb.net/papjoy?retryWrites=true&w=majority
 JWT_SECRET=your_secure_jwt_secret_here
-RAZORPAY_KEY=your_razorpay_key
-RAZORPAY_SECRET=your_razorpay_secret
+RAZORPAY_KEY_ID=your_razorpay_key
+RAZORPAY_KEY_SECRET=your_razorpay_secret
 # Add other payment keys as needed
 ```
 
