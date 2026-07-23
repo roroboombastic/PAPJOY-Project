@@ -58,12 +58,20 @@ async function apiFetch(path, options = {}) {
   }
 }
 
-window.addEventListener('error', (event) => {
+function onPageError(event) {
   console.error('Frontend runtime error', event.error || event.message || event);
-});
-
-window.addEventListener('unhandledrejection', (event) => {
+}
+function onUnhandledRejection(event) {
   console.error('Unhandled promise rejection', event.reason);
+}
+window.addEventListener('error', onPageError);
+window.addEventListener('unhandledrejection', onUnhandledRejection);
+
+window.addEventListener('pagehide', () => {
+  window.removeEventListener('error', onPageError);
+  window.removeEventListener('unhandledrejection', onUnhandledRejection);
+  if (syncCartTimer) clearTimeout(syncCartTimer);
+  if (trackingInterval) clearInterval(trackingInterval);
 });
 
 // GST configuration (18% default). Use CGST/SGST split for display.
@@ -654,9 +662,9 @@ function renderProducts() {
   productGrid.appendChild(fragment);
   const renderedCount = products.length;
   const renderDuration = performance.now() - renderStart;
-  console.log('Product render count:', productRenderCount);
-  console.log('Products rendered:', renderedCount);
-  console.log('Render duration (ms):', renderDuration.toFixed(2));
+  console.debug('Product render count:', productRenderCount);
+  console.debug('Products rendered:', renderedCount);
+  console.debug('Render duration (ms):', renderDuration.toFixed(2));
 }
 
 let cart = JSON.parse(localStorage.getItem('papjoy-cart')) || [];
@@ -1505,6 +1513,11 @@ function getRefreshToken() {
   return user?.refreshToken || null;
 }
 
+function getAuthHeaders() {
+  const headers = getAuthHeaders();
+  return headers;
+}
+
 function setCurrentUser(user, remember = true) {
   sessionStorage.removeItem(AUTH_USER_KEY);
   sessionStorage.removeItem(AUTH_TOKEN_KEY);
@@ -1650,34 +1663,6 @@ function storeLocalOrder(order) {
   const orders = getLocalOrders();
   orders.push(order);
   saveLocalOrders(orders);
-}
-
-function createLocalOrder(orderData = {}, provider = 'web') {
-  const user = getCurrentUser();
-  const order = {
-    id: `ORDER-${Date.now()}`,
-    email: orderData.email || user?.email || '',
-    provider,
-    items: orderData.items || [],
-    amount: orderData.amount || getCartTotals().total,
-    status: 'out_for_delivery',
-    placedAt: new Date().toISOString(),
-    estimatedDelivery: new Date(Date.now() + 45 * 60 * 1000).toISOString(),
-    currentLocation: {
-      lat: 28.5355,
-      lng: 77.3910,
-      address: 'Sector 18, Noida',
-    },
-    distance: 2.3,
-    deliveryInfo: orderData.deliveryInfo || {},
-    driver: {
-      name: 'Rajesh Kumar',
-      phone: '+91 98765 43210',
-    },
-  };
-
-  storeLocalOrder(order);
-  return order;
 }
 
 async function loadScript(src) {
@@ -2103,81 +2088,8 @@ function initPageTransitions() {
   });
 }
 
-function scrollToShop() {
-  const shop = document.getElementById('shop');
-  if (shop) shop.scrollIntoView({ behavior: 'smooth' });
-}
-
 function getAvailableCategories() {
   return Array.from(new Set(products.map((product) => product.category))).filter(Boolean);
-}
-
-function applyProductFilters(items) {
-  let filtered = [...items];
-  if (selectedCategory) {
-    filtered = filtered.filter((product) => product.category === selectedCategory);
-  }
-  if (searchQuery) {
-    const q = searchQuery.toLowerCase();
-    filtered = filtered.filter((product) =>
-      product.name.toLowerCase().includes(q) ||
-      product.subtitle.toLowerCase().includes(q) ||
-      product.description.toLowerCase().includes(q) ||
-      product.category.toLowerCase().includes(q)
-    );
-  }
-  if (selectedFeaturedFilter === 'featured') {
-    filtered = filtered.filter((product) => product.isFeatured);
-  } else if (selectedFeaturedFilter === 'new') {
-    filtered = filtered.filter((product) => product.isNewArrival);
-  }
-
-  if (selectedSort === 'priceLow') {
-    filtered.sort((a, b) => a.price - b.price);
-  } else if (selectedSort === 'priceHigh') {
-    filtered.sort((a, b) => b.price - a.price);
-  } else {
-    filtered.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0) || a.id.localeCompare(b.id));
-  }
-  return filtered;
-}
-
-function renderProductFilters() {
-  const filterContainer = document.getElementById('product-filters');
-  const categorySelect = document.getElementById('category-filter');
-  const sortSelect = document.getElementById('sort-filter');
-  const searchInput = document.getElementById('search-products');
-  if (!filterContainer || !categorySelect || !sortSelect || !searchInput) return;
-
-  const categories = getAvailableCategories();
-  categorySelect.innerHTML = `<option value="">All Categories</option>${categories
-    .map((category) => `<option value="${category}">${category}</option>`)
-    .join('')}`;
-
-  categorySelect.value = selectedCategory;
-  sortSelect.value = selectedSort;
-  searchInput.value = searchQuery;
-
-  if (filtersInitialized) return;
-
-  categorySelect.addEventListener('change', (event) => {
-    selectedCategory = event.target.value;
-    renderProducts();
-  });
-
-  sortSelect.addEventListener('change', (event) => {
-    selectedSort = event.target.value;
-    renderProducts();
-  });
-
-  searchInput.addEventListener('input', (event) => {
-    selectedCategory = categorySelect.value;
-    selectedSort = sortSelect.value;
-    searchQuery = event.target.value.trim();
-    renderProducts();
-  });
-
-  filtersInitialized = true;
 }
 
 function updateFeaturedControlState(filter) {
@@ -2247,7 +2159,7 @@ async function renderProductDetailPage() {
         <div class="gallery-thumbs">
           ${(product.images || [product.image]).map((src, index) => `
             <button class="gallery-thumb${index === 0 ? ' active' : ''}" type="button" data-image="${src}">
-              <img src="${src}" alt="${product.name} image ${index + 1}" />
+              <img src="${src}" alt="${product.name} image ${index + 1}" loading="lazy" />
             </button>
           `).join('')}
         </div>
@@ -2563,7 +2475,7 @@ function renderCart() {
     li.innerHTML = `
       <div class="cart-item-meta">
         <div class="cart-item-avatar">
-          <img src="${item.image || item.product?.image || 'https://via.placeholder.com/180'}" alt="${item.name}" />
+          <img src="${item.image || item.product?.image || 'https://via.placeholder.com/180'}" alt="${item.name}" loading="lazy" />
         </div>
         <div class="cart-item-content">
           <h3>${item.name}</h3>
@@ -2798,7 +2710,7 @@ async function renderRecommendations(productId) {
         ${items.slice(0, 4).map((product) => `
           <div class="recommendation-card">
             <a href="/product-detail.html?id=${product.id || product._id}">
-              <img src="${product.image || product.images?.[0] || ''}" alt="${product.name}" />
+              <img src="${product.image || product.images?.[0] || ''}" alt="${product.name}" loading="lazy" />
               <h4>${product.name}</h4>
               <p>${formatCurrency(product.price)}</p>
             </a>
@@ -2866,7 +2778,7 @@ function renderSavedItems() {
     <li class="saved-item">
       <div class="saved-item-meta">
         <div class="saved-item-avatar">
-          <img src="${item.image || item.product?.image || 'https://via.placeholder.com/100'}" alt="${item.name}" />
+          <img src="${item.image || item.product?.image || 'https://via.placeholder.com/100'}" alt="${item.name}" loading="lazy" />
         </div>
         <div class="saved-item-content">
           <h4>${item.name}</h4>
@@ -2930,9 +2842,7 @@ async function startStripeCheckout() {
 
   setCheckoutMessage(translate('checkout.redirectStripe'));
   const totals = getCartTotals();
-  const headers = { 'Content-Type': 'application/json' };
-  const token = getAuthToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const headers = getAuthHeaders();
 
   try {
     const response = await fetch(apiUrl('/api/v1/payments/stripe/session'), {
@@ -2966,9 +2876,7 @@ async function startPayPalCheckout() {
 
   setCheckoutMessage(translate('checkout.redirectPayPal'));
   const totals = getCartTotals();
-  const headers = { 'Content-Type': 'application/json' };
-  const token = getAuthToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const headers = getAuthHeaders();
 
   try {
     const response = await fetch(apiUrl('/api/v1/payments/paypal/create'), {
@@ -3009,9 +2917,7 @@ async function startRazorpayCheckout() {
 
   setCheckoutMessage(translate('checkout.preparingRazorpay'));
   const totals = getCartTotals();
-  const headers = { 'Content-Type': 'application/json' };
-  const token = getAuthToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const headers = getAuthHeaders();
 
   try {
     const response = await fetch(apiUrl('/api/v1/payments/razorpay/create'), {
@@ -3118,9 +3024,7 @@ async function submitWebOrder() {
       deliveryInfo,
       paymentMethod: 'web'
     };
-    const token = getAuthToken();
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers.Authorization = `Bearer ${token}`;
+    const headers = getAuthHeaders();
     const response = await fetch(apiUrl('/api/v1/orders'), {
       method: 'POST',
       headers,
@@ -3171,9 +3075,7 @@ async function startCODCheckout() {
       deliveryInfo,
       codNotes
     };
-    const token = getAuthToken();
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers.Authorization = `Bearer ${token}`;
+    const headers = getAuthHeaders();
     const response = await fetch(apiUrl('/api/v1/orders'), {
       method: 'POST',
       headers,
@@ -5544,8 +5446,6 @@ async function renderPage() {
 
   updateUserLinks();
 
-  updateUserLinks();
-
   if (page === 'checkout') {
     await renderCheckoutPage();
   }
@@ -6140,14 +6040,6 @@ async function loadAdminDashboardData() {
     console.error('Failed to load admin dashboard data:', error);
     return null;
   }
-}
-
-function createAdminButton(label, onClick) {
-  const button = document.createElement('button');
-  button.className = 'btn btn-secondary';
-  button.textContent = label;
-  button.addEventListener('click', onClick);
-  return button;
 }
 
 async function renderAdminDashboard(user) {

@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="PAP-JOY - Admin dashboard. Manage products, orders, users, and analytics." />
+  <meta name="theme-color" content="#0a0a0a" />
   <title>Admin Dashboard - PAP-JOY</title>
   <script>
     // Configure API base URL for production
@@ -11,6 +13,7 @@
     }
   </script>
   <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://papjoy-project.onrender.com" />
 </head>
 <body>
   <div class="admin-container">
@@ -115,7 +118,7 @@
       <!-- Products Page -->
       <section id="products-page" class="admin-page">
         <div class="admin-header">
-          <h1>Products Management</h1>
+          <h2>Products Management</h2>
           <button class="btn btn-primary" onclick="showProductForm()">➕ Add Product</button>
         </div>
 
@@ -160,7 +163,7 @@
       <!-- Orders Page -->
       <section id="orders-page" class="admin-page">
         <div class="admin-header">
-          <h1>Orders Management</h1>
+          <h2>Orders Management</h2>
         </div>
 
         <!-- Filters -->
@@ -209,7 +212,7 @@
       <!-- Users Page -->
       <section id="users-page" class="admin-page">
         <div class="admin-header">
-          <h1>Users Management</h1>
+          <h2>Users Management</h2>
         </div>
 
         <!-- Search -->
@@ -252,7 +255,7 @@
 
       <!-- Analytics Page -->
       <section id="analytics-page" class="admin-page">
-        <h1>Analytics</h1>
+        <h2>Analytics</h2>
         
         <!-- Revenue Chart -->
         <section class="dashboard-section">
@@ -285,7 +288,7 @@
       <!-- Categories Page -->
       <section id="categories-page" class="admin-page">
         <div class="admin-header">
-          <h1>Categories Management</h1>
+          <h2>Categories Management</h2>
           <button class="btn btn-primary" onclick="showCategoryForm()">➕ Add Category</button>
         </div>
 
@@ -445,7 +448,7 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <script src="script.js" defer></script>
   <script>
     // Initialize admin page
     document.addEventListener('DOMContentLoaded', async () => {

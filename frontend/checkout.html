@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="PAP-JOY - Secure checkout. Complete your order with Stripe, PayPal, Razorpay, or COD." />
+  <meta name="theme-color" content="#0a0a0a" />
   <title>PAP-JOY | Checkout</title>
   <script>
     // Configure API base URL for production
@@ -11,6 +13,7 @@
     }
   </script>
   <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://papjoy-project.onrender.com" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -46,6 +49,7 @@
     <div class="section-header">
       <div>
         <p class="eyebrow" data-i18n="checkout.eyebrow">Secure Checkout</p>
+        <h1 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">Complete your order with delivery details</h1>
         <h2 data-i18n="checkout.heading">Complete your order with delivery details</h2>
       </div>
       <p class="product-intro" data-i18n="checkout.text">Enter your delivery information and choose from multiple secure payment options.</p>
@@ -279,7 +283,7 @@
     </div>
   </footer>
 
-  <script src="script.js"></script>
+  <script src="script.js" defer></script>
 </body>
 </html>
 
