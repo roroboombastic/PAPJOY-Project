@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PAP-JOY | Invoice Preview</title>
+  <script>
+    // Configure API base URL for production
+    if (window.location.hostname === 'papjoy-project.vercel.app' || window.location.hostname === 'www.papjoy.com') {
+      window.API_BASE_URL = 'https://papjoy-project.onrender.com';
+    }
+  </script>
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
