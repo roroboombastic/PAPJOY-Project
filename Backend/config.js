@@ -21,7 +21,12 @@ const DEFAULT_DEV_ORIGINS = [
   'http://localhost:5504',
   'http://127.0.0.1:5504'
 ];
-const CORS_ORIGIN = process.env.CORS_ORIGIN || (NODE_ENV === 'production' ? APP_URL : DEFAULT_DEV_ORIGINS.join(','));
+const DEFAULT_PROD_ORIGINS = [
+  APP_URL,
+  'https://papjoy-project.vercel.app',
+  'https://www.papjoy.com'
+];
+const CORS_ORIGIN = process.env.CORS_ORIGIN || (NODE_ENV === 'production' ? DEFAULT_PROD_ORIGINS.join(',') : DEFAULT_DEV_ORIGINS.join(','));
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/papjoy';
 const LOCAL_MONGO_URI = process.env.LOCAL_MONGO_URI || 'mongodb://127.0.0.1:27017/papjoy';
 const ALLOW_LOCAL_MONGO_FALLBACK = process.env.MONGO_FALLBACK_TO_LOCAL !== 'false';
@@ -123,14 +128,7 @@ function isValidEmail(email) {
  */
 function parseCorsOrigins(input, appUrl) {
   if (!input) {
-    return isDev ? [
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'http://localhost:5500',
-      'http://127.0.0.1:5500',
-      'http://localhost:5504',
-      'http://127.0.0.1:5504'
-    ] : [appUrl];
+    return isDev ? DEFAULT_DEV_ORIGINS : DEFAULT_PROD_ORIGINS;
   }
 
   return input

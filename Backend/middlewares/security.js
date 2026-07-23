@@ -44,11 +44,13 @@ function createSecurityMiddleware(app) {
       if (corsOrigins.length === 0 || corsOrigins.includes('*') || corsOrigins.includes(origin)) {
         return callback(null, true);
       }
+      console.warn('[WARN] CORS origin rejected', { origin, allowedOrigins: corsOrigins });
       callback(new Error(`Origin not allowed by CORS: ${origin}`));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+    optionsSuccessStatus: 204
   };
   console.log('[INFO] CORS origins configured', JSON.stringify({ origins: corsOrigins }));
   app.use(cors(corsOptions));

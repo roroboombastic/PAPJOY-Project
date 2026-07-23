@@ -53,6 +53,17 @@ app.use((req, res, next) => {
 app.use(`${config.apiBasePath}`, routes);
 logger.info('Routes mounted', { apiBasePath: config.apiBasePath });
 
+app.get('/cors-test', (req, res) => {
+  const origin = req.get('origin') || null;
+  res.json({
+    success: true,
+    message: 'CORS test endpoint reached',
+    origin,
+    allowedOrigins: config.cors.origin,
+    apiBasePath: config.apiBasePath
+  });
+});
+
 app.get('/health', (req, res) => {
   const readyStates = {
     0: 'disconnected',
