@@ -240,7 +240,7 @@ function normalizeProduct(product) {
     id: product.id || product._id || product.slug,
     _id: product._id || product.id || product.slug,
     slug: product.slug || product.id,
-    category: product.category || product.categoryId?.name || 'Uncategorized',
+    category: product.category || (typeof product.categoryId === 'object' && product.categoryId?.name) || product.categoryId?.name || 'Uncategorized',
     subtitle,
     description: product.description || '',
     image: images[0] || product.image || 'https://via.placeholder.com/800x800?text=PAP-JOY',
@@ -270,11 +270,11 @@ async function loadProducts() {
     if (cached) {
       try {
         const { data, timestamp } = JSON.parse(cached);
-        if (Array.isArray(data) && now - timestamp < cacheExpiry) {
+        if (Array.isArray(data) && data.length && now - timestamp < cacheExpiry) {
           cachedProducts = data.map(normalizeProduct).filter(Boolean);
         }
       } catch (error) {
-        console.warn('Invalid product cache ignored:', error);
+        localStorage.removeItem('papjoy-products-cache');
       }
     }
 
@@ -286,20 +286,24 @@ async function loadProducts() {
 
       const data = await response.json();
       const receivedProducts = Array.isArray(data.products) ? data.products : [];
-      console.log('API products received:', receivedProducts.length);
 
       const loadedProducts = receivedProducts.map(normalizeProduct).filter(Boolean);
-      console.log('Normalized products ready:', loadedProducts.length);
 
       products = loadedProducts;
-      localStorage.setItem('papjoy-products-cache', JSON.stringify({ data: products, timestamp: now }));
+      if (loadedProducts.length) {
+        localStorage.setItem('papjoy-products-cache', JSON.stringify({ data: products, timestamp: now }));
+      }
       renderProducts();
       return products;
     } catch (error) {
       console.error('Failed to load products:', error);
 
-      products = cachedProducts.length ? cachedProducts : fallbackProducts;
-      console.log('Products loaded from fallback source:', products.length);
+      if (cachedProducts.length) {
+        products = cachedProducts;
+      } else {
+        localStorage.removeItem('papjoy-products-cache');
+        products = fallbackProducts;
+      }
       renderProducts();
       return products;
     }
@@ -597,6 +601,9 @@ function getProductLink(product) {
 
 // Render products on the main page with document fragment for efficiency
 function renderProducts() {
+  const page = document.body.dataset.page;
+  if (page === 'shop') return;
+
   const productGrid = document.querySelector('.product-grid');
   if (!productGrid) {
     return;
@@ -625,7 +632,7 @@ function renderProducts() {
       <div class="product-info">
         <div class="category">${product.category}</div>
         <h3 class="product-name">${product.name}</h3>
-        <p class="product-subtitle">${product.subtitle || product.description.slice(0, 80) + '...'}</p>
+        <p class="product-subtitle">${product.subtitle || (product.description || '').slice(0, 80) + '...'}</p>
         <div class="price">${formatCurrency(product.price)}</div>
         <div class="product-actions">
           <button class="btn btn-primary add-to-cart-btn" type="button" data-product-id="${product.id || product._id}" ${product.inventory?.quantity === 0 ? 'disabled' : ''}>
@@ -638,22 +645,7 @@ function renderProducts() {
       </div>
     `;
 
-    const addButton = productCard.querySelector('.add-to-cart-btn');
-    const buyButton = productCard.querySelector('.buy-now-btn');
-
-    if (addButton) {
-      addButton.addEventListener('click', (event) => {
-        event.stopPropagation();
-        addToCartFlow(addButton.dataset.productId);
-      });
-    }
-
-    if (buyButton) {
-      buyButton.addEventListener('click', (event) => {
-        event.stopPropagation();
-        buyNowFlow(buyButton.dataset.productId);
-      });
-    }
+    attachProductCardListeners(productCard);
 
     fragment.appendChild(productCard);
   });
@@ -677,7 +669,6 @@ let featuredControlsInitialized = false;
 
 // Promo codes, saved items and personalization
 let savedItems = JSON.parse(localStorage.getItem('papjoy-saved')) || [];
-let wishlistItems = [];
 let browsingHistory = JSON.parse(localStorage.getItem('papjoy-history')) || [];
 let appliedPromoCode = localStorage.getItem('papjoy-promo') || '';
 let remoteCartLoaded = false;
@@ -1579,25 +1570,31 @@ async function apiRequest(path, options = {}, retry = true) {
   return response;
 }
 
-async function syncCartToServer() {
+let syncCartTimer = null;
+function syncCart() {
+  const user = getCurrentUser();
   const token = getAuthToken();
-  if (!token) return;
-  try {
-    const response = await apiRequest('/api/v1/cart/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cart })
-    });
-    if (!response.ok) return;
-    const data = await response.json();
-    if (data && Array.isArray(data.items)) {
-      cart = data.items.map(normalizeServerCartItem);
-      saveCart();
-      renderCart();
+  if (!user || !user.id || !token) return;
+  if (syncCartTimer) clearTimeout(syncCartTimer);
+  syncCartTimer = setTimeout(async () => {
+    syncCartTimer = null;
+    try {
+      const response = await apiRequest('/api/v1/cart/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cart })
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data && Array.isArray(data.items)) {
+        cart = data.items.map(normalizeServerCartItem);
+        saveCart();
+        renderCart();
+      }
+    } catch (error) {
+      console.error('Failed to sync cart to server:', error);
     }
-  } catch (error) {
-    console.error('Failed to sync cart to server:', error);
-  }
+  }, 300);
 }
 
 async function syncUserProfile() {
@@ -1749,25 +1746,6 @@ async function initGoogleSignIn(buttonId, rememberCheckboxId) {
   }
 }
 
-async function syncCart() {
-  const user = getCurrentUser();
-  const token = getAuthToken();
-  if (!user || !user.id || !token) return;
-
-  try {
-    await fetch(`${API_BASE_URL}/api/v1/cart`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ cart }),
-    });
-  } catch (error) {
-    console.error('Failed to sync cart:', error);
-  }
-}
-
 function normalizeServerCartItem(item) {
   const product = item.productId || {};
   return {
@@ -1815,7 +1793,6 @@ async function loadUserCart() {
       const data = await response.json();
       if (data && Array.isArray(data.items) && data.items.length) {
         mergeServerCart(data.items);
-        renderCart();
       }
     }
   } catch (error) {
@@ -2394,10 +2371,15 @@ function addToCart(productId, variantName = 'Standard', variantPrice = null, red
     existing.quantity += 1;
   } else {
     cart.push({
-      ...product,
+      id: product.id || product._id,
+      productId: product.id || product._id,
+      name: product.name,
+      image: product.image,
+      price,
       quantity: 1,
       variant: selectedVariant,
-      price,
+      category: product.category,
+      subtitle: product.subtitle,
     });
   }
 
@@ -2744,7 +2726,6 @@ async function loadUserWishlist() {
 
   savedItems = dedupeItemsByKey(merged, (item) => getItemIdentity(item, item.variant || 'Standard'));
   localStorage.setItem('papjoy-saved', JSON.stringify(savedItems));
-  renderSavedItems();
 }
 
 async function syncSavedItemsToServer() {
@@ -5257,6 +5238,28 @@ async function initProductFilters() {
   const priceMinDisplay = document.getElementById('price-min-display');
   const priceMaxDisplay = document.getElementById('price-max-display');
 
+  if (!searchInput && !priceMinRange) return;
+
+  const params = new URLSearchParams(window.location.search);
+  const urlCategory = params.get('category');
+  const urlQuery = params.get('q');
+  if (urlCategory && searchInput) {
+    searchInput.value = urlCategory;
+  }
+  if (urlQuery && searchInput) {
+    searchInput.value = urlQuery;
+  }
+  if (urlCategory) {
+    let categoryInput = document.getElementById('filter-category');
+    if (!categoryInput) {
+      categoryInput = document.createElement('input');
+      categoryInput.type = 'hidden';
+      categoryInput.id = 'filter-category';
+      document.getElementById('product-filters')?.appendChild(categoryInput);
+    }
+    categoryInput.value = urlCategory;
+  }
+
   // Load available filter options
   const filterOptions = await loadFilterOptions();
 
@@ -5331,12 +5334,14 @@ async function performSearch() {
   const priceMinRange = document.getElementById('price-min');
   const priceMaxRange = document.getElementById('price-max');
   const productGrid = document.getElementById('product-grid');
+  const categoryInput = document.getElementById('filter-category');
 
   const q = searchInput?.value || '';
   const sort = sortFilter?.value || 'newest';
   const inStock = inStockFilter?.checked || false;
   const priceMin = priceMinRange?.value || 0;
   const priceMax = priceMaxRange?.value || 500000;
+  const category = categoryInput?.value || '';
 
   const selectedBrands = Array.from(document.querySelectorAll('[data-filter-brand]:checked'))
     .map(cb => cb.dataset.filterBrand);
@@ -5351,7 +5356,7 @@ async function performSearch() {
 
   try {
     const result = await searchProducts({
-      q, sort, inStock, priceMin, priceMax, brand, size, color
+      q, category, sort, inStock, priceMin, priceMax, brand, size, color
     });
 
     products = result.products.map(normalizeProduct).filter(Boolean);
@@ -5378,7 +5383,7 @@ async function performSearch() {
           <div class="product-info">
             <div class="category">${product.category}</div>
             <h3 class="product-name">${product.name}</h3>
-            <p class="product-subtitle">${product.subtitle || product.description.slice(0, 80) + '...'}</p>
+        <p class="product-subtitle">${product.subtitle || (product.description || '').slice(0, 80) + '...'}</p>
             <div class="price">${formatCurrency(product.price)}</div>
             <div class="product-actions">
               <button class="btn btn-primary add-to-cart-btn" type="button" data-product-id="${product.id || product._id}" ${product.inventory?.quantity === 0 ? 'disabled' : ''}>
@@ -5436,16 +5441,15 @@ async function renderPage() {
   const hasCartContainer = !!document.getElementById('cart-items');
   const hasSavedContainer = !!document.getElementById('saved-items');
 
-  if (hasProductGrid || page === 'home' || page === 'product' || page === 'product-detail') {
+  if (hasProductGrid || page === 'home' || page === 'product' || page === 'shop' || page === 'product-detail') {
     await loadProducts();
     initFeaturedControls();
   }
 
-  const needsSavedItemsSync = page === 'cart' || page === 'checkout' || page === 'product' || page === 'account';
+  const needsSavedItemsSync = page === 'cart' || page === 'checkout' || page === 'product' || page === 'shop' || page === 'account';
   const needsCartSync = page === 'cart' || page === 'checkout' || page === 'account';
 
   if (getCurrentUser() && needsSavedItemsSync) {
-    await syncSavedItemsToServer();
     await loadUserWishlist();
   }
 
@@ -5453,18 +5457,21 @@ async function renderPage() {
     await initProductFilters();
   }
 
+  if (getCurrentUser() && needsCartSync) {
+    await loadUserCart();
+  }
+
   if (hasCartContainer || page === 'cart' || page === 'checkout') {
     renderCart();
   }
 
-  if (hasSavedContainer || page === 'cart' || page === 'product' || page === 'checkout') {
+  if (hasSavedContainer || page === 'cart' || page === 'checkout') {
     renderSavedItems();
   }
 
   updateUserLinks();
-  if (getCurrentUser() && needsCartSync) {
-    await loadUserCart();
-  }
+
+  updateUserLinks();
 
   if (page === 'checkout') {
     await renderCheckoutPage();
