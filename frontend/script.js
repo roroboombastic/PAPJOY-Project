@@ -10,6 +10,16 @@ function getDefaultApiBaseUrl() {
   if (typeof window === 'undefined') return 'http://127.0.0.1:3000';
   if (window.API_BASE_URL) return window.API_BASE_URL;
   if (window.__PAPJOY_API_BASE_URL) return window.__PAPJOY_API_BASE_URL;
+
+  const productionApiHosts = {
+    'papjoy-project.vercel.app': 'https://papjoy-project.onrender.com',
+    'www.papjoy.com': 'https://papjoy-project.onrender.com'
+  };
+
+  if (productionApiHosts[window.location.hostname]) {
+    return productionApiHosts[window.location.hostname];
+  }
+
   if (window.location.protocol === 'file:') {
     return 'http://127.0.0.1:3000';
   }
