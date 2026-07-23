@@ -7,21 +7,28 @@ function looksConfigured(value) {
 }
 
 function getPaymentProviderStatus(env = {}) {
+  const hasOwnEnv = (key) => Object.prototype.hasOwnProperty.call(env, key);
+  const razorpayKey = hasOwnEnv('razorpayKey') ? env.razorpayKey : '';
+  const razorpaySecret = hasOwnEnv('razorpaySecret') ? env.razorpaySecret : '';
+  const stripeSecretKey = hasOwnEnv('stripeSecretKey') ? env.stripeSecretKey : '';
+  const paypalClientId = hasOwnEnv('paypalClientId') ? env.paypalClientId : '';
+  const paypalClientSecret = hasOwnEnv('paypalClientSecret') ? env.paypalClientSecret : '';
+
   const razorpay = {
-    enabled: looksConfigured(env.razorpayKey) && looksConfigured(env.razorpaySecret),
-    key: env.razorpayKey || '',
-    secretConfigured: looksConfigured(env.razorpaySecret)
+    enabled: looksConfigured(razorpayKey) && looksConfigured(razorpaySecret),
+    key: razorpayKey,
+    secretConfigured: looksConfigured(razorpaySecret)
   };
 
   const stripe = {
-    enabled: looksConfigured(env.stripeSecretKey),
-    secretConfigured: looksConfigured(env.stripeSecretKey)
+    enabled: looksConfigured(stripeSecretKey),
+    secretConfigured: looksConfigured(stripeSecretKey)
   };
 
   const paypal = {
-    enabled: looksConfigured(env.paypalClientId) && looksConfigured(env.paypalClientSecret),
-    clientIdConfigured: looksConfigured(env.paypalClientId),
-    secretConfigured: looksConfigured(env.paypalClientSecret)
+    enabled: looksConfigured(paypalClientId) && looksConfigured(paypalClientSecret),
+    clientIdConfigured: looksConfigured(paypalClientId),
+    secretConfigured: looksConfigured(paypalClientSecret)
   };
 
   return { razorpay, stripe, paypal };
@@ -34,17 +41,4 @@ function isPaymentConfigured(status) {
 module.exports = {
   getPaymentProviderStatus,
   isPaymentConfigured
-};
-
-const paymentProviders = {
-  paypal:
-    !!PAYPAL_CLIENT_ID &&
-    !!PAYPAL_CLIENT_SECRET,
-
-  razorpay:
-    !!RAZORPAY_KEY &&
-    !!RAZORPAY_SECRET,
-
-  stripe:
-    !!STRIPE_SECRET_KEY
 };

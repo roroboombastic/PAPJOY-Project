@@ -2,10 +2,8 @@ const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
 const NODE_ENV = process.env.NODE_ENV || 'development';
-<<<<<<< HEAD
 const isProd = NODE_ENV === 'production';
 const isDev = NODE_ENV === 'development';
-=======
 const PORT = Number(process.env.PORT) || 3000;
 const APP_URL = process.env.APP_URL || `http://127.0.0.1:${PORT}`;
 const API_BASE_PATH = '/api/v1';
@@ -56,7 +54,6 @@ const RAZORPAY_CURRENCY = process.env.RAZORPAY_CURRENCY || 'INR';
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(email => email.trim().toLowerCase()).filter(Boolean);
->>>>>>> 28bd2ea (fix: standardize Razorpay env vars for deployment)
 
 /**
  * Safely retrieve environment variable with validation
@@ -146,9 +143,6 @@ function parseCorsOrigins(input, appUrl) {
 // PARSE CONFIGURATION
 // ============================================================================
 
-const PORT = getPositiveNumber('PORT', 3000);
-const APP_URL = getEnv('APP_URL', `http://127.0.0.1:${PORT}`);
-
 const config = {
   // ========== SERVER ==========
   nodeEnv: NODE_ENV,
@@ -159,7 +153,6 @@ const config = {
   apiBasePath: '/api/v1',
   trustProxy: process.env.TRUST_PROXY === 'true',
 
-<<<<<<< HEAD
   // ========== HTTPS/SSL ==========
   https: {
     enabled: process.env.HTTPS_ENABLED === 'true',
@@ -306,16 +299,8 @@ console.log('[INFO] Environment loaded', JSON.stringify({
 // EXPORTS
 // ============================================================================
 
-module.exports = config;
-// expose internals for testing
-module.exports._internals = {
-  getEnv,
-  getPositiveNumber,
-  isValidEmail,
-  parseCorsOrigins,
-  validateConfiguration
-=======
 module.exports = {
+  ...config,
   NODE_ENV,
   PORT,
   APP_URL,
@@ -354,5 +339,13 @@ module.exports = {
   GST_STATE,
   GST_RETURN_POLICY,
   CUSTOMER_SUPPORT
->>>>>>> 28bd2ea (fix: standardize Razorpay env vars for deployment)
+};
+
+// expose internals for testing
+module.exports._internals = {
+  getEnv,
+  getPositiveNumber,
+  isValidEmail,
+  parseCorsOrigins,
+  validateConfiguration
 };
