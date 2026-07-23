@@ -1487,18 +1487,10 @@ const AUTH_USER_KEY = 'papjoy-user';
 const AUTH_TOKEN_KEY = 'papjoy-token';
 const AUTH_REFRESH_TOKEN_KEY = 'papjoy-refresh-token';
 
-function logAuthDiagnostic(message, details = {}) {
-  console.info(`[auth] ${message}`, details);
-}
-
-function getStoredUser() {
+function getCurrentUser() {
   const sessionUser = JSON.parse(sessionStorage.getItem(AUTH_USER_KEY) || 'null');
   if (sessionUser) return sessionUser;
   return JSON.parse(localStorage.getItem(AUTH_USER_KEY) || 'null');
-}
-
-function getCurrentUser() {
-  return getStoredUser();
 }
 
 function getAuthToken() {
@@ -1506,7 +1498,7 @@ function getAuthToken() {
   if (sessionToken) return sessionToken;
   const localToken = localStorage.getItem(AUTH_TOKEN_KEY);
   if (localToken) return localToken;
-  const user = getStoredUser();
+  const user = getCurrentUser();
   return user?.token || null;
 }
 
@@ -1515,7 +1507,7 @@ function getRefreshToken() {
   if (sessionToken) return sessionToken;
   const localToken = localStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
   if (localToken) return localToken;
-  const user = getStoredUser();
+  const user = getCurrentUser();
   return user?.refreshToken || null;
 }
 
@@ -1539,21 +1531,6 @@ function setCurrentUser(user, remember = true) {
     storage.setItem(AUTH_REFRESH_TOKEN_KEY, user.refreshToken);
   }
 
-  if (user.token) {
-    logAuthDiagnostic('token stored', {
-      remember,
-      storage: remember ? 'localStorage' : 'sessionStorage',
-      hasRefreshToken: Boolean(user.refreshToken),
-      userId: user.id || user._id || null,
-      email: user.email || null,
-    });
-  }
-
-  if (user.cart && Array.isArray(user.cart)) {
-    cart = user.cart;
-    saveCart();
-  }
-
   updateUserLinks();
 }
 
@@ -1575,7 +1552,7 @@ async function refreshAccessToken() {
 
     const currentUser = getCurrentUser() || {};
     const remember = !!localStorage.getItem(AUTH_TOKEN_KEY) || !!localStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
-    const updatedUser = { ...currentUser, token: data.token, refreshToken };
+    const updatedUser = { ...currentUser, token: data.token, refreshToken: data.refreshToken || refreshToken };
     setCurrentUser(updatedUser, remember);
     return data.token;
   } catch (error) {
@@ -1600,13 +1577,6 @@ async function apiRequest(path, options = {}, retry = true) {
     }
   }
   return response;
-}
-
-async function setCurrentUserAndSyncCart(user, remember = true) {
-  setCurrentUser(user, remember);
-  if (cart.length) {
-    await syncCartToServer();
-  }
 }
 
 async function syncCartToServer() {
@@ -1634,11 +1604,6 @@ async function syncUserProfile() {
   const token = getAuthToken();
   if (!token) return null;
 
-  logAuthDiagnostic('validating token', {
-    source: localStorage.getItem(AUTH_TOKEN_KEY) ? 'localStorage' : 'sessionStorage',
-    hasRefreshToken: Boolean(getRefreshToken())
-  });
-
   try {
     const response = await fetch(apiUrl('/api/v1/auth/me'), {
       headers: {
@@ -1646,17 +1611,9 @@ async function syncUserProfile() {
       }
     });
 
-    if (!response.ok) {
-      logAuthDiagnostic('token validation failed', { status: response.status });
-      return null;
-    }
+    if (!response.ok) return null;
     const data = await safeParseJson(response);
     if (!data || !data.email) return null;
-
-    logAuthDiagnostic('user loading success', {
-      userId: data.id || data._id || null,
-      email: data.email || null
-    });
 
     const remember = !!localStorage.getItem('papjoy-token');
     const currentUser = getCurrentUser() || {};
@@ -1876,16 +1833,12 @@ async function signOut() {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
-      logAuthDiagnostic('logout success', { userId: getCurrentUser()?.id || getCurrentUser()?._id || null });
     } catch (error) {
       console.warn('Logout request did not complete:', error);
     }
   }
 
   setCurrentUser(null);
-  cart = [];
-  saveCart();
-  await syncCart();
   window.location.href = 'signin.html';
 }
 
@@ -4288,13 +4241,7 @@ async function renderSignInPage() {
       }
 
       const userData = data.user ? { ...data.user, token: data.token, refreshToken: data.refreshToken } : { ...data, token: data.token, refreshToken: data.refreshToken };
-      logAuthDiagnostic('login success', {
-        email: userData.email || email,
-        remember: Boolean(remember),
-        hasToken: Boolean(data.token)
-      });
       setCurrentUser(userData, remember);
-      await loadUserCart();
       if (statusMessage) {
         statusMessage.textContent = translate('signin.welcomeBack').replace('{email}', userData.email || email);
         statusMessage.style.color = '#d7d7ff';
@@ -4439,7 +4386,6 @@ async function renderSignUpPage() {
 
       const userData = data.user ? { ...data.user, token: data.token, refreshToken: data.refreshToken } : { ...data, token: data.token, refreshToken: data.refreshToken };
       setCurrentUser(userData, remember);
-      await loadUserCart();
       if (signupMessage) {
         signupMessage.textContent = translate('signup.success');
         signupMessage.style.color = '#4caf50';
@@ -6181,43 +6127,28 @@ async function renderAdminDashboard(user) {
 
 // Session auto-restore: restore user session from localStorage on page load
 async function restoreSessionFromStorage() {
-  const storedUser = getStoredUser();
+  const storedUser = getCurrentUser();
   const storedToken = localStorage.getItem(AUTH_TOKEN_KEY) || sessionStorage.getItem(AUTH_TOKEN_KEY);
   const storedRefreshToken = localStorage.getItem(AUTH_REFRESH_TOKEN_KEY) || sessionStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
   
   if (storedUser && storedToken) {
-    // User was previously logged in, verify token is still valid
     const remember = !!localStorage.getItem(AUTH_TOKEN_KEY);
-    logAuthDiagnostic('restoring stored session', {
-      remember,
-      hasRefreshToken: Boolean(storedRefreshToken),
-      userId: storedUser.id || storedUser._id || null,
-      email: storedUser.email || null
-    });
     const user = { ...storedUser, token: storedToken };
     if (storedRefreshToken) {
       user.refreshToken = storedRefreshToken;
     }
     setCurrentUser(user, remember);
     
-    // Try to sync with latest profile from API
     try {
       const latestProfile = await syncUserProfile();
       if (!latestProfile) {
-        // Token might be expired, try to refresh
-        logAuthDiagnostic('stored token requires refresh', {
-          userId: storedUser.id || storedUser._id || null,
-          email: storedUser.email || null
-        });
         const newToken = await refreshAccessToken();
         if (!newToken) {
-          // Refresh failed, clear session
           signOut();
         }
       }
     } catch (error) {
       console.warn('Failed to sync profile on restore:', error);
-      // Don't sign out on error, let them stay logged in
     }
   }
 }
