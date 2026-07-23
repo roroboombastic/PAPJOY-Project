@@ -915,6 +915,7 @@ const translations = {
     'checkout.verifyFail': 'Unable to verify Razorpay payment.',
     'checkout.webOrderEmpty': 'Add items before placing a web order.',
     'checkout.webFail': 'Unable to place the order right now. Please try again later.',
+    'checkout.paymentFailed': 'Payment failed. Please try again or choose another method.',
     'error.loadProducts': 'Unable to load products from server.',
     'error.stripeCheckoutUrl': 'Stripe checkout URL not available.',
     'error.paypalApprovalUrl': 'PayPal approval URL not available.',
@@ -1025,6 +1026,7 @@ const translations = {
     'checkout.verifyFail': 'Razorpay भुगतान सत्यापित करने में असमर्थ।',
     'checkout.webOrderEmpty': 'ऑर्डर करने से पहले आइटम जोड़ें।',
     'checkout.webFail': 'ऑर्डर करने में असमर्थ। कृपया बाद में पुन: प्रयास करें।',
+    'checkout.paymentFailed': 'भुगतान विफल रहा। कृपया पुन: प्रयास करें या दूसरा तरीका चुनें।',
     'product.status': '{count} जूते शॉप करने के लिए तैयार हैं।',
     'cart.free': 'मुफ़्त',
     'provider.web': 'वेब',
@@ -1146,6 +1148,7 @@ const translations = {
     'checkout.verifyFail': 'No se pudo verificar el pago de Razorpay.',
     'checkout.webOrderEmpty': 'Agrega artículos antes de realizar el pedido.',
     'checkout.webFail': 'No se pudo realizar el pedido. Intenta de nuevo más tarde.',
+    'checkout.paymentFailed': 'Pago fallido. Intenta de nuevo o elige otro método.',
     'product.status': '{count} zapatos listos para comprar.',
     'cart.free': 'GRATIS',
     'provider.web': 'Web',
@@ -2909,9 +2912,11 @@ function setCheckoutMessage(message, isError = false) {
 function getCheckoutItems() {
   return cart.map((item) => ({
     id: item.id,
+    productId: item.productId || item.id,
     name: item.name,
     price: item.price,
     quantity: item.quantity,
+    variant: item.variant || 'Standard',
     category: item.category,
     subtitle: item.subtitle,
   }));
@@ -3145,13 +3150,14 @@ async function startCODCheckout() {
     return;
   }
 
-  // Validate delivery form
   if (!validateDeliveryForm()) {
     return;
   }
 
   const deliveryInfo = getDeliveryInfo();
   const codNotes = document.getElementById('cod-notes').value.trim();
+  const totals = getCartTotals();
+  const codFee = 50;
 
   setCheckoutMessage('Processing Cash on Delivery order...');
 
@@ -3159,9 +3165,9 @@ async function startCODCheckout() {
     const orderData = {
       items: getCheckoutItems(),
       paymentMethod: 'cod',
-      shipping: getCartTotals().shipping,
-      discount: getCartTotals().discount,
-      tax: getCartTotals().tax,
+      shipping: totals.shipping + codFee,
+      discount: totals.discount,
+      tax: totals.tax,
       deliveryInfo,
       codNotes
     };
@@ -3902,30 +3908,95 @@ function renderSuccessDetails(order) {
   container.appendChild(invoiceBtn);
 }
 
+let paymentProviders = null;
+
+async function loadPaymentConfig() {
+  try {
+    const response = await fetch(apiUrl('/api/v1/payments/config'));
+    if (response.ok) {
+      paymentProviders = await response.json();
+      const cards = document.querySelectorAll('.payment-card');
+      cards.forEach((card) => {
+        const button = card.querySelector('.checkout-button');
+        if (!button) return;
+        const action = button.getAttribute('onclick') || '';
+        if (action.includes('startStripe') && paymentProviders && !paymentProviders.stripe?.enabled) {
+          button.disabled = true; button.textContent = 'Stripe unavailable';
+        }
+        if (action.includes('startPayPal') && paymentProviders && !paymentProviders.paypal?.enabled) {
+          button.disabled = true; button.textContent = 'PayPal unavailable';
+        }
+        if (action.includes('startRazorpay') && paymentProviders && !paymentProviders.razorpay?.enabled) {
+          button.disabled = true; button.textContent = 'Razorpay unavailable';
+        }
+      });
+    }
+  } catch (error) {
+    console.warn('Payment config unavailable, showing all options:', error);
+  }
+}
+
+async function loadCheckoutAddresses() {
+  const container = document.getElementById('checkout-addresses');
+  if (!container) return;
+  try {
+    const addresses = await loadUserAddresses();
+    if (!addresses || !addresses.length) {
+      container.innerHTML = '';
+      return;
+    }
+    container.innerHTML = '<p style="margin-bottom:0.5rem;font-size:0.85rem;opacity:0.7;">Saved addresses:</p>' +
+      addresses.map((addr, i) => `<button type="button" class="checkout-button secondary" style="margin:0.25rem;padding:0.4rem 0.75rem;font-size:0.8rem;" onclick="fillAddressFromSaved(${i})">${addr.name || 'Address ' + (i+1)}${addr.isDefault ? ' ★' : ''}</button>`).join('');
+    window.__checkoutAddresses = addresses;
+  } catch (error) {
+    console.warn('Failed to load saved addresses:', error);
+  }
+}
+
+function fillAddressFromSaved(index) {
+  const addresses = window.__checkoutAddresses;
+  if (!addresses || !addresses[index]) return;
+  const addr = addresses[index];
+  const nameEl = document.getElementById('delivery-fullname');
+  const phoneEl = document.getElementById('delivery-phone');
+  const streetEl = document.getElementById('delivery-address');
+  const cityEl = document.getElementById('delivery-city');
+  const stateEl = document.getElementById('delivery-state');
+  const postalEl = document.getElementById('delivery-postal');
+  const countryEl = document.getElementById('delivery-country');
+  if (nameEl) nameEl.value = addr.name || '';
+  if (phoneEl) phoneEl.value = addr.phone || '';
+  if (streetEl) streetEl.value = addr.street || '';
+  if (cityEl) cityEl.value = addr.city || '';
+  if (stateEl) stateEl.value = addr.state || '';
+  if (postalEl) postalEl.value = addr.zipCode || '';
+  if (countryEl) countryEl.value = addr.country || 'India';
+}
+
 async function renderCheckoutPage() {
   renderCheckoutItems();
   updateCartSummary();
   updateCheckoutSummary();
   
-  // Attach GPS autofill button if present
   const gpsButton = document.getElementById('fill-delivery-address-btn');
   if (gpsButton) {
+    gpsButton.removeEventListener('click', fillDeliveryAddressWithGPS);
     gpsButton.addEventListener('click', fillDeliveryAddressWithGPS);
   }
   
-  // Check if user is signed in
   const user = getCurrentUser();
   const signinPrompt = document.getElementById('signin-prompt');
   if (!user && signinPrompt) {
     signinPrompt.style.display = 'block';
   }
   
-  // Load delivery information if user is signed in
   if (user) {
     loadDeliveryInfo();
+    await loadCheckoutAddresses();
   }
   
-  // Initialize card formatting
+  await loadPaymentConfig();
+  
   initCardFormatting();
   
   const params = getQueryParams();
@@ -3934,6 +4005,9 @@ async function renderCheckoutPage() {
   }
   if (params.paypal === 'canceled') {
     setCheckoutMessage(translate('checkout.paypalCanceled'), true);
+  }
+  if (params.payment === 'failed') {
+    setCheckoutMessage(translate('checkout.paymentFailed'), true);
   }
 }
 
@@ -4015,6 +4089,18 @@ function showCODForm() {
   }
 }
 
+function getDeliveryInfo() {
+  const fullName = document.getElementById('delivery-fullname')?.value.trim() || '';
+  const phone = document.getElementById('delivery-phone')?.value.trim() || '';
+  const address = document.getElementById('delivery-address')?.value.trim() || '';
+  const city = document.getElementById('delivery-city')?.value.trim() || '';
+  const state = document.getElementById('delivery-state')?.value.trim() || '';
+  const postalCode = document.getElementById('delivery-postal')?.value.trim() || '';
+  const country = document.getElementById('delivery-country')?.value.trim() || 'India';
+  const instructions = document.getElementById('delivery-instructions')?.value.trim() || '';
+  return { fullName, phone, address, city, state, postalCode, country, instructions };
+}
+
 function showCreditForm() {
   const creditForm = document.getElementById('credit-form');
   if (creditForm.style.display === 'none' || creditForm.style.display === '') {
@@ -4053,19 +4139,6 @@ function validateDeliveryForm() {
     }
   }
   return true;
-}
-
-function getDeliveryInfo() {
-  return {
-    fullName: document.getElementById('delivery-fullname').value.trim(),
-    phone: document.getElementById('delivery-phone').value.trim(),
-    address: document.getElementById('delivery-address').value.trim(),
-    city: document.getElementById('delivery-city').value.trim(),
-    state: document.getElementById('delivery-state').value.trim(),
-    postalCode: document.getElementById('delivery-postal').value.trim(),
-    country: document.getElementById('delivery-country').value.trim(),
-    instructions: document.getElementById('delivery-instructions').value.trim()
-  };
 }
 
 async function renderSuccessPage() {

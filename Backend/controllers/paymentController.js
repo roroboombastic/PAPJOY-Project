@@ -280,11 +280,22 @@ async function verifyRazorpayPayment(req, res) {
   }
 }
 
+function getPaymentConfig(req, res) {
+  res.json({
+    razorpay: { enabled: paymentStatus.razorpay.enabled, key: paymentStatus.razorpay.key || null },
+    stripe: { enabled: paymentStatus.stripe.enabled },
+    paypal: { enabled: paymentStatus.paypal.enabled, clientId: paymentStatus.paypal.clientIdConfigured ? PAYPAL_CLIENT_ID : null },
+    cod: { enabled: true },
+    web: { enabled: true }
+  });
+}
+
 module.exports = {
   createPaypalOrder,
   capturePaypalOrder,
   createStripeSession,
   createStripeOrder,
   createRazorpayOrder,
-  verifyRazorpayPayment
+  verifyRazorpayPayment,
+  getPaymentConfig
 };

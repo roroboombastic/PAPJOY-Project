@@ -10,5 +10,6 @@ router.post('/stripe/session', optionalAuth, paymentController.createStripeSessi
 router.post('/stripe/order', optionalAuth, paymentController.createStripeOrder);
 router.post('/razorpay/create', optionalAuth, paymentController.createRazorpayOrder);
 router.post('/razorpay/verify', optionalAuth, paymentController.verifyRazorpayPayment);
+router.get('/config', paymentController.getPaymentConfig);
 
 module.exports = router;
