@@ -28,12 +28,6 @@ async function optionalAuth(req, res, next) {
     const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'], issuer: 'papjoy' });
     req.userId = decoded.id;
     req.userEmail = decoded.email;
-    const user = await User.findById(req.userId).lean();
-    if (user) {
-      req.user = user;
-      req.userRole = user.role;
-      req.isAdmin = user.role === 'admin' || user.role === 'super_admin' || ADMIN_EMAILS.includes((user.email || '').toLowerCase());
-    }
   } catch (err) {
     logger.debug('Optional auth ignored invalid token', { error: err.message });
   }

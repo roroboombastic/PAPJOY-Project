@@ -95,7 +95,13 @@ function debounce(func, wait) {
 async function fetchWithTimeout(resource, options = {}) {
   const { timeout = 5000 } = options;
   const controller = new AbortController();
+  const externalSignal = options.signal;
   const timer = setTimeout(() => controller.abort(), timeout);
+
+  if (externalSignal) {
+    externalSignal.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+
   try {
     return await fetch(resource, { ...options, signal: controller.signal });
   } finally {
@@ -267,13 +273,94 @@ function normalizeProduct(product) {
 // ================== API FUNCTIONS ==================
 
 // Load products from API with caching
+function showLoadingState() {
+  const grid = document.querySelector('.product-grid');
+  if (!grid) return;
+  grid.innerHTML = `<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>Loading products...</p></div>`;
+}
+
+function showLoadedState() {
+  const grid = document.querySelector('.product-grid');
+  if (!grid) return;
+}
+
+function showEmptyState() {
+  const grid = document.querySelector('.product-grid');
+  if (!grid) return;
+  grid.innerHTML = `<div class="empty-state"><i class="fas fa-box-open"></i><p>No products available</p></div>`;
+}
+
+function showErrorState(message) {
+  const grid = document.querySelector('.product-grid');
+  if (!grid) return;
+  grid.innerHTML = `<div class="error-state"><i class="fas fa-exclamation-circle"></i><p>${message || 'Failed to load products'}</p><button class="btn btn-primary" onclick="loadProducts()">Retry</button></div>`;
+}
+
+function createProductCardElement(product) {
+  if (!product || !product.name) return null;
+  const card = document.createElement('div');
+  card.className = 'product-card';
+  card.onclick = () => { window.location.href = getProductLink(product); };
+
+  const imageUrls = getProductImageUrls(product);
+  const primaryImage = imageUrls[0] || product.image || PRODUCT_FALLBACK_IMAGE;
+  const invStatus = getInventoryStatus(product);
+  const productId = product.id || product._id;
+
+  card.innerHTML = `
+    <div class="product-image">
+      <img src="${primaryImage}" alt="${product.name || 'Product'}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'">
+      <button class="wishlist-heart" data-product-id="${productId}" title="Add to wishlist"><i class="${isInWishlist(productId) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
+      ${product.isFeatured ? '<div class="badge featured">Featured</div>' : ''}
+      <div class="badge ${invStatus.class}" style="background-color: ${invStatus.color}">${invStatus.status}</div>
+    </div>
+    <div class="product-info">
+      <div class="category">${product.category || 'Uncategorized'}</div>
+      <h3 class="product-name">${product.name}</h3>
+      <p class="product-subtitle">${product.subtitle || (product.description || '').slice(0, 80) + '...'}</p>
+      <div class="price">${formatCurrency(product.price || 0)}</div>
+      <div class="product-actions">
+        <button class="btn btn-primary add-to-cart-btn" type="button" data-product-id="${productId}" ${product.inventory?.quantity === 0 ? 'disabled' : ''}>
+          <i class="fas fa-cart-plus"></i> ${product.inventory?.quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
+        </button>
+        <button class="btn btn-secondary buy-now-btn" type="button" data-product-id="${productId}" ${product.inventory?.quantity === 0 ? 'disabled' : ''}>
+          <i class="fas fa-bolt"></i> Buy Now
+        </button>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+function initProductGridDelegation() {
+  const grid = document.querySelector('.product-grid') || document.getElementById('product-grid');
+  if (!grid || grid._gridDelegated) return;
+  grid._gridDelegated = true;
+  grid.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-product-id]');
+    if (!btn) return;
+    const productId = btn.dataset.productId;
+    if (btn.classList.contains('add-to-cart-btn') && !btn.disabled) {
+      e.stopPropagation();
+      addToCartFlow(productId);
+    } else if (btn.classList.contains('buy-now-btn') && !btn.disabled) {
+      e.stopPropagation();
+      buyNowFlow(productId);
+    } else if (btn.classList.contains('wishlist-heart')) {
+      e.stopPropagation();
+      toggleWishlist(productId, e);
+    }
+  });
+}
+
 async function loadProducts() {
   if (productsLoadPromise) {
     return productsLoadPromise;
   }
 
   productsLoading = true;
-  showLoadingState();
+  const grid = document.querySelector('.product-grid');
+  if (grid) grid.innerHTML = `<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>Loading products...</p></div>`;
 
   productsLoadPromise = (async () => {
     const now = Date.now();
@@ -285,9 +372,10 @@ async function loadProducts() {
         const { data, timestamp } = JSON.parse(cached);
         if (Array.isArray(data) && data.length && now - timestamp < cacheExpiry) {
           cachedProducts = data.map(normalizeProduct).filter(Boolean);
-          products = cachedProducts;
-          showLoadedState();
-          renderProducts();
+          if (cachedProducts.length) {
+            products = cachedProducts;
+            renderProducts();
+          }
         }
       } catch (error) {
         localStorage.removeItem('papjoy-products-cache');
@@ -302,48 +390,28 @@ async function loadProducts() {
 
       const data = await response.json();
       const receivedProducts = Array.isArray(data.products) ? data.products : [];
-
-      if (!receivedProducts.length) {
-        if (cachedProducts.length) {
-          products = cachedProducts;
-          renderProducts();
-          productsLoading = false;
-          return products;
-        }
-        products = [];
-        renderProducts();
-        showEmptyState();
-        productsLoading = false;
-        return products;
-      }
-
       const loadedProducts = receivedProducts.map(normalizeProduct).filter(Boolean);
 
-      if (!loadedProducts.length) {
-        products = cachedProducts.length ? cachedProducts : [];
-        renderProducts();
-        if (!products.length) showEmptyState();
-        productsLoading = false;
-        return products;
+      if (loadedProducts.length) {
+        products = loadedProducts;
+        localStorage.setItem('papjoy-products-cache', JSON.stringify({ data: products, timestamp: now }));
+      } else if (cachedProducts.length) {
+        products = cachedProducts;
+      } else {
+        products = [];
       }
 
-      products = loadedProducts;
-      localStorage.setItem('papjoy-products-cache', JSON.stringify({ data: products, timestamp: now }));
-      showLoadedState();
       renderProducts();
       return products;
     } catch (error) {
       console.error('Failed to load products:', error);
-
       if (cachedProducts.length) {
         products = cachedProducts;
-        showLoadedState();
-        renderProducts();
       } else {
         localStorage.removeItem('papjoy-products-cache');
         products = [];
-        showErrorState('Failed to load products');
       }
+      renderProducts();
       return products;
     } finally {
       productsLoading = false;
@@ -383,7 +451,8 @@ async function searchProducts(searchParams = {}) {
     sort = 'newest',
     limit = 20,
     page = 1,
-    inStock = false
+    inStock = false,
+    signal = null
   } = searchParams;
 
   const queryParams = new URLSearchParams({
@@ -392,10 +461,11 @@ async function searchProducts(searchParams = {}) {
   });
 
   try {
-    const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/products/search?${queryParams.toString()}`, { timeout: 5000 });
+    const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/products/search?${queryParams.toString()}`, { timeout: 5000, signal });
     if (!response.ok) return { products: [], pagination: {} };
     return await response.json();
   } catch (error) {
+    if (error.name === 'AbortError') throw error;
     console.error('Search failed:', error);
     return { products: [], pagination: {} };
   }
@@ -646,69 +716,26 @@ function renderProducts() {
   if (page === 'shop') return;
 
   const productGrid = document.querySelector('.product-grid');
-  if (!productGrid) {
-    return;
-  }
+  if (!productGrid) return;
 
   if (!products || !products.length) {
-    productGrid.innerHTML = `<div class="empty-state">No products available</div>`;
+    showEmptyState();
     return;
   }
 
-  const renderStart = performance.now();
-  productRenderCount += 1;
   const fragment = document.createDocumentFragment();
   products.forEach((product) => {
-    if (!product || !product.name) return;
-    const productCard = document.createElement('div');
-    productCard.className = 'product-card';
-    productCard.onclick = () => {
-      window.location.href = getProductLink(product);
-    };
-
-    const imageUrls = getProductImageUrls(product);
-    const primaryImage = imageUrls[0] || product.image || PRODUCT_FALLBACK_IMAGE;
-    const invStatus = getInventoryStatus(product);
-
-    productCard.innerHTML = `
-      <div class="product-image">
-        <img src="${primaryImage}" alt="${product.name || 'Product'}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'">
-        <button class="wishlist-heart" data-product-id="${product.id || product._id}" title="Add to wishlist"><i class="${isInWishlist(product.id || product._id) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
-        ${product.isFeatured ? '<div class="badge featured">Featured</div>' : ''}
-        <div class="badge ${invStatus.class}" style="background-color: ${invStatus.color}">${invStatus.status}</div>
-      </div>
-      <div class="product-info">
-        <div class="category">${product.category || 'Uncategorized'}</div>
-        <h3 class="product-name">${product.name}</h3>
-        <p class="product-subtitle">${product.subtitle || (product.description || '').slice(0, 80) + '...'}</p>
-        <div class="price">${formatCurrency(product.price || 0)}</div>
-        <div class="product-actions">
-          <button class="btn btn-primary add-to-cart-btn" type="button" data-product-id="${product.id || product._id}" ${product.inventory?.quantity === 0 ? 'disabled' : ''}>
-            <i class="fas fa-cart-plus"></i> ${product.inventory?.quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
-          </button>
-          <button class="btn btn-secondary buy-now-btn" type="button" data-product-id="${product.id || product._id}" ${product.inventory?.quantity === 0 ? 'disabled' : ''}>
-            <i class="fas fa-bolt"></i> Buy Now
-          </button>
-        </div>
-      </div>
-    `;
-
-    attachProductCardListeners(productCard);
-
-    fragment.appendChild(productCard);
+    const card = createProductCardElement(product);
+    if (card) fragment.appendChild(card);
   });
 
   productGrid.innerHTML = '';
   if (fragment.childNodes.length) {
     productGrid.appendChild(fragment);
   } else {
-    productGrid.innerHTML = `<div class="empty-state">No products available</div>`;
+    showEmptyState();
   }
-  const renderedCount = products.length;
-  const renderDuration = performance.now() - renderStart;
-  console.debug('Product render count:', productRenderCount);
-  console.debug('Products rendered:', renderedCount);
-  console.debug('Render duration (ms):', renderDuration.toFixed(2));
+  initProductGridDelegation();
 }
 
 let cart = JSON.parse(localStorage.getItem('papjoy-cart')) || [];
@@ -2140,15 +2167,19 @@ function createSidebar() {
     if (link) closeMobileSidebar();
   });
 
-  overlay = document.getElementById('mobile-nav-overlay');
-  if (overlay && !overlay._navListener) {
-    overlay.addEventListener('click', () => closeMobileSidebar());
-    overlay._navListener = true;
+  const navOverlay = document.getElementById('mobile-nav-overlay');
+  if (navOverlay && !navOverlay._navListener) {
+    navOverlay.addEventListener('click', () => closeMobileSidebar());
+    navOverlay._navListener = true;
   }
 
   if (!navResizeHandler) {
+    let resizeTimer;
     navResizeHandler = () => {
-      if (window.innerWidth > 1024) closeMobileSidebar();
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (window.innerWidth > 1024) closeMobileSidebar();
+      }, 150);
     };
     window.addEventListener('resize', navResizeHandler);
   }
@@ -5718,16 +5749,21 @@ async function initProductFilters() {
   await performSearch();
 }
 
+let searchAbortController = null;
+
 async function performSearch() {
   if (searchInProgress) return;
   searchInProgress = true;
+
+  if (searchAbortController) searchAbortController.abort();
+  searchAbortController = new AbortController();
 
   const searchInput = document.getElementById('search-products');
   const sortFilter = document.getElementById('sort-filter');
   const inStockFilter = document.getElementById('in-stock-filter');
   const priceMinRange = document.getElementById('price-min');
   const priceMaxRange = document.getElementById('price-max');
-  const productGrid = document.getElementById('product-grid');
+  const productGrid = document.getElementById('product-grid') || document.querySelector('.product-grid');
   const categoryInput = document.getElementById('filter-category');
 
   const q = searchInput?.value || '';
@@ -5754,8 +5790,11 @@ async function performSearch() {
 
   try {
     const result = await searchProducts({
-      q, category, sort, inStock, priceMin, priceMax, brand, size, color
+      q, category, sort, inStock, priceMin, priceMax, brand, size, color,
+      signal: searchAbortController.signal
     });
+
+    if (searchAbortController.signal.aborted) return;
 
     const rawProducts = Array.isArray(result.products) ? result.products : [];
     products = rawProducts.map(normalizeProduct).filter(Boolean);
@@ -5765,52 +5804,18 @@ async function performSearch() {
         productGrid.innerHTML = `<div class="empty-state">No products found matching your criteria.</div>`;
         const statusEl = document.getElementById('product-status');
         if (statusEl) statusEl.textContent = '0 products found';
-        searchInProgress = false;
         return;
       }
 
       const fragment = document.createDocumentFragment();
       products.forEach((product) => {
-        if (!product || !product.name) return;
-        const productCard = document.createElement('div');
-        productCard.className = 'product-card';
-        productCard.onclick = () => {
-          window.location.href = getProductLink(product);
-        };
-
-        const imageUrls = getProductImageUrls(product);
-        const primaryImage = imageUrls[0] || product.image || PRODUCT_FALLBACK_IMAGE;
-        const invStatus = getInventoryStatus(product);
-
-        productCard.innerHTML = `
-          <div class="product-image">
-            <img src="${primaryImage}" alt="${product.name || 'Product'}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'">
-        <button class="wishlist-heart" data-product-id="${product.id || product._id}" title="Add to wishlist"><i class="${isInWishlist(product.id || product._id) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
-            ${product.isFeatured ? '<div class="badge featured">Featured</div>' : ''}
-            <div class="badge ${invStatus.class}" style="background-color: ${invStatus.color}">${invStatus.status}</div>
-          </div>
-          <div class="product-info">
-            <div class="category">${product.category || 'Uncategorized'}</div>
-            <h3 class="product-name">${product.name}</h3>
-        <p class="product-subtitle">${product.subtitle || (product.description || '').slice(0, 80) + '...'}</p>
-            <div class="price">${formatCurrency(product.price || 0)}</div>
-            <div class="product-actions">
-              <button class="btn btn-primary add-to-cart-btn" type="button" data-product-id="${product.id || product._id}" ${product.inventory?.quantity === 0 ? 'disabled' : ''}>
-                <i class="fas fa-cart-plus"></i> ${product.inventory?.quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
-              </button>
-              <button class="btn btn-secondary buy-now-btn" type="button" data-product-id="${product.id || product._id}" ${product.inventory?.quantity === 0 ? 'disabled' : ''}>
-                <i class="fas fa-bolt"></i> Buy Now
-              </button>
-            </div>
-          </div>
-        `;
-
-        attachProductCardListeners(productCard);
-        fragment.appendChild(productCard);
+        const card = createProductCardElement(product);
+        if (card) fragment.appendChild(card);
       });
 
       productGrid.innerHTML = '';
       productGrid.appendChild(fragment);
+      initProductGridDelegation();
     }
 
     const statusEl = document.getElementById('product-status');
@@ -5818,6 +5823,7 @@ async function performSearch() {
       statusEl.textContent = `${products.length} ${products.length === 1 ? 'product' : 'products'} found`;
     }
   } catch (error) {
+    if (error.name === 'AbortError') return;
     console.error('Search error:', error);
     if (productGrid) {
       productGrid.innerHTML = `
@@ -5828,33 +5834,6 @@ async function performSearch() {
     }
   } finally {
     searchInProgress = false;
-  }
-}
-
-function attachProductCardListeners(productCard) {
-  const addButton = productCard.querySelector('.add-to-cart-btn');
-  const buyButton = productCard.querySelector('.buy-now-btn');
-  const wishlistHeart = productCard.querySelector('.wishlist-heart');
-  const productId = addButton?.dataset.productId;
-
-  if (addButton && !addButton.disabled) {
-    addButton.addEventListener('click', (event) => {
-      event.stopPropagation();
-      addToCartFlow(productId);
-    });
-  }
-
-  if (buyButton && !buyButton.disabled) {
-    buyButton.addEventListener('click', (event) => {
-      event.stopPropagation();
-      buyNowFlow(productId);
-    });
-  }
-
-  if (wishlistHeart) {
-    wishlistHeart.addEventListener('click', (event) => {
-      toggleWishlist(productId, event);
-    });
   }
 }
 

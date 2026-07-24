@@ -17,5 +17,6 @@ const cartSchema = new mongoose.Schema({
 
 cartSchema.index({ userId: 1 });
 cartSchema.index({ sessionId: 1 });
+cartSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model('Cart', cartSchema);

@@ -58,17 +58,30 @@ async function addCartItem(req, res) {
 async function syncCart(req, res) {
   try {
     const incomingItems = Array.isArray(req.body.cart) ? req.body.cart : [];
+    if (!incomingItems.length) {
+      let cart = await Cart.findOne({ userId: req.userId });
+      if (cart) {
+        cart.items = [];
+        await cart.save();
+      }
+      return res.json({ success: true });
+    }
+
+    const productIds = incomingItems.map(item => item.productId || item.id || item._id).filter(Boolean);
+    const products = await Product.find({ _id: { $in: productIds } }).lean();
+    const productMap = new Map(products.map(p => [p._id.toString(), p]));
+
     let cart = await Cart.findOne({ userId: req.userId });
     if (!cart) cart = new Cart({ userId: req.userId, items: [] });
-    const synced = [];
-    for (const item of incomingItems) {
-      const productId = item.productId || item.id || item._id;
-      if (!productId) continue;
-      const product = await Product.findById(productId);
-      if (!product) continue;
-      synced.push({ productId: product._id, variant: item.variant || 'Standard', quantity: Math.max(1, Number(item.quantity) || 1), price: Number(item.price) || product.price });
-    }
-    cart.items = synced;
+
+    cart.items = incomingItems.map(item => {
+      const pid = item.productId || item.id || item._id;
+      if (!pid) return null;
+      const product = productMap.get(pid.toString());
+      if (!product) return null;
+      return { productId: product._id, variant: item.variant || 'Standard', quantity: Math.max(1, Number(item.quantity) || 1), price: Number(item.price) || product.price };
+    }).filter(Boolean);
+
     await cart.save();
     res.json({ success: true });
   } catch (err) {

@@ -27,7 +27,6 @@ function buildAddressLine(address = {}) {
 }
 
 function canAccessInvoice(invoice, req, guestEmail = '') {
-  if (req.isAdmin || (req.user && ['admin', 'super_admin'].includes(req.user.role))) return true;
   if (req.userEmail && ADMIN_EMAILS.includes(normalizeEmail(req.userEmail))) return true;
   if (invoice.userId && req.userId) {
     return invoice.userId.toString() === req.userId.toString();

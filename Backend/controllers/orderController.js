@@ -34,8 +34,11 @@ async function createOrder(req, res) {
 
 async function getUserOrders(req, res) {
   try {
-    const orders = await Order.find({ userId: req.userId }).sort({ createdAt: -1 });
-    res.json(orders);
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+    const orders = await Order.find({ userId: req.userId }).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
+    const total = await Order.countDocuments({ userId: req.userId });
+    res.json({ orders, pagination: { page, limit, total, pages: Math.ceil(total / limit) } });
   } catch (err) {
     logger.error('Fetch user orders failed', { error: err.message });
     res.status(500).json({ error: 'Failed to fetch orders' });
@@ -46,8 +49,11 @@ async function getOrders(req, res) {
   try {
     const user = await User.findById(req.userId).select('role');
     const filter = user?.role === 'admin' || user?.role === 'super_admin' ? {} : { userId: req.userId };
-    const orders = await Order.find(filter).sort({ createdAt: -1 });
-    res.json({ orders });
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    const orders = await Order.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
+    const total = await Order.countDocuments(filter);
+    res.json({ orders, pagination: { page, limit, total, pages: Math.ceil(total / limit) } });
   } catch (err) {
     logger.error('Fetch orders failed', { error: err.message });
     res.status(500).json({ error: 'Failed to fetch orders' });

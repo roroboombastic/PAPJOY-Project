@@ -8,17 +8,18 @@ function createOrderNumber() {
 
 async function buildOrderLineItems(items = [], deliveryInfo = {}) {
   const lineItems = [];
+  const productIds = items.map(item => item.productId || item.id).filter(Boolean);
+  const products = productIds.length ? await Product.find({ _id: { $in: productIds } }).lean() : [];
+  const productMap = new Map(products.map(p => [p._id.toString(), p]));
+
   for (const item of items) {
     const quantity = Math.max(1, Number(item.quantity) || 1);
     const productId = item.productId || item.id || null;
-    const product = productId ? await Product.findById(productId) : null;
+    if (!productId) throw new Error('Order item must include a valid product id');
+    const product = productMap.get(productId.toString());
     const price = Number(item.price || product?.price || 0);
     if (price < 0) continue;
     const itemTotal = quantity * price;
-
-    if (!productId) {
-      throw new Error('Order item must include a valid product id');
-    }
 
     lineItems.push({
       productId: product ? product._id : productId,
@@ -39,12 +40,19 @@ async function buildOrderLineItems(items = [], deliveryInfo = {}) {
 
 async function adjustInventory(items = [], { operation = 'decrement', reference = '', note = '' } = {}) {
   const direction = operation === 'increment' ? 1 : -1;
+  const productIds = items.map(item => item.productId || item.id).filter(Boolean);
+  if (!productIds.length) return;
+
+  const products = await Product.find({ _id: { $in: productIds } });
+  const productMap = new Map(products.map(p => [p._id.toString(), p]));
+
+  const saves = [];
   for (const item of items) {
     const quantity = Math.max(1, Number(item.quantity) || 1);
     const productId = item.productId || item.id;
     if (!productId) continue;
 
-    const product = await Product.findById(productId);
+    const product = productMap.get(productId.toString());
     if (!product || !product.inventory?.trackInventory) continue;
 
     const variantKey = String(item.variant || '').trim().toLowerCase();
@@ -79,8 +87,10 @@ async function adjustInventory(items = [], { operation = 'decrement', reference 
       note: note || `Inventory ${operation} for order ${reference}`
     });
 
-    await product.save();
+    saves.push(product.save());
   }
+
+  await Promise.all(saves);
 }
 
 async function restoreInventoryForOrder(order) {
