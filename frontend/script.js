@@ -1773,13 +1773,17 @@ async function syncUserProfile() {
     if (!data || !data.email) return null;
 
     const remember = !!localStorage.getItem('papjoy-token');
-    const currentUser = getCurrentUser() || {};
     const updatedUser = {
-      ...currentUser,
-      ...data,
       token,
-      id: data.id || data._id || currentUser.id || currentUser._id,
-      _id: data._id || data.id || currentUser._id || currentUser.id
+      id: data.id || data._id,
+      _id: data._id || data.id,
+      email: data.email,
+      name: data.name || '',
+      role: data.role || 'customer',
+      shippingAddress: data.shippingAddress || {},
+      addresses: data.addresses || [],
+      createdAt: data.createdAt || '',
+      phone: data.phone || ''
     };
     setCurrentUser(updatedUser, remember);
     return updatedUser;
@@ -1955,6 +1959,7 @@ async function signOut() {
 
   setCurrentUser(null);
   remoteCartLoaded = false;
+  wishlistUpdated = false;
   window.location.href = 'signin.html';
 }
 
@@ -4769,11 +4774,22 @@ async function renderResetPasswordPage() {
   });
 }
 
+function formatOrderData(order) {
+  const number = order.orderNumber || order.id || 'N/A';
+  const date = order.createdAt ? new Date(order.createdAt).toLocaleString() : 'Unknown';
+  const shortDate = order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'Unknown';
+  const statusText = order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Pending';
+  const totalText = order.total != null ? formatCurrency(order.total) : '—';
+  const orderId = order._id || order.id || '';
+  return { number, date, shortDate, statusText, totalText, orderId, status: order.status || 'pending' };
+}
+
 async function loadUserOrders() {
   const orderTableEl = document.querySelector('.order-table');
   const ordersContainer = document.getElementById('orders-container');
   const user = getCurrentUser();
   const currentUserId = user?.id || user?._id;
+
   if (!user || !currentUserId) {
     if (orderTableEl) {
       orderTableEl.innerHTML = `
@@ -4861,16 +4877,13 @@ async function loadUserOrders() {
         <span>Total</span>
       </div>
       ${orders.map((order) => {
-        const number = order.orderNumber || order.id || 'N/A';
-        const date = order.createdAt ? new Date(order.createdAt).toLocaleString() : 'Unknown';
-        const statusText = order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Pending';
-        const totalText = order.total != null ? formatCurrency(order.total) : '—';
+        const d = formatOrderData(order);
         return `
           <div class="order-row">
-            <a href="tracking.html?order=${number}" class="order-link">${number}</a>
-            <span>${date}</span>
-            <span class="status-pill status-${order.status || 'pending'}">${statusText}</span>
-            <span>${totalText}</span>
+            <a href="tracking.html?order=${d.number}" class="order-link">${d.number}</a>
+            <span>${d.date}</span>
+            <span class="status-pill status-${d.status}">${d.statusText}</span>
+            <span>${d.totalText}</span>
           </div>
         `;
       }).join('')}
@@ -4878,27 +4891,39 @@ async function loadUserOrders() {
   }
 
   if (ordersContainer) {
+    if (ordersContainer._orderListener) {
+      ordersContainer.removeEventListener('click', ordersContainer._orderListener);
+    }
     ordersContainer.innerHTML = orders.map((order) => {
-      const number = order.orderNumber || order.id || 'N/A';
-      const date = order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'Unknown';
-      const statusText = order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Pending';
-      const totalText = order.total != null ? formatCurrency(order.total) : '—';
-      const orderId = order._id || order.id || '';
+      const d = formatOrderData(order);
       return `
         <div class="order-item">
           <div class="order-details">
-            <div class="order-id">Order #${number}</div>
-            <div class="order-date">${date}</div>
+            <div class="order-id">Order #${d.number}</div>
+            <div class="order-date">${d.shortDate}</div>
           </div>
-          <span class="order-status">${statusText}</span>
-          <div class="order-total">${totalText}</div>
+          <span class="order-status">${d.statusText}</span>
+          <div class="order-total">${d.totalText}</div>
           <div class="order-actions">
-            <button class="btn-small" onclick="window.location.href='invoice-preview.html?orderId=${orderId}'">Preview</button>
-            <button class="btn-small" onclick="downloadOrderInvoice('${orderId}')">Download</button>
+            <button type="button" class="btn-small" data-order-action="preview" data-order-id="${d.orderId}">Preview</button>
+            <button type="button" class="btn-small" data-order-action="download" data-order-id="${d.orderId}">Download</button>
           </div>
         </div>
       `;
     }).join('');
+    const orderHandler = (e) => {
+      const btn = e.target.closest('[data-order-action]');
+      if (!btn) return;
+      const orderId = btn.dataset.orderId;
+      const action = btn.dataset.orderAction;
+      if (action === 'preview') {
+        window.location.href = `invoice-preview.html?orderId=${orderId}`;
+      } else if (action === 'download') {
+        downloadOrderInvoice(orderId);
+      }
+    };
+    ordersContainer.addEventListener('click', orderHandler);
+    ordersContainer._orderListener = orderHandler;
   }
 
   return orders;
@@ -5024,13 +5049,17 @@ async function renderAccountAddresses(user) {
         <div class="empty-state">
           <i class="fas fa-location-dot"></i>
           <p>No saved addresses yet.</p>
-          <button type="button" class="checkout-button" onclick="document.getElementById('add-address-modal').classList.add('active')">Add Address</button>
+          <button type="button" class="checkout-button" id="add-address-empty-btn">Add Address</button>
         </div>
       `;
+      const emptyBtn = document.getElementById('add-address-empty-btn');
+      if (emptyBtn) {
+        emptyBtn.onclick = () => document.getElementById('add-address-modal')?.classList.add('active');
+      }
       return;
     }
 
-    addressesContainer.innerHTML = addresses.map((address, index) => `
+    addressesContainer.innerHTML = addresses.map((address) => `
       <div class="address-card ${address.isDefault ? 'default' : ''}">
         ${address.isDefault ? '<div class="address-badge">Default</div>' : ''}
         <div class="address-name">${address.name || 'Address'} ${address.type ? `(${address.type})` : ''}</div>
@@ -5041,11 +5070,28 @@ async function renderAccountAddresses(user) {
           ${address.phone ? '<br><strong>Phone: ' + address.phone + '</strong>' : ''}
         </div>
         <div class="address-actions">
-          <button type="button" class="btn-small" onclick="editAddress('${address._id}')">Edit</button>
-          <button type="button" class="btn-small btn-danger" onclick="deleteAddressHandler('${address._id}')">Delete</button>
+          <button type="button" class="btn-small" data-address-id="${address._id}" data-address-action="edit">Edit</button>
+          <button type="button" class="btn-small btn-danger" data-address-id="${address._id}" data-address-action="delete">Delete</button>
         </div>
       </div>
     `).join('');
+
+    if (addressesContainer._addressListener) {
+      addressesContainer.removeEventListener('click', addressesContainer._addressListener);
+    }
+    const addressHandler = (e) => {
+      const btn = e.target.closest('[data-address-action]');
+      if (!btn) return;
+      const id = btn.dataset.addressId;
+      const action = btn.dataset.addressAction;
+      if (action === 'edit') {
+        editAddress(id);
+      } else if (action === 'delete') {
+        deleteAddressHandler(id);
+      }
+    };
+    addressesContainer.addEventListener('click', addressHandler);
+    addressesContainer._addressListener = addressHandler;
   } catch (error) {
     console.error('Failed to render addresses:', error);
     addressesContainer.innerHTML = `
@@ -5285,6 +5331,11 @@ async function handleEditProfileSubmit(event) {
   const name = document.getElementById('edit-name')?.value.trim();
   const phone = document.getElementById('edit-phone')?.value.trim();
 
+  if (!name) {
+    showToast('Please enter your name.');
+    return;
+  }
+
   const profileUpdates = { name };
   if (phone) {
     profileUpdates.shippingAddress = {
@@ -5417,6 +5468,21 @@ async function handleAddAddressSubmit(event) {
   } catch (error) {
     showToast(error.message || 'Unable to save address.');
   }
+}
+
+function closeAddressModal() {
+  const modal = document.getElementById('add-address-modal');
+  if (modal) modal.classList.remove('active');
+  const form = document.getElementById('add-address-form');
+  if (form) {
+    form.reset();
+    form.onsubmit = handleAddAddressSubmit;
+  }
+}
+
+function closeEditModal() {
+  const modal = document.getElementById('edit-profile-modal');
+  if (modal) modal.classList.remove('active');
 }
 
 function populateEditProfileForm(user) {
@@ -6461,6 +6527,11 @@ async function restoreSessionFromStorage() {
   const storedToken = localStorage.getItem(AUTH_TOKEN_KEY) || sessionStorage.getItem(AUTH_TOKEN_KEY);
   const storedRefreshToken = localStorage.getItem(AUTH_REFRESH_TOKEN_KEY) || sessionStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
   
+  if ((storedUser && !storedToken) || (!storedUser && storedToken)) {
+    setCurrentUser(null);
+    return;
+  }
+
   if (storedUser && storedToken) {
     const remember = !!localStorage.getItem(AUTH_TOKEN_KEY);
     const user = { ...storedUser, token: storedToken };
