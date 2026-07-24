@@ -719,6 +719,8 @@ let selectedSort = 'featured';
 let selectedFeaturedFilter = 'all';
 let filtersInitialized = false;
 let featuredControlsInitialized = false;
+let sidebarCreated = false;
+let navResizeHandler = null;
 
 // Promo codes, saved items and personalization
 let savedItems = JSON.parse(localStorage.getItem('papjoy-saved')) || [];
@@ -1965,7 +1967,7 @@ async function signOut() {
 
 function updateCartCount() {
   const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const countEls = document.querySelectorAll('#cart-count, #cart-count-sidebar, #sidebar-cart-count');
+  const countEls = document.querySelectorAll('#cart-count');
   countEls.forEach((el) => {
     el.textContent = count;
   });
@@ -1992,41 +1994,43 @@ function injectWishlistNav() {
   }
 }
 
+function updateNavLinkText(link, text) {
+  const span = link.querySelector('span');
+  if (span) {
+    span.textContent = text;
+    return;
+  }
+  const icon = link.querySelector('i');
+  if (icon) {
+    const textNode = Array.from(link.childNodes).find((node) => node.nodeType === Node.TEXT_NODE);
+    if (textNode) {
+      textNode.textContent = ` ${text}`;
+    } else {
+      link.append(` ${text}`);
+    }
+    return;
+  }
+  link.textContent = text;
+}
+
 function updateUserLinks() {
   const user = getCurrentUser();
   const links = Array.from(document.querySelectorAll('.site-nav a, .sidebar-nav a'));
-  const updateText = (link, text) => {
-    const span = link.querySelector('span');
-    if (span) {
-      span.textContent = text;
-      return;
-    }
-    const icon = link.querySelector('i');
-    if (icon) {
-      const textNode = Array.from(link.childNodes).find((node) => node.nodeType === Node.TEXT_NODE);
-      if (textNode) {
-        textNode.textContent = ` ${text}`;
-      } else {
-        link.append(` ${text}`);
-      }
-      return;
-    }
-    link.textContent = text;
-  };
 
   links.forEach((link) => {
     if (link.getAttribute('href') === 'signin.html') {
       if (user) {
-        updateText(link, translate('nav.signout'));
+        link.onclick = null;
+        updateNavLinkText(link, translate('nav.signout'));
         link.href = '#';
         link.onclick = (event) => {
           event.preventDefault();
           signOut();
         };
       } else {
-        updateText(link, translate('nav.signin'));
-        link.href = 'signin.html';
         link.onclick = null;
+        updateNavLinkText(link, translate('nav.signin'));
+        link.href = 'signin.html';
       }
     }
   });
@@ -2040,58 +2044,65 @@ function toggleMobileSidebar(forceClose = false) {
   document.body.classList.toggle('mobile-nav-open', shouldOpen);
   sidebar?.classList.toggle('active', shouldOpen);
   toggle?.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+  toggle?.setAttribute('aria-label', shouldOpen ? 'Close navigation menu' : 'Open navigation menu');
+  document.body.style.overflow = shouldOpen ? 'hidden' : '';
+
+  if (shouldOpen && sidebar) {
+    sidebar.querySelector('a')?.focus();
+  } else if (!shouldOpen && toggle) {
+    toggle.focus();
+  }
 }
 
 function closeMobileSidebar() {
   toggleMobileSidebar(true);
 }
 
+function getActivePageName() {
+  const path = window.location.pathname.split('/').pop() || 'index.html';
+  const page = path.replace(/\.html$/i, '');
+  if (page === '' || page === 'index' || page === 'home') return 'index';
+  return page;
+}
+
+function isActiveNavPage(href) {
+  const current = getActivePageName();
+  const pageName = href.replace(/\.html$/i, '');
+  if (pageName === 'index' || pageName === 'home') {
+    return current === 'index';
+  }
+  return current === pageName;
+}
+
 function createSidebar() {
-  // Skip on admin pages which have their own sidebar
+  if (sidebarCreated) return;
   if (document.querySelector('.admin-sidebar') || document.querySelector('.admin-container')) return;
 
-  const existingSidebar = document.getElementById('site-sidebar') || document.querySelector('.site-sidebar');
-  const existingHeader = document.querySelector('.site-header');
+  sidebarCreated = true;
+
   const existingLegacyOverlay = document.getElementById('sidebar-overlay');
+  if (existingLegacyOverlay) existingLegacyOverlay.remove();
+
+  const existingSidebar = document.getElementById('site-sidebar');
   const existingMobileOverlay = document.getElementById('mobile-nav-overlay');
-  const currentPath = window.location.pathname.split('/').pop() || 'index.html';
-
-  if (existingHeader) {
-    existingHeader.remove();
-  }
-
-  if (existingLegacyOverlay) {
-    existingLegacyOverlay.remove();
-  }
+  const currentCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const sidebar = existingSidebar || document.createElement('aside');
   if (!existingSidebar) {
     sidebar.id = 'site-sidebar';
     sidebar.className = 'site-sidebar';
     document.body.prepend(sidebar);
-  } else {
-    sidebar.id = 'site-sidebar';
-    sidebar.className = 'site-sidebar';
   }
-
-  const currentPage = currentPath.replace(/\.html$/i, '');
-  const isActivePage = (href) => {
-    const pageName = href.replace(/\.html$/i, '');
-    if (pageName === 'index' || pageName === 'home') {
-      return currentPage === '' || currentPage === 'index' || currentPage === 'home';
-    }
-    return currentPage === pageName;
-  };
 
   sidebar.innerHTML = `
     <div class="sidebar-brand"><a href="index.html">PAP-JOY</a></div>
     <nav class="sidebar-nav">
-      <a href="index.html" class="nav-link ${isActivePage('index.html') ? 'active' : ''}"><i class="fas fa-home"></i><span>Home</span></a>
-      <a href="product.html" class="nav-link ${isActivePage('product.html') ? 'active' : ''}"><i class="fas fa-store"></i><span>Shop</span></a>
-      <a href="cart.html" class="nav-link ${isActivePage('cart.html') ? 'active' : ''}"><i class="fas fa-shopping-cart"></i><span>Cart</span><span class="cart-badge" id="sidebar-cart-count">${cart.reduce((sum, item) => sum + item.quantity, 0)}</span></a>
-      <a href="tracking.html" class="nav-link ${isActivePage('tracking.html') ? 'active' : ''}"><i class="fas fa-truck"></i><span>Track Order</span></a>
-      <a href="account.html" class="nav-link ${isActivePage('account.html') ? 'active' : ''}"><i class="fas fa-user"></i><span>Account</span></a>
-      <a href="signin.html" class="nav-link ${isActivePage('signin.html') ? 'active' : ''}"><i class="fas fa-sign-in-alt"></i><span>Sign In</span></a>
+      <a href="index.html" class="nav-link${isActiveNavPage('index.html') ? ' active' : ''}"${isActiveNavPage('index.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-home"></i><span>Home</span></a>
+      <a href="product.html" class="nav-link${isActiveNavPage('product.html') ? ' active' : ''}"${isActiveNavPage('product.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-store"></i><span>Shop</span></a>
+      <a href="cart.html" class="nav-link${isActiveNavPage('cart.html') ? ' active' : ''}"${isActiveNavPage('cart.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-shopping-cart"></i><span>Cart</span><span class="cart-badge" id="cart-count">${currentCartCount}</span></a>
+      <a href="tracking.html" class="nav-link${isActiveNavPage('tracking.html') ? ' active' : ''}"${isActiveNavPage('tracking.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-truck"></i><span>Track Order</span></a>
+      <a href="account.html" class="nav-link${isActiveNavPage('account.html') ? ' active' : ''}"${isActiveNavPage('account.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-user"></i><span>Account</span></a>
+      <a href="signin.html" class="nav-link${isActiveNavPage('signin.html') ? ' active' : ''}"${isActiveNavPage('signin.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-sign-in-alt"></i><span>Sign In</span></a>
     </nav>
     <div class="sidebar-meta">
       <div class="sidebar-stats">
@@ -2104,9 +2115,8 @@ function createSidebar() {
     </div>
   `;
 
-  let overlay = existingMobileOverlay;
-  if (!overlay) {
-    overlay = document.createElement('div');
+  if (!existingMobileOverlay) {
+    const overlay = document.createElement('div');
     overlay.id = 'mobile-nav-overlay';
     overlay.className = 'mobile-nav-overlay';
     document.body.appendChild(overlay);
@@ -2118,32 +2128,48 @@ function createSidebar() {
     toggleButton.id = 'mobile-menu-toggle';
     toggleButton.className = 'mobile-menu-toggle';
     toggleButton.setAttribute('aria-expanded', 'false');
+    toggleButton.setAttribute('aria-label', 'Open navigation menu');
     toggleButton.innerHTML = '<i class="fas fa-bars"></i>';
     document.body.appendChild(toggleButton);
   }
 
+  document.body.classList.add('has-global-nav');
+
+  sidebar.addEventListener('click', (e) => {
+    const link = e.target.closest('a');
+    if (link) closeMobileSidebar();
+  });
+
+  overlay = document.getElementById('mobile-nav-overlay');
+  if (overlay && !overlay._navListener) {
+    overlay.addEventListener('click', () => closeMobileSidebar());
+    overlay._navListener = true;
+  }
+
+  if (!navResizeHandler) {
+    navResizeHandler = () => {
+      if (window.innerWidth > 1024) closeMobileSidebar();
+    };
+    window.addEventListener('resize', navResizeHandler);
+  }
+
   const activeToggle = document.getElementById('mobile-menu-toggle');
-  if (activeToggle) {
+  if (activeToggle && !activeToggle._navListener) {
     activeToggle.addEventListener('click', (event) => {
       event.stopPropagation();
       toggleMobileSidebar();
     });
+    activeToggle._navListener = true;
   }
 
-  sidebar.querySelectorAll('a').forEach((link) => {
-    link.addEventListener('click', () => closeMobileSidebar());
-  });
-
-  overlay.addEventListener('click', () => closeMobileSidebar());
-  window.addEventListener('resize', () => {
-    if (window.innerWidth > 1024) {
-      closeMobileSidebar();
-    }
-  });
-
-  document.body.classList.add('has-global-nav');
   updateCartCount();
 }
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.body.classList.contains('mobile-nav-open')) {
+    closeMobileSidebar();
+  }
+});
 
 function updateLocaleSwitcher() {
   const select = document.getElementById('region-selector');
@@ -2152,8 +2178,11 @@ function updateLocaleSwitcher() {
 }
 
 function createLocaleSwitcher() {
-  const header = document.querySelector('.site-header');
-  if (!header || document.getElementById('region-switcher-wrapper')) return;
+  if (document.getElementById('region-switcher-wrapper')) return;
+
+  const sidebarMeta = document.querySelector('.sidebar-meta');
+  const target = sidebarMeta || document.querySelector('.sidebar-brand');
+  if (!target) return;
 
   const wrapper = document.createElement('div');
   wrapper.id = 'region-switcher-wrapper';
@@ -2202,7 +2231,7 @@ function createLocaleSwitcher() {
     });
   }
 
-  header.appendChild(wrapper);
+  target.appendChild(wrapper);
 }
 
 function createToastContainer() {
