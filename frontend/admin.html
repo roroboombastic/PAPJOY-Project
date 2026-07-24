@@ -128,7 +128,7 @@
             type="text"
             id="product-search"
             placeholder="Search products..."
-            onkeyup="debounce(() => loadAdminProducts(), 300)"
+            oninput="loadAdminProducts()"
           />
           <select id="product-status" onchange="loadAdminProducts()">
             <option value="all">All Status</option>
@@ -221,7 +221,7 @@
             type="text"
             id="user-search"
             placeholder="Search users by name or email..."
-            onkeyup="debounce(() => loadAdminUsers(), 300)"
+            oninput="loadAdminUsers()"
           />
           <select id="user-role-filter" onchange="loadAdminUsers()">
             <option value="all">All Users</option>

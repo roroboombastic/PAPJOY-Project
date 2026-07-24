@@ -72,6 +72,7 @@ window.addEventListener('pagehide', () => {
   window.removeEventListener('unhandledrejection', onUnhandledRejection);
   if (syncCartTimer) clearTimeout(syncCartTimer);
   if (trackingInterval) clearInterval(trackingInterval);
+  productsLoadPromise = null;
 });
 
 // GST configuration (18% default). Use CGST/SGST split for display.
@@ -81,12 +82,8 @@ const GST_RATE = 0.18;
 function debounce(func, wait) {
   let timeout;
   return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
     clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
+    timeout = setTimeout(() => func(...args), wait);
   };
 }
 
@@ -734,10 +731,10 @@ function updateCurrencyFormatter() {
   const region = getCurrentLocaleRegion();
   selectedRegion = localStorage.getItem('papjoy-region') || selectedRegion;
   currentLocale = region.locale;
-  currentCurrency = 'INR';
+  currentCurrency = region.currency;
   currencyFormatter = new Intl.NumberFormat(currentLocale, {
     style: 'currency',
-    currency: 'INR',
+    currency: region.currency,
     maximumFractionDigits: 0,
   });
 }
@@ -934,6 +931,10 @@ const translations = {
     'success.orderPlaced': 'Your order has been placed successfully.',
     'success.orderComplete': 'Your order is complete.',
     'success.noInfo': 'No order information was found. Please return to the store.',
+    'success.processing': 'Processing your order...',
+    'error.orderProcessing': 'There was an error processing your order.',
+    'error.returnHome': 'Return to Home',
+    'signup.missingFields': 'Please fill in all required fields.',
     'item.remove': 'Remove',
   },
   hi: {
@@ -1056,6 +1057,10 @@ const translations = {
     'success.orderPlaced': 'आपका ऑर्डर सफलतापूर्वक रखा गया है।',
     'success.orderComplete': 'आपका ऑर्डर पूरा हो गया है।',
     'success.noInfo': 'कोई ऑर्डर जानकारी नहीं मिली। कृपया स्टोर पर लौटें।',
+    'success.processing': 'आपके ऑर्डर की प्रक्रिया चल रही है...',
+    'error.orderProcessing': 'आपके ऑर्डर को संसाधित करने में त्रुटि हुई।',
+    'error.returnHome': 'होम पर लौटें',
+    'signup.missingFields': 'कृपया सभी आवश्यक फ़ील्ड भरें।',
     'item.remove': 'हटाएं',
   },
   es: {
@@ -1178,6 +1183,10 @@ const translations = {
     'success.orderPlaced': 'Tu pedido se ha realizado con éxito.',
     'success.orderComplete': 'Tu pedido está completo.',
     'success.noInfo': 'No se encontró información de pedido. Regresa a la tienda.',
+    'success.processing': 'Procesando tu pedido...',
+    'error.orderProcessing': 'Hubo un error al procesar tu pedido.',
+    'error.returnHome': 'Volver al inicio',
+    'signup.missingFields': 'Por favor, completa todos los campos obligatorios.',
     'item.remove': 'Eliminar',
   },
   fr: {
@@ -1299,6 +1308,10 @@ const translations = {
     'success.orderPlaced': 'Votre commande a été passée avec succès.',
     'success.orderComplete': 'Votre commande est terminée.',
     'success.noInfo': 'Aucune information de commande trouvée. Veuillez retourner à la boutique.',
+    'success.processing': 'Traitement de votre commande...',
+    'error.orderProcessing': 'Une erreur est survenue lors du traitement de votre commande.',
+    'error.returnHome': "Retour à l'accueil",
+    'signup.missingFields': 'Veuillez remplir tous les champs obligatoires.',
     'item.remove': 'Supprimer',
   },
   ar: {
@@ -1409,6 +1422,10 @@ const translations = {
     'success.orderPlaced': 'تم تقديم طلبك بنجاح.',
     'success.orderComplete': 'اكتمل طلبك.',
     'success.noInfo': 'لم يتم العثور على معلومات الطلب. الرجاء العودة إلى المتجر.',
+    'success.processing': 'جاري معالجة طلبك...',
+    'error.orderProcessing': 'حدث خطأ أثناء معالجة طلبك.',
+    'error.returnHome': 'العودة إلى الرئيسية',
+    'signup.missingFields': 'يرجى ملء جميع الحقول المطلوبة.',
     'success.summaryProvider': 'مزود الطلب',
     'success.summaryOrderId': 'معرف الطلب',
     'success.summaryPaymentId': 'معرف الدفع',
@@ -1514,7 +1531,9 @@ function getRefreshToken() {
 }
 
 function getAuthHeaders() {
-  const headers = getAuthHeaders();
+  const headers = { 'Content-Type': 'application/json' };
+  const token = getAuthToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
   return headers;
 }
 
@@ -1874,6 +1893,9 @@ function closeMobileSidebar() {
 }
 
 function createSidebar() {
+  // Skip on admin pages which have their own sidebar
+  if (document.querySelector('.admin-sidebar') || document.querySelector('.admin-container')) return;
+
   const existingSidebar = document.getElementById('site-sidebar') || document.querySelector('.site-sidebar');
   const existingHeader = document.querySelector('.site-header');
   const existingLegacyOverlay = document.getElementById('sidebar-overlay');
@@ -2127,10 +2149,11 @@ function getProductById(productId) {
 
 async function renderProductDetailPage() {
   const params = getQueryParams();
-  let product = getProductById(params.id || params.slug);
+  const productIdOrSlug = params.slug || params.id;
+  let product = getProductById(productIdOrSlug);
 
-  if (!product && params.slug) {
-    product = await getProductBySlug(params.slug);
+  if (!product && productIdOrSlug) {
+    product = await getProductBySlug(productIdOrSlug);
     if (product) {
       products.push(product);
     }
@@ -2469,9 +2492,14 @@ function renderCart() {
     return;
   }
 
+  container._cartItemId = null;
   cart.forEach((item) => {
+    const safeId = encodeURIComponent(String(item.id || ''));
+    const safeVariant = encodeURIComponent(String(item.variant || 'Standard'));
     const li = document.createElement('li');
     li.className = 'cart-item';
+    li.dataset.cartId = safeId;
+    li.dataset.cartVariant = safeVariant;
     li.innerHTML = `
       <div class="cart-item-meta">
         <div class="cart-item-avatar">
@@ -2485,18 +2513,46 @@ function renderCart() {
         </div>
       </div>
       <div class="item-controls">
-        <button onclick="changeQuantity(${JSON.stringify(item.id)}, -1, ${JSON.stringify(item.variant || 'Standard')})">-</button>
+        <button class="cart-qty-btn" data-cart-action="decr">-</button>
         <span>${item.quantity}</span>
-        <button onclick="changeQuantity(${JSON.stringify(item.id)}, 1, ${JSON.stringify(item.variant || 'Standard')})">+</button>
-        <button class="remove-button" onclick="removeFromCart(${JSON.stringify(item.id)}, ${JSON.stringify(item.variant || 'Standard')})">${translate('item.remove')}</button>
-        <button class="save-for-later-btn" onclick="saveForLater(${JSON.stringify(item.id)}, ${JSON.stringify(item.variant || 'Standard')})" title="Save for later"><i class="fas fa-bookmark"></i></button>
+        <button class="cart-qty-btn" data-cart-action="incr">+</button>
+        <button class="remove-button cart-remove-btn">${translate('item.remove')}</button>
+        <button class="save-for-later-btn cart-save-btn" title="Save for later"><i class="fas fa-bookmark"></i></button>
       </div>
     `;
     container.appendChild(li);
   });
 
+  // Attach one delegated listener per render (remove old first, attach new)
+  if (container._cartListener) {
+    container.removeEventListener('click', container._cartListener);
+  }
+  const handler = (e) => {
+    const li = e.target.closest('.cart-item');
+    if (!li) return;
+    const id = decodeURIComponent(li.dataset.cartId || '');
+    const variant = decodeURIComponent(li.dataset.cartVariant || 'Standard');
+    if (e.target.closest('.cart-qty-btn')) {
+      const delta = e.target.closest('.cart-qty-btn').dataset.cartAction === 'incr' ? 1 : -1;
+      changeQuantity(id, delta, variant);
+    } else if (e.target.closest('.cart-remove-btn')) {
+      removeFromCart(id, variant);
+    } else if (e.target.closest('.cart-save-btn')) {
+      saveForLater(id, variant);
+    }
+  };
+  container.addEventListener('click', handler);
+  container._cartListener = handler;
+
   updateCartSummary();
   renderSavedItems();
+}
+
+function resetCartState() {
+  cart = [];
+  appliedPromoCode = '';
+  localStorage.removeItem('papjoy-promo');
+  saveCart();
 }
 
 function clearCart() {
@@ -2504,10 +2560,7 @@ function clearCart() {
     showToast('Your cart is already empty.');
     return;
   }
-  cart = [];
-  appliedPromoCode = '';
-  localStorage.removeItem('papjoy-promo');
-  saveCart();
+  resetCartState();
   renderCart();
   showToast('Cart cleared.');
 }
@@ -2707,12 +2760,12 @@ async function renderRecommendations(productId) {
     container.innerHTML = `
       <h3>Recommended for you</h3>
       <div class="recommendation-grid">
-        ${items.slice(0, 4).map((product) => `
+        ${items.slice(0, 4).map((recProduct) => `
           <div class="recommendation-card">
-            <a href="/product-detail.html?id=${product.id || product._id}">
-              <img src="${product.image || product.images?.[0] || ''}" alt="${product.name}" loading="lazy" />
-              <h4>${product.name}</h4>
-              <p>${formatCurrency(product.price)}</p>
+            <a href="${getProductLink(recProduct)}">
+              <img src="${recProduct.image || (recProduct.images && recProduct.images[0]) || ''}" alt="${recProduct.name}" loading="lazy" />
+              <h4>${recProduct.name}</h4>
+              <p>${formatCurrency(recProduct.price)}</p>
             </a>
           </div>
         `).join('')}
@@ -2772,10 +2825,18 @@ function renderSavedItems() {
 
   if (section) section.style.display = 'block';
 
+  // Remove old listener
+  if (container._savedListener) {
+    container.removeEventListener('click', container._savedListener);
+  }
+
   container.innerHTML = savedItems
     .map(
-      (item) => `
-    <li class="saved-item">
+      (item) => {
+        const safeId = encodeURIComponent(String(item.id || ''));
+        const safeVariant = encodeURIComponent(String(item.variant || 'Standard'));
+        return `
+    <li class="saved-item" data-saved-id="${safeId}" data-saved-variant="${safeVariant}">
       <div class="saved-item-meta">
         <div class="saved-item-avatar">
           <img src="${item.image || item.product?.image || 'https://via.placeholder.com/100'}" alt="${item.name}" loading="lazy" />
@@ -2787,17 +2848,28 @@ function renderSavedItems() {
         </div>
       </div>
       <div class="saved-actions">
-        <button onclick="moveFromSaved(${JSON.stringify(item.id)}, ${JSON.stringify(item.variant || 'Standard')})" class="move-to-cart-btn">
-          <i class="fas fa-cart-plus"></i> Cart
-        </button>
-        <button onclick="removeSavedItem(${JSON.stringify(item.id)}, ${JSON.stringify(item.variant || 'Standard')})" class="remove-saved-btn">
-          <i class="fas fa-trash"></i>
-        </button>
+        <button class="move-to-cart-btn saved-move-btn"><i class="fas fa-cart-plus"></i> Cart</button>
+        <button class="remove-saved-btn saved-del-btn"><i class="fas fa-trash"></i></button>
       </div>
     </li>
-  `
+  `;
+      }
     )
     .join('');
+
+  const savedHandler = (e) => {
+    const li = e.target.closest('.saved-item');
+    if (!li) return;
+    const id = decodeURIComponent(li.dataset.savedId || '');
+    const variant = decodeURIComponent(li.dataset.savedVariant || 'Standard');
+    if (e.target.closest('.saved-move-btn')) {
+      moveFromSaved(id, variant);
+    } else if (e.target.closest('.saved-del-btn')) {
+      removeSavedItem(id, variant);
+    }
+  };
+  container.addEventListener('click', savedHandler);
+  container._savedListener = savedHandler;
 }
 
 function checkout() {
@@ -2941,6 +3013,7 @@ async function startRazorpayCheckout() {
       throw new Error('Razorpay SDK failed to load');
     }
 
+    const razorpayToken = getAuthToken();
     const options = {
       key: key_id,
       amount: order.amount,
@@ -2950,7 +3023,7 @@ async function startRazorpayCheckout() {
       order_id: order.id,
       handler: async function (razorResponse) {
         try {
-          const verifyData = {
+          const verifyPayload = {
             paymentId: razorResponse.razorpay_payment_id,
             orderId: razorResponse.razorpay_order_id,
             signature: razorResponse.razorpay_signature,
@@ -2962,21 +3035,20 @@ async function startRazorpayCheckout() {
             deliveryInfo
           };
           const verifyHeaders = { 'Content-Type': 'application/json' };
-          if (token) verifyHeaders.Authorization = `Bearer ${token}`;
+          if (razorpayToken) verifyHeaders.Authorization = `Bearer ${razorpayToken}`;
           const verifyResponse = await fetch(apiUrl('/api/v1/payments/razorpay/verify'), {
             method: 'POST',
             headers: verifyHeaders,
-            body: JSON.stringify(verifyData),
+            body: JSON.stringify(verifyPayload),
           });
 
           if (!verifyResponse.ok) {
-            const verifyData = await verifyResponse.json().catch(() => null);
-            throw new Error(verifyData?.error || translate('checkout.verifyFail'));
+            const errorBody = await verifyResponse.json().catch(() => null);
+            throw new Error(errorBody?.error || translate('checkout.verifyFail'));
           }
-          const result = await verifyResponse.json();
-          sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'razorpay', order: result.order }));
-          cart = [];
-          saveCart();
+          const verifyResult = await verifyResponse.json();
+          sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'razorpay', order: verifyResult.order }));
+          resetCartState();
           syncCart();
           window.location.href = 'success.html?provider=razorpay';
         } catch (verifyError) {
@@ -3038,8 +3110,7 @@ async function submitWebOrder() {
 
     const result = await response.json();
     sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'web', order: result.order }));
-    cart = [];
-    saveCart();
+    resetCartState();
     syncCart();
     window.location.href = 'success.html?provider=web';
   } catch (error) {
@@ -3089,8 +3160,7 @@ async function startCODCheckout() {
 
     const result = await response.json();
     sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'cod', order: result.order }));
-    cart = [];
-    saveCart();
+    resetCartState();
     syncCart();
     window.location.href = 'success.html?provider=cod';
   } catch (error) {
@@ -3109,8 +3179,7 @@ async function startPaytmCheckout() {
   // Simulate Paytm payment
   setTimeout(() => {
     sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'paytm', order: { id: 'simulated-paytm-' + Date.now() } }));
-    cart = [];
-    saveCart();
+    resetCartState();
     syncCart();
     window.location.href = 'success.html?provider=paytm';
   }, 2000);
@@ -3168,8 +3237,7 @@ async function startCreditCardCheckout() {
 
       const result = await response.json();
       sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'creditcard', order: result.order }));
-      cart = [];
-      saveCart();
+      resetCartState();
       syncCart();
       window.location.href = 'success.html?provider=creditcard';
     } catch (error) {
@@ -3231,8 +3299,7 @@ async function startDebitCardCheckout() {
 
       const result = await response.json();
       sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'debitcard', order: result.order }));
-      cart = [];
-      saveCart();
+      resetCartState();
       syncCart();
       window.location.href = 'success.html?provider=debitcard';
     } catch (error) {
@@ -3624,8 +3691,7 @@ async function startUPICheckout() {
   // Simulate UPI payment
   setTimeout(() => {
     sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'upi', order: { id: 'simulated-upi-' + Date.now() } }));
-    cart = [];
-    saveCart();
+    resetCartState();
     syncCart();
     window.location.href = 'success.html?provider=upi';
   }, 2000);
@@ -4067,7 +4133,8 @@ async function renderSuccessPage() {
       }
       const { order } = await response.json();
       sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'stripe', order }));
-      clearCart();
+      resetCartState();
+      syncCart();
       renderSuccessDetails(order);
       statusEl.textContent = translate('success.stripeComplete');
       statusEl.style.color = '#4CAF50';
@@ -4087,7 +4154,8 @@ async function renderSuccessPage() {
       }
       const { order } = await response.json();
       sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'paypal', order }));
-      clearCart();
+      resetCartState();
+      syncCart();
       renderSuccessDetails(order);
       statusEl.textContent = translate('success.paypalComplete');
       statusEl.style.color = '#4CAF50';
@@ -4097,7 +4165,8 @@ async function renderSuccessPage() {
     if (params.provider === 'web' && storedOrder) {
       const { order } = JSON.parse(storedOrder);
       renderSuccessDetails(order);
-      clearCart();
+      resetCartState();
+      syncCart();
       statusEl.textContent = translate('success.orderPlaced');
       statusEl.style.color = '#4CAF50';
       sessionStorage.removeItem('papjoy-order');
@@ -4107,7 +4176,8 @@ async function renderSuccessPage() {
     if (storedOrder) {
       const { order } = JSON.parse(storedOrder);
       renderSuccessDetails(order);
-      clearCart();
+      resetCartState();
+      syncCart();
       statusEl.textContent = translate('success.orderComplete');
       statusEl.style.color = '#4CAF50';
       sessionStorage.removeItem('papjoy-order');
@@ -5931,15 +6001,16 @@ function initCookieConsent() {
   // Check if user has already made a choice
   const consent = localStorage.getItem('papjoy-cookie-consent');
   if (consent) {
-    const preferences = JSON.parse(consent);
-    // Apply saved preferences
-    if (preferences.analytics) {
-      // Enable analytics
+    try {
+      const preferences = JSON.parse(consent);
+      // Apply saved preferences (stub for future use)
+      if (preferences.analytics) { /* Enable analytics */ }
+      if (preferences.marketing) { /* Enable marketing cookies */ }
+      return; // Don't show modal if already consented
+    } catch (e) {
+      localStorage.removeItem('papjoy-cookie-consent');
+      // Fall through to show the modal again
     }
-    if (preferences.marketing) {
-      // Enable marketing cookies
-    }
-    return; // Don't show modal if already consented
   }
 
   // Show modal
@@ -6138,8 +6209,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   if ('requestIdleCallback' in window) {
-    requestIdleCallback(renderPage);
+    requestIdleCallback(() => renderPage().catch(console.error));
   } else {
-    setTimeout(renderPage, 200);
+    setTimeout(() => renderPage().catch(console.error), 200);
   }
 });
