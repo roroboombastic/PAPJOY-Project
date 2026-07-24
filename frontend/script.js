@@ -5,9 +5,6 @@ let productsCache = null;
 let cacheExpiry = 5 * 60 * 1000; // 5 minutes
 let productsLoadPromise = null;
 let productRenderCount = 0;
-let searchInProgress = false;
-let productsLoading = false;
-const PRODUCT_FALLBACK_IMAGE = 'https://via.placeholder.com/800x800?text=PAP-JOY';
 
 function getDefaultApiBaseUrl() {
   if (typeof window === 'undefined') return 'http://127.0.0.1:3000';
@@ -74,10 +71,7 @@ window.addEventListener('pagehide', () => {
   window.removeEventListener('error', onPageError);
   window.removeEventListener('unhandledrejection', onUnhandledRejection);
   if (syncCartTimer) clearTimeout(syncCartTimer);
-  syncCartImmediate();
   if (trackingInterval) clearInterval(trackingInterval);
-  productsLoadPromise = null;
-  wishlistUpdated = false;
 });
 
 // GST configuration (18% default). Use CGST/SGST split for display.
@@ -87,21 +81,19 @@ const GST_RATE = 0.18;
 function debounce(func, wait) {
   let timeout;
   return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
     clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
+    timeout = setTimeout(later, wait);
   };
 }
 
 async function fetchWithTimeout(resource, options = {}) {
   const { timeout = 5000 } = options;
   const controller = new AbortController();
-  const externalSignal = options.signal;
   const timer = setTimeout(() => controller.abort(), timeout);
-
-  if (externalSignal) {
-    externalSignal.addEventListener('abort', () => controller.abort(), { once: true });
-  }
-
   try {
     return await fetch(resource, { ...options, signal: controller.signal });
   } finally {
@@ -273,94 +265,10 @@ function normalizeProduct(product) {
 // ================== API FUNCTIONS ==================
 
 // Load products from API with caching
-function showLoadingState() {
-  const grid = document.querySelector('.product-grid');
-  if (!grid) return;
-  grid.innerHTML = `<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>Loading products...</p></div>`;
-}
-
-function showLoadedState() {
-  const grid = document.querySelector('.product-grid');
-  if (!grid) return;
-}
-
-function showEmptyState() {
-  const grid = document.querySelector('.product-grid');
-  if (!grid) return;
-  grid.innerHTML = `<div class="empty-state"><i class="fas fa-box-open"></i><p>No products available</p></div>`;
-}
-
-function showErrorState(message) {
-  const grid = document.querySelector('.product-grid');
-  if (!grid) return;
-  grid.innerHTML = `<div class="error-state"><i class="fas fa-exclamation-circle"></i><p>${message || 'Failed to load products'}</p><button class="btn btn-primary" onclick="loadProducts()">Retry</button></div>`;
-}
-
-function createProductCardElement(product) {
-  if (!product || !product.name) return null;
-  const card = document.createElement('div');
-  card.className = 'product-card';
-  card.onclick = () => { window.location.href = getProductLink(product); };
-
-  const imageUrls = getProductImageUrls(product);
-  const primaryImage = imageUrls[0] || product.image || PRODUCT_FALLBACK_IMAGE;
-  const invStatus = getInventoryStatus(product);
-  const productId = product.id || product._id;
-
-  card.innerHTML = `
-    <div class="product-image">
-      <img src="${primaryImage}" alt="${product.name || 'Product'}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'">
-      <button class="wishlist-heart" data-product-id="${productId}" title="Add to wishlist"><i class="${isInWishlist(productId) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
-      ${product.isFeatured ? '<div class="badge featured">Featured</div>' : ''}
-      <div class="badge ${invStatus.class}" style="background-color: ${invStatus.color}">${invStatus.status}</div>
-    </div>
-    <div class="product-info">
-      <div class="category">${product.category || 'Uncategorized'}</div>
-      <h3 class="product-name">${product.name}</h3>
-      <p class="product-subtitle">${product.subtitle || (product.description || '').slice(0, 80) + '...'}</p>
-      <div class="price">${formatCurrency(product.price || 0)}</div>
-      <div class="product-actions">
-        <button class="btn btn-primary add-to-cart-btn" type="button" data-product-id="${productId}" ${product.inventory?.quantity === 0 ? 'disabled' : ''}>
-          <i class="fas fa-cart-plus"></i> ${product.inventory?.quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
-        </button>
-        <button class="btn btn-secondary buy-now-btn" type="button" data-product-id="${productId}" ${product.inventory?.quantity === 0 ? 'disabled' : ''}>
-          <i class="fas fa-bolt"></i> Buy Now
-        </button>
-      </div>
-    </div>
-  `;
-  return card;
-}
-
-function initProductGridDelegation() {
-  const grid = document.querySelector('.product-grid') || document.getElementById('product-grid');
-  if (!grid || grid._gridDelegated) return;
-  grid._gridDelegated = true;
-  grid.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-product-id]');
-    if (!btn) return;
-    const productId = btn.dataset.productId;
-    if (btn.classList.contains('add-to-cart-btn') && !btn.disabled) {
-      e.stopPropagation();
-      addToCartFlow(productId);
-    } else if (btn.classList.contains('buy-now-btn') && !btn.disabled) {
-      e.stopPropagation();
-      buyNowFlow(productId);
-    } else if (btn.classList.contains('wishlist-heart')) {
-      e.stopPropagation();
-      toggleWishlist(productId, e);
-    }
-  });
-}
-
 async function loadProducts() {
   if (productsLoadPromise) {
     return productsLoadPromise;
   }
-
-  productsLoading = true;
-  const grid = document.querySelector('.product-grid');
-  if (grid) grid.innerHTML = `<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>Loading products...</p></div>`;
 
   productsLoadPromise = (async () => {
     const now = Date.now();
@@ -372,10 +280,6 @@ async function loadProducts() {
         const { data, timestamp } = JSON.parse(cached);
         if (Array.isArray(data) && data.length && now - timestamp < cacheExpiry) {
           cachedProducts = data.map(normalizeProduct).filter(Boolean);
-          if (cachedProducts.length) {
-            products = cachedProducts;
-            renderProducts();
-          }
         }
       } catch (error) {
         localStorage.removeItem('papjoy-products-cache');
@@ -383,38 +287,33 @@ async function loadProducts() {
     }
 
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/products`, { timeout: 8000 });
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/products`, { timeout: 5000 });
       if (!response.ok) {
         throw new Error(`Product API returned ${response.status}`);
       }
 
       const data = await response.json();
       const receivedProducts = Array.isArray(data.products) ? data.products : [];
+
       const loadedProducts = receivedProducts.map(normalizeProduct).filter(Boolean);
 
+      products = loadedProducts;
       if (loadedProducts.length) {
-        products = loadedProducts;
         localStorage.setItem('papjoy-products-cache', JSON.stringify({ data: products, timestamp: now }));
-      } else if (cachedProducts.length) {
-        products = cachedProducts;
-      } else {
-        products = [];
       }
-
       renderProducts();
       return products;
     } catch (error) {
       console.error('Failed to load products:', error);
+
       if (cachedProducts.length) {
         products = cachedProducts;
       } else {
         localStorage.removeItem('papjoy-products-cache');
-        products = [];
+        products = fallbackProducts;
       }
       renderProducts();
       return products;
-    } finally {
-      productsLoading = false;
     }
   })();
 
@@ -451,8 +350,7 @@ async function searchProducts(searchParams = {}) {
     sort = 'newest',
     limit = 20,
     page = 1,
-    inStock = false,
-    signal = null
+    inStock = false
   } = searchParams;
 
   const queryParams = new URLSearchParams({
@@ -461,11 +359,10 @@ async function searchProducts(searchParams = {}) {
   });
 
   try {
-    const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/products/search?${queryParams.toString()}`, { timeout: 5000, signal });
+    const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/products/search?${queryParams.toString()}`, { timeout: 5000 });
     if (!response.ok) return { products: [], pagination: {} };
     return await response.json();
   } catch (error) {
-    if (error.name === 'AbortError') throw error;
     console.error('Search failed:', error);
     return { products: [], pagination: {} };
   }
@@ -716,100 +613,72 @@ function renderProducts() {
   if (page === 'shop') return;
 
   const productGrid = document.querySelector('.product-grid');
-  if (!productGrid) return;
-
-  if (!products || !products.length) {
-    showEmptyState();
+  if (!productGrid) {
     return;
   }
 
+  const renderStart = performance.now();
+  productRenderCount += 1;
   const fragment = document.createDocumentFragment();
   products.forEach((product) => {
-    const card = createProductCardElement(product);
-    if (card) fragment.appendChild(card);
+    const productCard = document.createElement('div');
+    productCard.className = 'product-card';
+    productCard.onclick = () => {
+      window.location.href = getProductLink(product);
+    };
+
+    const imageUrls = getProductImageUrls(product);
+    const primaryImage = imageUrls[0] || product.image || 'https://via.placeholder.com/800x800?text=PAP-JOY';
+    const invStatus = getInventoryStatus(product);
+
+    productCard.innerHTML = `
+      <div class="product-image">
+        <img src="${primaryImage}" alt="${product.name}" loading="lazy">
+        ${product.isFeatured ? '<div class="badge featured">Featured</div>' : ''}
+        <div class="badge ${invStatus.class}" style="background-color: ${invStatus.color}">${invStatus.status}</div>
+      </div>
+      <div class="product-info">
+        <div class="category">${product.category}</div>
+        <h3 class="product-name">${product.name}</h3>
+        <p class="product-subtitle">${product.subtitle || (product.description || '').slice(0, 80) + '...'}</p>
+        <div class="price">${formatCurrency(product.price)}</div>
+        <div class="product-actions">
+          <button class="btn btn-primary add-to-cart-btn" type="button" data-product-id="${product.id || product._id}" ${product.inventory?.quantity === 0 ? 'disabled' : ''}>
+            <i class="fas fa-cart-plus"></i> ${product.inventory?.quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
+          </button>
+          <button class="btn btn-secondary buy-now-btn" type="button" data-product-id="${product.id || product._id}" ${product.inventory?.quantity === 0 ? 'disabled' : ''}>
+            <i class="fas fa-bolt"></i> Buy Now
+          </button>
+        </div>
+      </div>
+    `;
+
+    attachProductCardListeners(productCard);
+
+    fragment.appendChild(productCard);
   });
 
   productGrid.innerHTML = '';
-  if (fragment.childNodes.length) {
-    productGrid.appendChild(fragment);
-  } else {
-    showEmptyState();
-  }
-  initProductGridDelegation();
+  productGrid.appendChild(fragment);
+  const renderedCount = products.length;
+  const renderDuration = performance.now() - renderStart;
+  console.debug('Product render count:', productRenderCount);
+  console.debug('Products rendered:', renderedCount);
+  console.debug('Render duration (ms):', renderDuration.toFixed(2));
 }
 
 let cart = JSON.parse(localStorage.getItem('papjoy-cart')) || [];
-let cartUpdateInProgress = false;
 let selectedCategory = '';
 let searchQuery = '';
 let selectedSort = 'featured';
 let selectedFeaturedFilter = 'all';
 let filtersInitialized = false;
 let featuredControlsInitialized = false;
-let sidebarCreated = false;
-let navResizeHandler = null;
 
 // Promo codes, saved items and personalization
 let savedItems = JSON.parse(localStorage.getItem('papjoy-saved')) || [];
-let wishlistUpdated = false;
 let browsingHistory = JSON.parse(localStorage.getItem('papjoy-history')) || [];
 let appliedPromoCode = localStorage.getItem('papjoy-promo') || '';
-
-function isInWishlist(productId) {
-  return savedItems.some((item) =>
-    String(item.id || item._id || item.productId) === String(productId)
-  );
-}
-
-function toggleWishlist(productId, event) {
-  if (event) event.stopPropagation();
-  const existing = savedItems.find((item) =>
-    String(item.id || item._id || item.productId) === String(productId)
-  );
-  if (existing) {
-    removeSavedItem(productId, existing.variant || 'Standard');
-  } else {
-    const product = getProductById(productId);
-    if (!product) return;
-    savedItems.push({
-      id: product.id || product._id,
-      productId: product.id || product._id,
-      name: product.name,
-      image: getProductImageUrls(product)[0] || product.image || PRODUCT_FALLBACK_IMAGE,
-      price: product.price,
-      variant: 'Standard',
-      category: product.category,
-      subtitle: product.subtitle,
-    });
-    localStorage.setItem('papjoy-saved', JSON.stringify(savedItems));
-    syncWishlistItem({ id: product.id || product._id, variant: 'Standard' });
-    showToast(`${product.name} added to wishlist`);
-  }
-  updateWishlistCount();
-  updateProductCardHearts();
-}
-
-function updateWishlistCount() {
-  const count = savedItems.length;
-  const badge = document.getElementById('wishlist-count');
-  if (badge) {
-    badge.textContent = count;
-    badge.style.display = count > 0 ? '' : 'none';
-  }
-}
-
-function updateProductCardHearts() {
-  document.querySelectorAll('.wishlist-heart').forEach((heart) => {
-    const productId = heart.dataset.productId;
-    if (!productId) return;
-    const saved = isInWishlist(productId);
-    const icon = heart.querySelector('i');
-    if (icon) {
-      icon.className = saved ? 'fas fa-heart' : 'far fa-heart';
-    }
-    heart.classList.toggle('active', saved);
-  });
-}
 let remoteCartLoaded = false;
 let adminCategories = [];
 const validPromoCodes = {
@@ -865,10 +734,10 @@ function updateCurrencyFormatter() {
   const region = getCurrentLocaleRegion();
   selectedRegion = localStorage.getItem('papjoy-region') || selectedRegion;
   currentLocale = region.locale;
-  currentCurrency = region.currency;
+  currentCurrency = 'INR';
   currencyFormatter = new Intl.NumberFormat(currentLocale, {
     style: 'currency',
-    currency: region.currency,
+    currency: 'INR',
     maximumFractionDigits: 0,
   });
 }
@@ -1065,10 +934,6 @@ const translations = {
     'success.orderPlaced': 'Your order has been placed successfully.',
     'success.orderComplete': 'Your order is complete.',
     'success.noInfo': 'No order information was found. Please return to the store.',
-    'success.processing': 'Processing your order...',
-    'error.orderProcessing': 'There was an error processing your order.',
-    'error.returnHome': 'Return to Home',
-    'signup.missingFields': 'Please fill in all required fields.',
     'item.remove': 'Remove',
   },
   hi: {
@@ -1191,10 +1056,6 @@ const translations = {
     'success.orderPlaced': 'आपका ऑर्डर सफलतापूर्वक रखा गया है।',
     'success.orderComplete': 'आपका ऑर्डर पूरा हो गया है।',
     'success.noInfo': 'कोई ऑर्डर जानकारी नहीं मिली। कृपया स्टोर पर लौटें।',
-    'success.processing': 'आपके ऑर्डर की प्रक्रिया चल रही है...',
-    'error.orderProcessing': 'आपके ऑर्डर को संसाधित करने में त्रुटि हुई।',
-    'error.returnHome': 'होम पर लौटें',
-    'signup.missingFields': 'कृपया सभी आवश्यक फ़ील्ड भरें।',
     'item.remove': 'हटाएं',
   },
   es: {
@@ -1317,10 +1178,6 @@ const translations = {
     'success.orderPlaced': 'Tu pedido se ha realizado con éxito.',
     'success.orderComplete': 'Tu pedido está completo.',
     'success.noInfo': 'No se encontró información de pedido. Regresa a la tienda.',
-    'success.processing': 'Procesando tu pedido...',
-    'error.orderProcessing': 'Hubo un error al procesar tu pedido.',
-    'error.returnHome': 'Volver al inicio',
-    'signup.missingFields': 'Por favor, completa todos los campos obligatorios.',
     'item.remove': 'Eliminar',
   },
   fr: {
@@ -1442,10 +1299,6 @@ const translations = {
     'success.orderPlaced': 'Votre commande a été passée avec succès.',
     'success.orderComplete': 'Votre commande est terminée.',
     'success.noInfo': 'Aucune information de commande trouvée. Veuillez retourner à la boutique.',
-    'success.processing': 'Traitement de votre commande...',
-    'error.orderProcessing': 'Une erreur est survenue lors du traitement de votre commande.',
-    'error.returnHome': "Retour à l'accueil",
-    'signup.missingFields': 'Veuillez remplir tous les champs obligatoires.',
     'item.remove': 'Supprimer',
   },
   ar: {
@@ -1556,10 +1409,6 @@ const translations = {
     'success.orderPlaced': 'تم تقديم طلبك بنجاح.',
     'success.orderComplete': 'اكتمل طلبك.',
     'success.noInfo': 'لم يتم العثور على معلومات الطلب. الرجاء العودة إلى المتجر.',
-    'success.processing': 'جاري معالجة طلبك...',
-    'error.orderProcessing': 'حدث خطأ أثناء معالجة طلبك.',
-    'error.returnHome': 'العودة إلى الرئيسية',
-    'signup.missingFields': 'يرجى ملء جميع الحقول المطلوبة.',
     'success.summaryProvider': 'مزود الطلب',
     'success.summaryOrderId': 'معرف الطلب',
     'success.summaryPaymentId': 'معرف الدفع',
@@ -1641,16 +1490,31 @@ const AUTH_TOKEN_KEY = 'papjoy-token';
 const AUTH_REFRESH_TOKEN_KEY = 'papjoy-refresh-token';
 
 function getCurrentUser() {
-  const sessionUser = JSON.parse(sessionStorage.getItem(AUTH_USER_KEY) || 'null');
-  if (sessionUser) return sessionUser;
-  return JSON.parse(localStorage.getItem(AUTH_USER_KEY) || 'null');
+  try {
+    const sessionUser = sessionStorage.getItem(AUTH_USER_KEY);
+    if (sessionUser) {
+      return JSON.parse(sessionUser);
+    }
+
+    const localUser = localStorage.getItem(AUTH_USER_KEY);
+    if (localUser) {
+      return JSON.parse(localUser);
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Failed to load current user:', error);
+    return null;
+  }
 }
 
 function getAuthToken() {
   const sessionToken = sessionStorage.getItem(AUTH_TOKEN_KEY);
   if (sessionToken) return sessionToken;
+
   const localToken = localStorage.getItem(AUTH_TOKEN_KEY);
   if (localToken) return localToken;
+
   const user = getCurrentUser();
   return user?.token || null;
 }
@@ -1658,15 +1522,17 @@ function getAuthToken() {
 function getRefreshToken() {
   const sessionToken = sessionStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
   if (sessionToken) return sessionToken;
+
   const localToken = localStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
   if (localToken) return localToken;
+
   const user = getCurrentUser();
   return user?.refreshToken || null;
 }
 
 function getAuthHeaders() {
-  const headers = { 'Content-Type': 'application/json' };
   const token = getAuthToken();
+  const headers = {};
   if (token) headers.Authorization = `Bearer ${token}`;
   return headers;
 }
@@ -1740,50 +1606,30 @@ async function apiRequest(path, options = {}, retry = true) {
 }
 
 let syncCartTimer = null;
-let syncCartPromise = null;
 function syncCart() {
   const user = getCurrentUser();
   const token = getAuthToken();
   if (!user || !user.id || !token) return;
   if (syncCartTimer) clearTimeout(syncCartTimer);
-  if (syncCartPromise) return;
   syncCartTimer = setTimeout(async () => {
     syncCartTimer = null;
-    syncCartPromise = (async () => {
-      try {
-        const response = await apiRequest('/api/v1/cart/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cart })
-        });
-      } catch (error) {
-        console.error('Failed to sync cart to server:', error);
-      } finally {
-        syncCartPromise = null;
-      }
-    })();
     try {
-      await syncCartPromise;
-    } catch {
-      // ignored, error already logged
+      const response = await apiRequest('/api/v1/cart/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cart })
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data && Array.isArray(data.items)) {
+        cart = data.items.map(normalizeServerCartItem);
+        saveCart();
+        renderCart();
+      }
+    } catch (error) {
+      console.error('Failed to sync cart to server:', error);
     }
   }, 300);
-}
-
-function syncCartImmediate() {
-  const user = getCurrentUser();
-  const token = getAuthToken();
-  if (!user || !user.id || !token) return;
-  if (syncCartTimer) clearTimeout(syncCartTimer);
-  try {
-    const payload = JSON.stringify({ cart });
-    navigator.sendBeacon(
-      `${API_BASE_URL}/api/v1/cart/sync`,
-      new Blob([payload], { type: 'application/json' })
-    );
-  } catch (error) {
-    console.error('Failed to sync cart on unload:', error);
-  }
 }
 
 async function syncUserProfile() {
@@ -1802,17 +1648,13 @@ async function syncUserProfile() {
     if (!data || !data.email) return null;
 
     const remember = !!localStorage.getItem('papjoy-token');
+    const currentUser = getCurrentUser() || {};
     const updatedUser = {
+      ...currentUser,
+      ...data,
       token,
-      id: data.id || data._id,
-      _id: data._id || data.id,
-      email: data.email,
-      name: data.name || '',
-      role: data.role || 'customer',
-      shippingAddress: data.shippingAddress || {},
-      addresses: data.addresses || [],
-      createdAt: data.createdAt || '',
-      phone: data.phone || ''
+      id: data.id || data._id || currentUser.id || currentUser._id,
+      _id: data._id || data.id || currentUser._id || currentUser.id
     };
     setCurrentUser(updatedUser, remember);
     return updatedUser;
@@ -1928,26 +1770,20 @@ function normalizeServerCartItem(item) {
 
 function mergeServerCart(remoteItems) {
   const merged = [...cart];
-  const seenKeys = new Set();
-
-  cart.forEach(item => {
-    seenKeys.add(getItemIdentity(item, item.variant || 'Standard'));
-  });
 
   remoteItems.forEach((item) => {
     const normalized = normalizeServerCartItem(item);
-    const key = getItemIdentity(normalized, normalized.variant || 'Standard');
-    if (seenKeys.has(key)) return;
-    seenKeys.add(key);
-    const existing = merged.find((entry) => getItemIdentity(entry, entry.variant || 'Standard') === key);
-    if (!existing) {
+    const existing = merged.find((entry) => entry.id === normalized.id && (entry.variant || 'Standard') === normalized.variant);
+    if (existing) {
+      existing.quantity = Math.max(existing.quantity, normalized.quantity);
+      existing.price = normalized.price;
+    } else {
       merged.push(normalized);
     }
   });
 
   cart = merged;
   saveCart();
-  renderCart();
 }
 
 async function loadUserCart() {
@@ -1987,14 +1823,12 @@ async function signOut() {
   }
 
   setCurrentUser(null);
-  remoteCartLoaded = false;
-  wishlistUpdated = false;
   window.location.href = 'signin.html';
 }
 
 function updateCartCount() {
   const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const countEls = document.querySelectorAll('#cart-count');
+  const countEls = document.querySelectorAll('#cart-count, #cart-count-sidebar, #sidebar-cart-count');
   countEls.forEach((el) => {
     el.textContent = count;
   });
@@ -2004,60 +1838,41 @@ function showCart() {
   window.location.href = 'cart.html';
 }
 
-function injectWishlistNav() {
-  if (document.getElementById('wishlist-nav-link')) return;
-  const nav = document.querySelector('.sidebar-nav');
-  if (!nav) return;
-  const accountLink = nav.querySelector('a[href="account.html"]');
-  const wishlistLink = document.createElement('a');
-  wishlistLink.id = 'wishlist-nav-link';
-  wishlistLink.href = 'account.html#wishlist';
-  wishlistLink.className = 'nav-link';
-  wishlistLink.innerHTML = '<i class="fas fa-heart"></i><span>Wishlist</span><span class="cart-badge" id="wishlist-count" style="display:none">0</span>';
-  if (accountLink) {
-    nav.insertBefore(wishlistLink, accountLink);
-  } else {
-    nav.appendChild(wishlistLink);
-  }
-}
-
-function updateNavLinkText(link, text) {
-  const span = link.querySelector('span');
-  if (span) {
-    span.textContent = text;
-    return;
-  }
-  const icon = link.querySelector('i');
-  if (icon) {
-    const textNode = Array.from(link.childNodes).find((node) => node.nodeType === Node.TEXT_NODE);
-    if (textNode) {
-      textNode.textContent = ` ${text}`;
-    } else {
-      link.append(` ${text}`);
-    }
-    return;
-  }
-  link.textContent = text;
-}
-
 function updateUserLinks() {
   const user = getCurrentUser();
   const links = Array.from(document.querySelectorAll('.site-nav a, .sidebar-nav a'));
+  const updateText = (link, text) => {
+    const span = link.querySelector('span');
+    if (span) {
+      span.textContent = text;
+      return;
+    }
+    const icon = link.querySelector('i');
+    if (icon) {
+      const textNode = Array.from(link.childNodes).find((node) => node.nodeType === Node.TEXT_NODE);
+      if (textNode) {
+        textNode.textContent = ` ${text}`;
+      } else {
+        link.append(` ${text}`);
+      }
+      return;
+    }
+    link.textContent = text;
+  };
 
   links.forEach((link) => {
     if (link.getAttribute('href') === 'signin.html') {
       if (user) {
-        link.onclick = null;
-        updateNavLinkText(link, translate('nav.signout'));
+        updateText(link, translate('nav.signout'));
         link.href = '#';
         link.onclick = (event) => {
           event.preventDefault();
           signOut();
         };
       } else {
-        link.onclick = null;
-        updateNavLinkText(link, translate('nav.signin'));
+        updateText(link, translate('nav.signin'));
         link.href = 'signin.html';
+        link.onclick = null;
       }
     }
   });
@@ -2071,65 +1886,55 @@ function toggleMobileSidebar(forceClose = false) {
   document.body.classList.toggle('mobile-nav-open', shouldOpen);
   sidebar?.classList.toggle('active', shouldOpen);
   toggle?.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
-  toggle?.setAttribute('aria-label', shouldOpen ? 'Close navigation menu' : 'Open navigation menu');
-  document.body.style.overflow = shouldOpen ? 'hidden' : '';
-
-  if (shouldOpen && sidebar) {
-    sidebar.querySelector('a')?.focus();
-  } else if (!shouldOpen && toggle) {
-    toggle.focus();
-  }
 }
 
 function closeMobileSidebar() {
   toggleMobileSidebar(true);
 }
 
-function getActivePageName() {
-  const path = window.location.pathname.split('/').pop() || 'index.html';
-  const page = path.replace(/\.html$/i, '');
-  if (page === '' || page === 'index' || page === 'home') return 'index';
-  return page;
-}
-
-function isActiveNavPage(href) {
-  const current = getActivePageName();
-  const pageName = href.replace(/\.html$/i, '');
-  if (pageName === 'index' || pageName === 'home') {
-    return current === 'index';
-  }
-  return current === pageName;
-}
-
-function createSidebar() {
-  if (sidebarCreated) return;
-  if (document.querySelector('.admin-sidebar') || document.querySelector('.admin-container')) return;
-
-  sidebarCreated = true;
-
+  function createSidebar() {
+  const existingSidebar = document.getElementById('site-sidebar') || document.querySelector('.site-sidebar');
+  const existingHeader = document.querySelector('.site-header');
   const existingLegacyOverlay = document.getElementById('sidebar-overlay');
-  if (existingLegacyOverlay) existingLegacyOverlay.remove();
-
-  const existingSidebar = document.getElementById('site-sidebar');
   const existingMobileOverlay = document.getElementById('mobile-nav-overlay');
-  const currentCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+
+  if (existingHeader) {
+    existingHeader.remove();
+  }
+
+  if (existingLegacyOverlay) {
+    existingLegacyOverlay.remove();
+  }
 
   const sidebar = existingSidebar || document.createElement('aside');
   if (!existingSidebar) {
     sidebar.id = 'site-sidebar';
     sidebar.className = 'site-sidebar';
     document.body.prepend(sidebar);
+  } else {
+    sidebar.id = 'site-sidebar';
+    sidebar.className = 'site-sidebar';
   }
+
+  const currentPage = currentPath.replace(/\.html$/i, '');
+  const isActivePage = (href) => {
+    const pageName = href.replace(/\.html$/i, '');
+    if (pageName === 'index' || pageName === 'home') {
+      return currentPage === '' || currentPage === 'index' || currentPage === 'home';
+    }
+    return currentPage === pageName;
+  };
 
   sidebar.innerHTML = `
     <div class="sidebar-brand"><a href="index.html">PAP-JOY</a></div>
     <nav class="sidebar-nav">
-      <a href="index.html" class="nav-link${isActiveNavPage('index.html') ? ' active' : ''}"${isActiveNavPage('index.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-home"></i><span>Home</span></a>
-      <a href="product.html" class="nav-link${isActiveNavPage('product.html') ? ' active' : ''}"${isActiveNavPage('product.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-store"></i><span>Shop</span></a>
-      <a href="cart.html" class="nav-link${isActiveNavPage('cart.html') ? ' active' : ''}"${isActiveNavPage('cart.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-shopping-cart"></i><span>Cart</span><span class="cart-badge" id="cart-count">${currentCartCount}</span></a>
-      <a href="tracking.html" class="nav-link${isActiveNavPage('tracking.html') ? ' active' : ''}"${isActiveNavPage('tracking.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-truck"></i><span>Track Order</span></a>
-      <a href="account.html" class="nav-link${isActiveNavPage('account.html') ? ' active' : ''}"${isActiveNavPage('account.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-user"></i><span>Account</span></a>
-      <a href="signin.html" class="nav-link${isActiveNavPage('signin.html') ? ' active' : ''}"${isActiveNavPage('signin.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-sign-in-alt"></i><span>Sign In</span></a>
+      <a href="index.html" class="nav-link ${isActivePage('index.html') ? 'active' : ''}"><i class="fas fa-home"></i><span>Home</span></a>
+      <a href="product.html" class="nav-link ${isActivePage('product.html') ? 'active' : ''}"><i class="fas fa-store"></i><span>Shop</span></a>
+      <a href="cart.html" class="nav-link ${isActivePage('cart.html') ? 'active' : ''}"><i class="fas fa-shopping-cart"></i><span>Cart</span><span class="cart-badge" id="sidebar-cart-count">${cart.reduce((sum, item) => sum + item.quantity, 0)}</span></a>
+      <a href="tracking.html" class="nav-link ${isActivePage('tracking.html') ? 'active' : ''}"><i class="fas fa-truck"></i><span>Track Order</span></a>
+      <a href="account.html" class="nav-link ${isActivePage('account.html') ? 'active' : ''}"><i class="fas fa-user"></i><span>Account</span></a>
+      <a href="signin.html" class="nav-link ${isActivePage('signin.html') ? 'active' : ''}"><i class="fas fa-sign-in-alt"></i><span>Sign In</span></a>
     </nav>
     <div class="sidebar-meta">
       <div class="sidebar-stats">
@@ -2142,8 +1947,9 @@ function createSidebar() {
     </div>
   `;
 
-  if (!existingMobileOverlay) {
-    const overlay = document.createElement('div');
+  let overlay = existingMobileOverlay;
+  if (!overlay) {
+    overlay = document.createElement('div');
     overlay.id = 'mobile-nav-overlay';
     overlay.className = 'mobile-nav-overlay';
     document.body.appendChild(overlay);
@@ -2155,52 +1961,32 @@ function createSidebar() {
     toggleButton.id = 'mobile-menu-toggle';
     toggleButton.className = 'mobile-menu-toggle';
     toggleButton.setAttribute('aria-expanded', 'false');
-    toggleButton.setAttribute('aria-label', 'Open navigation menu');
     toggleButton.innerHTML = '<i class="fas fa-bars"></i>';
     document.body.appendChild(toggleButton);
   }
 
-  document.body.classList.add('has-global-nav');
-
-  sidebar.addEventListener('click', (e) => {
-    const link = e.target.closest('a');
-    if (link) closeMobileSidebar();
-  });
-
-  const navOverlay = document.getElementById('mobile-nav-overlay');
-  if (navOverlay && !navOverlay._navListener) {
-    navOverlay.addEventListener('click', () => closeMobileSidebar());
-    navOverlay._navListener = true;
-  }
-
-  if (!navResizeHandler) {
-    let resizeTimer;
-    navResizeHandler = () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        if (window.innerWidth > 1024) closeMobileSidebar();
-      }, 150);
-    };
-    window.addEventListener('resize', navResizeHandler);
-  }
-
   const activeToggle = document.getElementById('mobile-menu-toggle');
-  if (activeToggle && !activeToggle._navListener) {
+  if (activeToggle) {
     activeToggle.addEventListener('click', (event) => {
       event.stopPropagation();
       toggleMobileSidebar();
     });
-    activeToggle._navListener = true;
   }
 
+  sidebar.querySelectorAll('a').forEach((link) => {
+    link.addEventListener('click', () => closeMobileSidebar());
+  });
+
+  overlay.addEventListener('click', () => closeMobileSidebar());
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 1024) {
+      closeMobileSidebar();
+    }
+  });
+
+  document.body.classList.add('has-global-nav');
   updateCartCount();
 }
-
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && document.body.classList.contains('mobile-nav-open')) {
-    closeMobileSidebar();
-  }
-});
 
 function updateLocaleSwitcher() {
   const select = document.getElementById('region-selector');
@@ -2209,11 +1995,8 @@ function updateLocaleSwitcher() {
 }
 
 function createLocaleSwitcher() {
-  if (document.getElementById('region-switcher-wrapper')) return;
-
-  const sidebarMeta = document.querySelector('.sidebar-meta');
-  const target = sidebarMeta || document.querySelector('.sidebar-brand');
-  if (!target) return;
+  const header = document.querySelector('.site-header');
+  if (!header || document.getElementById('region-switcher-wrapper')) return;
 
   const wrapper = document.createElement('div');
   wrapper.id = 'region-switcher-wrapper';
@@ -2262,7 +2045,7 @@ function createLocaleSwitcher() {
     });
   }
 
-  target.appendChild(wrapper);
+  header.appendChild(wrapper);
 }
 
 function createToastContainer() {
@@ -2362,31 +2145,28 @@ function getProductById(productId) {
 }
 
 async function renderProductDetailPage() {
-  const container = document.getElementById('product-detail');
-  if (!container) return;
-
-  container.innerHTML = `<div class="loading-state">Loading product details...</div>`;
-
   const params = getQueryParams();
-  const productIdOrSlug = params.slug || params.id;
-  let product = getProductById(productIdOrSlug);
+  let product = getProductById(params.id || params.slug);
 
-  if (!product && productIdOrSlug) {
-    product = await getProductBySlug(productIdOrSlug);
+  if (!product && params.slug) {
+    product = await getProductBySlug(params.slug);
     if (product) {
       products.push(product);
     }
   }
 
+  const container = document.getElementById('product-detail');
+
+  if (!container) return;
   if (!product) {
     container.innerHTML = `<div class="empty-state">${translate('product.notFound')}</div>`;
     return;
   }
 
-  const activeImage = product.images && product.images.length ? product.images[0] : (product.image || PRODUCT_FALLBACK_IMAGE);
+  const activeImage = product.images && product.images.length ? product.images[0] : product.image;
   const variantButtons = (product.variants || []).map((variant, index) => `
-        <button class="variant-option${index === 0 ? ' active' : ''}" data-price-delta="${variant.priceDelta || 0}" data-variant="${variant.name || 'Standard'}">
-          ${variant.name || 'Standard'}${variant.priceDelta ? ` +${formatCurrency(variant.priceDelta)}` : ''}
+        <button class="variant-option${index === 0 ? ' active' : ''}" data-price-delta="${variant.priceDelta}" data-variant="${variant.name}">
+          ${variant.name}${variant.priceDelta ? ` +${formatCurrency(variant.priceDelta)}` : ''}
         </button>
       `).join('');
   const detailsList = (product.details || []).map((detail) => `<li>${detail}</li>`).join('');
@@ -2394,28 +2174,27 @@ async function renderProductDetailPage() {
   container.innerHTML = `
     <div class="product-detail-card">
       <div class="product-gallery">
-        <img id="detail-main-image" src="${activeImage}" alt="${product.name || 'Product'}" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
-        <button class="wishlist-heart detail-wishlist-heart" data-product-id="${product.id || product._id}" title="Add to wishlist"><i class="${isInWishlist(product.id || product._id) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
+        <img id="detail-main-image" src="${activeImage}" alt="${product.name}" />
         <div class="gallery-thumbs">
-          ${(product.images || [product.image || PRODUCT_FALLBACK_IMAGE]).map((src, index) => `
+          ${(product.images || [product.image]).map((src, index) => `
             <button class="gallery-thumb${index === 0 ? ' active' : ''}" type="button" data-image="${src}">
-              <img src="${src}" alt="${product.name || 'Product'} image ${index + 1}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
+              <img src="${src}" alt="${product.name} image ${index + 1}" loading="lazy" />
             </button>
           `).join('')}
         </div>
       </div>
       <div class="detail-copy">
-        <p class="eyebrow">${product.category || 'Uncategorized'}</p>
-        <h2>${product.name || 'Product'}</h2>
-        <p class="detail-subtitle">${product.subtitle || ''}</p>
-        <p class="detail-description">${product.description || ''}</p>
+        <p class="eyebrow">${product.category}</p>
+        <h2>${product.name}</h2>
+        <p class="detail-subtitle">${product.subtitle}</p>
+        <p class="detail-description">${product.description}</p>
         <div class="product-variants">
           <p class="variant-label">Choose variant</p>
           <div class="variant-list">${variantButtons}</div>
         </div>
         <ul class="detail-features">${detailsList}</ul>
         <div class="detail-meta">
-          <span id="detail-price">${formatCurrency(product.price || 0)}</span>
+          <span id="detail-price">${formatCurrency(product.price)}</span>
           <button id="detail-add-button" type="button">${translate('product.addToCart')}</button>
           <button id="detail-buy-button" type="button" class="buy-now-button">Buy now</button>
         </div>
@@ -2465,14 +2244,6 @@ async function renderProductDetailPage() {
     });
   });
 
-  const detailWishlistHeart = container.querySelector('.detail-wishlist-heart');
-  if (detailWishlistHeart) {
-    detailWishlistHeart.addEventListener('click', (event) => {
-      event.preventDefault();
-      toggleWishlist(product.id || product._id, event);
-    });
-  }
-
   // Track product views and load personalized recommendations
   const productId = product.id || product._id;
   await saveViewedProduct(productId);
@@ -2504,14 +2275,8 @@ async function renderProductDetailPage() {
 }
 
 function addToCart(productId, variantName = 'Standard', variantPrice = null, redirectToCheckout = false) {
-  if (cartUpdateInProgress) return;
-  cartUpdateInProgress = true;
-
   const product = getProductById(productId);
-  if (!product) {
-    cartUpdateInProgress = false;
-    return;
-  }
+  if (!product) return;
 
   const selectedVariant = normalizeVariantName(variantName);
   const price = typeof variantPrice === 'number' ? variantPrice : product.price;
@@ -2524,8 +2289,7 @@ function addToCart(productId, variantName = 'Standard', variantPrice = null, red
   }
 
   if (availableStock <= 0) {
-    showToast('This product is out of stock');
-    cartUpdateInProgress = false;
+    showToast('❌ This product is out of stock');
     return;
   }
 
@@ -2533,8 +2297,7 @@ function addToCart(productId, variantName = 'Standard', variantPrice = null, red
   const currentQuantity = existing?.quantity || 0;
 
   if (currentQuantity >= availableStock) {
-    showToast(`Only ${availableStock} items available (${currentQuantity} already in cart)`);
-    cartUpdateInProgress = false;
+    showToast(`❌ Only ${availableStock} items available (${currentQuantity} already in cart)`);
     return;
   }
 
@@ -2545,7 +2308,7 @@ function addToCart(productId, variantName = 'Standard', variantPrice = null, red
       id: product.id || product._id,
       productId: product.id || product._id,
       name: product.name,
-      image: getProductImageUrls(product)[0] || product.image || PRODUCT_FALLBACK_IMAGE,
+      image: product.image,
       price,
       quantity: 1,
       variant: selectedVariant,
@@ -2561,8 +2324,6 @@ function addToCart(productId, variantName = 'Standard', variantPrice = null, red
   const quantity = existing ? existing.quantity : 1;
   const message = `${product.name}${selectedVariant !== 'Standard' ? ' - ' + selectedVariant : ''} (x${quantity}) ${translate('toast.addedCart')}`;
   showToast(message);
-
-  cartUpdateInProgress = false;
 
   if (redirectToCheckout) {
     window.location.href = 'checkout.html';
@@ -2594,41 +2355,17 @@ function removeFromCart(productId, variantName = 'Standard') {
 }
 
 function changeQuantity(productId, delta, variantName = 'Standard') {
-  if (cartUpdateInProgress) return;
-  cartUpdateInProgress = true;
-
   const item = cart.find((entry) => getItemIdentity(entry, entry.variant || 'Standard') === getItemIdentity({ id: productId, variant: variantName }, variantName));
-  if (!item) {
-    cartUpdateInProgress = false;
-    return;
-  }
-
-  if (delta > 0) {
-    const product = getProductById(productId);
-    if (product) {
-      let availableStock = product.inventory?.quantity || 0;
-      const selectedVariant = normalizeVariantName(variantName);
-      if (selectedVariant !== 'Standard') {
-        const variant = product.variants?.find(v => v.name === selectedVariant);
-        availableStock = variant?.inventory || product.inventory?.quantity || 0;
-      }
-      if (item.quantity + delta > availableStock) {
-        showToast(`Only ${availableStock} items available`);
-        cartUpdateInProgress = false;
-        return;
-      }
-    }
-  }
+  if (!item) return;
 
   item.quantity += delta;
   if (item.quantity <= 0) {
-    cartUpdateInProgress = false;
     removeFromCart(productId, variantName);
   } else {
     saveCart();
     syncCart();
     renderCart();
-    cartUpdateInProgress = false;
+    showToast(`${item.name} quantity updated to ${item.quantity}.`);
   }
 }
 
@@ -2751,18 +2488,13 @@ function renderCart() {
     return;
   }
 
-  container._cartItemId = null;
   cart.forEach((item) => {
-    const safeId = encodeURIComponent(String(item.id || ''));
-    const safeVariant = encodeURIComponent(String(item.variant || 'Standard'));
     const li = document.createElement('li');
     li.className = 'cart-item';
-    li.dataset.cartId = safeId;
-    li.dataset.cartVariant = safeVariant;
     li.innerHTML = `
       <div class="cart-item-meta">
         <div class="cart-item-avatar">
-          <img src="${item.image || item.product?.image || PRODUCT_FALLBACK_IMAGE}" alt="${item.name}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
+          <img src="${item.image || item.product?.image || 'https://via.placeholder.com/180'}" alt="${item.name}" loading="lazy" />
         </div>
         <div class="cart-item-content">
           <h3>${item.name}</h3>
@@ -2772,47 +2504,18 @@ function renderCart() {
         </div>
       </div>
       <div class="item-controls">
-        <button class="cart-qty-btn" data-cart-action="decr">-</button>
+        <button onclick="changeQuantity(${JSON.stringify(item.id)}, -1, ${JSON.stringify(item.variant || 'Standard')})">-</button>
         <span>${item.quantity}</span>
-        <button class="cart-qty-btn" data-cart-action="incr">+</button>
-        <button class="remove-button cart-remove-btn">${translate('item.remove')}</button>
-        <button class="save-for-later-btn cart-save-btn" title="Save for later"><i class="fas fa-bookmark"></i></button>
+        <button onclick="changeQuantity(${JSON.stringify(item.id)}, 1, ${JSON.stringify(item.variant || 'Standard')})">+</button>
+        <button class="remove-button" onclick="removeFromCart(${JSON.stringify(item.id)}, ${JSON.stringify(item.variant || 'Standard')})">${translate('item.remove')}</button>
+        <button class="save-for-later-btn" onclick="saveForLater(${JSON.stringify(item.id)}, ${JSON.stringify(item.variant || 'Standard')})" title="Save for later"><i class="fas fa-bookmark"></i></button>
       </div>
     `;
     container.appendChild(li);
   });
 
-  // Attach one delegated listener per render (remove old first, attach new)
-  if (container._cartListener) {
-    container.removeEventListener('click', container._cartListener);
-  }
-  const handler = (e) => {
-    const li = e.target.closest('.cart-item');
-    if (!li) return;
-    const id = decodeURIComponent(li.dataset.cartId || '');
-    const variant = decodeURIComponent(li.dataset.cartVariant || 'Standard');
-    if (e.target.closest('.cart-qty-btn')) {
-      const delta = e.target.closest('.cart-qty-btn').dataset.cartAction === 'incr' ? 1 : -1;
-      changeQuantity(id, delta, variant);
-    } else if (e.target.closest('.cart-remove-btn')) {
-      removeFromCart(id, variant);
-    } else if (e.target.closest('.cart-save-btn')) {
-      saveForLater(id, variant);
-    }
-  };
-  container.addEventListener('click', handler);
-  container._cartListener = handler;
-
   updateCartSummary();
   renderSavedItems();
-}
-
-function resetCartState() {
-  cart = [];
-  appliedPromoCode = '';
-  localStorage.removeItem('papjoy-promo');
-  saveCart();
-  syncCart();
 }
 
 function clearCart() {
@@ -2820,7 +2523,10 @@ function clearCart() {
     showToast('Your cart is already empty.');
     return;
   }
-  resetCartState();
+  cart = [];
+  appliedPromoCode = '';
+  localStorage.removeItem('papjoy-promo');
+  saveCart();
   renderCart();
   showToast('Cart cleared.');
 }
@@ -2837,7 +2543,6 @@ function saveForLater(productId, variantName = 'Standard') {
   }
 
   saveCart();
-  syncCart();
   localStorage.setItem('papjoy-saved', JSON.stringify(savedItems));
   showToast(`${item.name} saved for later!`);
   renderCart();
@@ -2857,7 +2562,6 @@ function moveFromSaved(productId, variantName = 'Standard') {
   }
 
   saveCart();
-  syncCart();
   localStorage.setItem('papjoy-saved', JSON.stringify(savedItems));
   showToast(`${item.name} moved to cart!`);
   renderCart();
@@ -2870,8 +2574,6 @@ function removeSavedItem(productId, variantName = 'Standard') {
   localStorage.setItem('papjoy-saved', JSON.stringify(savedItems));
   removeWishlistItem(productId, variantName);
   renderSavedItems();
-  updateWishlistCount();
-  updateProductCardHearts();
 }
 
 async function fetchUserWishlist() {
@@ -2922,7 +2624,7 @@ async function removeWishlistItem(productId, variantName = 'Standard') {
   if (!token) return;
 
   try {
-    await fetch(`${API_BASE_URL}/api/v1/wishlist/${encodeURIComponent(productId)}?variant=${encodeURIComponent(variantName)}`, {
+    await fetch(`${API_BASE_URL}/api/v1/wishlist/${encodeURIComponent(productId)}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -2935,64 +2637,38 @@ async function removeWishlistItem(productId, variantName = 'Standard') {
 }
 
 async function loadUserWishlist() {
-  if (wishlistUpdated) return;
-  wishlistUpdated = true;
-
   const remoteItems = await fetchUserWishlist();
-  if (!remoteItems.length && savedItems.length) {
-    await syncSavedItemsToServer();
-    return;
-  }
-
   if (!remoteItems.length) return;
 
-  const merged = [...savedItems];
-  const seenKeys = new Set();
-  savedItems.forEach(item => seenKeys.add(getItemIdentity(item, item.variant || 'Standard')));
-
+  const merged = dedupeItemsByKey([...savedItems], (item) => getItemIdentity(item, item.variant || 'Standard'));
   remoteItems.forEach((item) => {
     const remoteProductId = item.productId?._id || item.productId;
     const variantName = item.variant || 'Standard';
-    const key = getItemIdentity({ id: remoteProductId, variant: variantName }, variantName);
-    if (seenKeys.has(key)) return;
-    seenKeys.add(key);
-
-    const product = getProductById(remoteProductId);
-    if (product) {
-      merged.push({
-        ...product,
-        id: remoteProductId,
-        variant: variantName,
-        quantity: 1,
-      });
-    } else {
-      merged.push({
-        id: remoteProductId,
-        productId: remoteProductId,
-        name: item.productId?.name || 'Saved item',
-        variant: variantName,
-        quantity: 1,
-      });
+    const alreadySaved = merged.some((saved) => getItemIdentity(saved, saved.variant || 'Standard') === getItemIdentity({ id: remoteProductId, variant: variantName }, variantName));
+    if (!alreadySaved) {
+      const product = typeof item.productId === 'string' ? getProductById(item.productId) : item.productId;
+      if (product) {
+        merged.push({
+          ...product,
+          id: remoteProductId,
+          variant: variantName,
+          quantity: 1,
+        });
+      }
     }
   });
 
   savedItems = dedupeItemsByKey(merged, (item) => getItemIdentity(item, item.variant || 'Standard'));
   localStorage.setItem('papjoy-saved', JSON.stringify(savedItems));
-  updateWishlistCount();
-  updateProductCardHearts();
-
-  if (savedItems.length) {
-    await syncSavedItemsToServer();
-  }
 }
 
 async function syncSavedItemsToServer() {
   const token = getAuthToken();
-  if (!token) return;
+  if (!token || !savedItems.length) return;
 
   try {
     const payload = dedupeItemsByKey(savedItems, (item) => getItemIdentity(item, item.variant || 'Standard')).map((item) => ({
-      productId: item.id || item.productId,
+      productId: item.id,
       variant: item.variant || 'Standard',
     }));
 
@@ -3050,12 +2726,12 @@ async function renderRecommendations(productId) {
     container.innerHTML = `
       <h3>Recommended for you</h3>
       <div class="recommendation-grid">
-        ${items.slice(0, 4).map((recProduct) => `
+        ${items.slice(0, 4).map((product) => `
           <div class="recommendation-card">
-            <a href="${getProductLink(recProduct)}">
-              <img src="${recProduct.image || (recProduct.images && recProduct.images[0]) || ''}" alt="${recProduct.name}" loading="lazy" />
-              <h4>${recProduct.name}</h4>
-              <p>${formatCurrency(recProduct.price)}</p>
+            <a href="/product-detail.html?id=${product.id || product._id}">
+              <img src="${product.image || product.images?.[0] || ''}" alt="${product.name}" loading="lazy" />
+              <h4>${product.name}</h4>
+              <p>${formatCurrency(product.price)}</p>
             </a>
           </div>
         `).join('')}
@@ -3115,21 +2791,13 @@ function renderSavedItems() {
 
   if (section) section.style.display = 'block';
 
-  // Remove old listener
-  if (container._savedListener) {
-    container.removeEventListener('click', container._savedListener);
-  }
-
   container.innerHTML = savedItems
     .map(
-      (item) => {
-        const safeId = encodeURIComponent(String(item.id || ''));
-        const safeVariant = encodeURIComponent(String(item.variant || 'Standard'));
-        return `
-    <li class="saved-item" data-saved-id="${safeId}" data-saved-variant="${safeVariant}">
+      (item) => `
+    <li class="saved-item">
       <div class="saved-item-meta">
         <div class="saved-item-avatar">
-          <img src="${item.image || item.product?.image || PRODUCT_FALLBACK_IMAGE}" alt="${item.name}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
+          <img src="${item.image || item.product?.image || 'https://via.placeholder.com/100'}" alt="${item.name}" loading="lazy" />
         </div>
         <div class="saved-item-content">
           <h4>${item.name}</h4>
@@ -3138,28 +2806,17 @@ function renderSavedItems() {
         </div>
       </div>
       <div class="saved-actions">
-        <button class="move-to-cart-btn saved-move-btn"><i class="fas fa-cart-plus"></i> Cart</button>
-        <button class="remove-saved-btn saved-del-btn"><i class="fas fa-trash"></i></button>
+        <button onclick="moveFromSaved(${JSON.stringify(item.id)}, ${JSON.stringify(item.variant || 'Standard')})" class="move-to-cart-btn">
+          <i class="fas fa-cart-plus"></i> Cart
+        </button>
+        <button onclick="removeSavedItem(${JSON.stringify(item.id)}, ${JSON.stringify(item.variant || 'Standard')})" class="remove-saved-btn">
+          <i class="fas fa-trash"></i>
+        </button>
       </div>
     </li>
-  `;
-      }
+  `
     )
     .join('');
-
-  const savedHandler = (e) => {
-    const li = e.target.closest('.saved-item');
-    if (!li) return;
-    const id = decodeURIComponent(li.dataset.savedId || '');
-    const variant = decodeURIComponent(li.dataset.savedVariant || 'Standard');
-    if (e.target.closest('.saved-move-btn')) {
-      moveFromSaved(id, variant);
-    } else if (e.target.closest('.saved-del-btn')) {
-      removeSavedItem(id, variant);
-    }
-  };
-  container.addEventListener('click', savedHandler);
-  container._savedListener = savedHandler;
 }
 
 function checkout() {
@@ -3303,7 +2960,6 @@ async function startRazorpayCheckout() {
       throw new Error('Razorpay SDK failed to load');
     }
 
-    const razorpayToken = getAuthToken();
     const options = {
       key: key_id,
       amount: order.amount,
@@ -3313,7 +2969,7 @@ async function startRazorpayCheckout() {
       order_id: order.id,
       handler: async function (razorResponse) {
         try {
-          const verifyPayload = {
+          const verifyData = {
             paymentId: razorResponse.razorpay_payment_id,
             orderId: razorResponse.razorpay_order_id,
             signature: razorResponse.razorpay_signature,
@@ -3325,20 +2981,21 @@ async function startRazorpayCheckout() {
             deliveryInfo
           };
           const verifyHeaders = { 'Content-Type': 'application/json' };
-          if (razorpayToken) verifyHeaders.Authorization = `Bearer ${razorpayToken}`;
+          if (token) verifyHeaders.Authorization = `Bearer ${token}`;
           const verifyResponse = await fetch(apiUrl('/api/v1/payments/razorpay/verify'), {
             method: 'POST',
             headers: verifyHeaders,
-            body: JSON.stringify(verifyPayload),
+            body: JSON.stringify(verifyData),
           });
 
           if (!verifyResponse.ok) {
-            const errorBody = await verifyResponse.json().catch(() => null);
-            throw new Error(errorBody?.error || translate('checkout.verifyFail'));
+            const verifyData = await verifyResponse.json().catch(() => null);
+            throw new Error(verifyData?.error || translate('checkout.verifyFail'));
           }
-          const verifyResult = await verifyResponse.json();
-          sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'razorpay', order: verifyResult.order }));
-          resetCartState();
+          const result = await verifyResponse.json();
+          sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'razorpay', order: result.order }));
+          cart = [];
+          saveCart();
           syncCart();
           window.location.href = 'success.html?provider=razorpay';
         } catch (verifyError) {
@@ -3400,7 +3057,8 @@ async function submitWebOrder() {
 
     const result = await response.json();
     sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'web', order: result.order }));
-    resetCartState();
+    cart = [];
+    saveCart();
     syncCart();
     window.location.href = 'success.html?provider=web';
   } catch (error) {
@@ -3450,7 +3108,8 @@ async function startCODCheckout() {
 
     const result = await response.json();
     sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'cod', order: result.order }));
-    resetCartState();
+    cart = [];
+    saveCart();
     syncCart();
     window.location.href = 'success.html?provider=cod';
   } catch (error) {
@@ -3469,7 +3128,8 @@ async function startPaytmCheckout() {
   // Simulate Paytm payment
   setTimeout(() => {
     sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'paytm', order: { id: 'simulated-paytm-' + Date.now() } }));
-    resetCartState();
+    cart = [];
+    saveCart();
     syncCart();
     window.location.href = 'success.html?provider=paytm';
   }, 2000);
@@ -3527,7 +3187,8 @@ async function startCreditCardCheckout() {
 
       const result = await response.json();
       sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'creditcard', order: result.order }));
-      resetCartState();
+      cart = [];
+      saveCart();
       syncCart();
       window.location.href = 'success.html?provider=creditcard';
     } catch (error) {
@@ -3589,7 +3250,8 @@ async function startDebitCardCheckout() {
 
       const result = await response.json();
       sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'debitcard', order: result.order }));
-      resetCartState();
+      cart = [];
+      saveCart();
       syncCart();
       window.location.href = 'success.html?provider=debitcard';
     } catch (error) {
@@ -3981,7 +3643,8 @@ async function startUPICheckout() {
   // Simulate UPI payment
   setTimeout(() => {
     sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'upi', order: { id: 'simulated-upi-' + Date.now() } }));
-    resetCartState();
+    cart = [];
+    saveCart();
     syncCart();
     window.location.href = 'success.html?provider=upi';
   }, 2000);
@@ -4423,8 +4086,7 @@ async function renderSuccessPage() {
       }
       const { order } = await response.json();
       sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'stripe', order }));
-      resetCartState();
-      syncCart();
+      clearCart();
       renderSuccessDetails(order);
       statusEl.textContent = translate('success.stripeComplete');
       statusEl.style.color = '#4CAF50';
@@ -4444,8 +4106,7 @@ async function renderSuccessPage() {
       }
       const { order } = await response.json();
       sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'paypal', order }));
-      resetCartState();
-      syncCart();
+      clearCart();
       renderSuccessDetails(order);
       statusEl.textContent = translate('success.paypalComplete');
       statusEl.style.color = '#4CAF50';
@@ -4455,8 +4116,7 @@ async function renderSuccessPage() {
     if (params.provider === 'web' && storedOrder) {
       const { order } = JSON.parse(storedOrder);
       renderSuccessDetails(order);
-      resetCartState();
-      syncCart();
+      clearCart();
       statusEl.textContent = translate('success.orderPlaced');
       statusEl.style.color = '#4CAF50';
       sessionStorage.removeItem('papjoy-order');
@@ -4466,8 +4126,7 @@ async function renderSuccessPage() {
     if (storedOrder) {
       const { order } = JSON.parse(storedOrder);
       renderSuccessDetails(order);
-      resetCartState();
-      syncCart();
+      clearCart();
       statusEl.textContent = translate('success.orderComplete');
       statusEl.style.color = '#4CAF50';
       sessionStorage.removeItem('papjoy-order');
@@ -4834,22 +4493,11 @@ async function renderResetPasswordPage() {
   });
 }
 
-function formatOrderData(order) {
-  const number = order.orderNumber || order.id || 'N/A';
-  const date = order.createdAt ? new Date(order.createdAt).toLocaleString() : 'Unknown';
-  const shortDate = order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'Unknown';
-  const statusText = order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Pending';
-  const totalText = order.total != null ? formatCurrency(order.total) : '—';
-  const orderId = order._id || order.id || '';
-  return { number, date, shortDate, statusText, totalText, orderId, status: order.status || 'pending' };
-}
-
 async function loadUserOrders() {
   const orderTableEl = document.querySelector('.order-table');
   const ordersContainer = document.getElementById('orders-container');
   const user = getCurrentUser();
   const currentUserId = user?.id || user?._id;
-
   if (!user || !currentUserId) {
     if (orderTableEl) {
       orderTableEl.innerHTML = `
@@ -4937,13 +4585,16 @@ async function loadUserOrders() {
         <span>Total</span>
       </div>
       ${orders.map((order) => {
-        const d = formatOrderData(order);
+        const number = order.orderNumber || order.id || 'N/A';
+        const date = order.createdAt ? new Date(order.createdAt).toLocaleString() : 'Unknown';
+        const statusText = order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Pending';
+        const totalText = order.total != null ? formatCurrency(order.total) : '—';
         return `
           <div class="order-row">
-            <a href="tracking.html?order=${d.number}" class="order-link">${d.number}</a>
-            <span>${d.date}</span>
-            <span class="status-pill status-${d.status}">${d.statusText}</span>
-            <span>${d.totalText}</span>
+            <a href="tracking.html?order=${number}" class="order-link">${number}</a>
+            <span>${date}</span>
+            <span class="status-pill status-${order.status || 'pending'}">${statusText}</span>
+            <span>${totalText}</span>
           </div>
         `;
       }).join('')}
@@ -4951,39 +4602,27 @@ async function loadUserOrders() {
   }
 
   if (ordersContainer) {
-    if (ordersContainer._orderListener) {
-      ordersContainer.removeEventListener('click', ordersContainer._orderListener);
-    }
     ordersContainer.innerHTML = orders.map((order) => {
-      const d = formatOrderData(order);
+      const number = order.orderNumber || order.id || 'N/A';
+      const date = order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'Unknown';
+      const statusText = order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Pending';
+      const totalText = order.total != null ? formatCurrency(order.total) : '—';
+      const orderId = order._id || order.id || '';
       return `
         <div class="order-item">
           <div class="order-details">
-            <div class="order-id">Order #${d.number}</div>
-            <div class="order-date">${d.shortDate}</div>
+            <div class="order-id">Order #${number}</div>
+            <div class="order-date">${date}</div>
           </div>
-          <span class="order-status">${d.statusText}</span>
-          <div class="order-total">${d.totalText}</div>
+          <span class="order-status">${statusText}</span>
+          <div class="order-total">${totalText}</div>
           <div class="order-actions">
-            <button type="button" class="btn-small" data-order-action="preview" data-order-id="${d.orderId}">Preview</button>
-            <button type="button" class="btn-small" data-order-action="download" data-order-id="${d.orderId}">Download</button>
+            <button class="btn-small" onclick="window.location.href='invoice-preview.html?orderId=${orderId}'">Preview</button>
+            <button class="btn-small" onclick="downloadOrderInvoice('${orderId}')">Download</button>
           </div>
         </div>
       `;
     }).join('');
-    const orderHandler = (e) => {
-      const btn = e.target.closest('[data-order-action]');
-      if (!btn) return;
-      const orderId = btn.dataset.orderId;
-      const action = btn.dataset.orderAction;
-      if (action === 'preview') {
-        window.location.href = `invoice-preview.html?orderId=${orderId}`;
-      } else if (action === 'download') {
-        downloadOrderInvoice(orderId);
-      }
-    };
-    ordersContainer.addEventListener('click', orderHandler);
-    ordersContainer._orderListener = orderHandler;
   }
 
   return orders;
@@ -5109,17 +4748,13 @@ async function renderAccountAddresses(user) {
         <div class="empty-state">
           <i class="fas fa-location-dot"></i>
           <p>No saved addresses yet.</p>
-          <button type="button" class="checkout-button" id="add-address-empty-btn">Add Address</button>
+          <button type="button" class="checkout-button" onclick="document.getElementById('add-address-modal').classList.add('active')">Add Address</button>
         </div>
       `;
-      const emptyBtn = document.getElementById('add-address-empty-btn');
-      if (emptyBtn) {
-        emptyBtn.onclick = () => document.getElementById('add-address-modal')?.classList.add('active');
-      }
       return;
     }
 
-    addressesContainer.innerHTML = addresses.map((address) => `
+    addressesContainer.innerHTML = addresses.map((address, index) => `
       <div class="address-card ${address.isDefault ? 'default' : ''}">
         ${address.isDefault ? '<div class="address-badge">Default</div>' : ''}
         <div class="address-name">${address.name || 'Address'} ${address.type ? `(${address.type})` : ''}</div>
@@ -5130,28 +4765,11 @@ async function renderAccountAddresses(user) {
           ${address.phone ? '<br><strong>Phone: ' + address.phone + '</strong>' : ''}
         </div>
         <div class="address-actions">
-          <button type="button" class="btn-small" data-address-id="${address._id}" data-address-action="edit">Edit</button>
-          <button type="button" class="btn-small btn-danger" data-address-id="${address._id}" data-address-action="delete">Delete</button>
+          <button type="button" class="btn-small" onclick="editAddress('${address._id}')">Edit</button>
+          <button type="button" class="btn-small btn-danger" onclick="deleteAddressHandler('${address._id}')">Delete</button>
         </div>
       </div>
     `).join('');
-
-    if (addressesContainer._addressListener) {
-      addressesContainer.removeEventListener('click', addressesContainer._addressListener);
-    }
-    const addressHandler = (e) => {
-      const btn = e.target.closest('[data-address-action]');
-      if (!btn) return;
-      const id = btn.dataset.addressId;
-      const action = btn.dataset.addressAction;
-      if (action === 'edit') {
-        editAddress(id);
-      } else if (action === 'delete') {
-        deleteAddressHandler(id);
-      }
-    };
-    addressesContainer.addEventListener('click', addressHandler);
-    addressesContainer._addressListener = addressHandler;
   } catch (error) {
     console.error('Failed to render addresses:', error);
     addressesContainer.innerHTML = `
@@ -5181,48 +4799,22 @@ function renderAccountWishlist() {
   wishlistContainer.innerHTML = savedItems.map((item) => {
     const productId = item.id || item._id || item.productId || '';
     const variantName = item.variant || 'Standard';
-    const itemImage = item.image || item.product?.image || PRODUCT_FALLBACK_IMAGE;
-    const safeId = encodeURIComponent(String(productId));
-    const safeVariant = encodeURIComponent(String(variantName));
     return `
-      <div class="wishlist-card" data-wishlist-id="${safeId}" data-wishlist-variant="${safeVariant}">
+      <div class="wishlist-card">
         <div class="wishlist-card-meta">
-          <img src="${itemImage}" alt="${item.name || 'Saved item'}" loading="lazy" class="wishlist-card-image" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
-          <div class="wishlist-card-details">
-            <strong>${item.name || item.title || 'Saved item'}</strong>
-            ${item.category ? `<p>${item.category}</p>` : ''}
-            ${variantName !== 'Standard' ? `<p class="wishlist-variant">${variantName}</p>` : ''}
-            <p class="wishlist-price">${formatCurrency(item.price || 0)}</p>
-          </div>
+          <strong>${item.name || item.title || 'Saved item'}</strong>
+          ${item.category ? `<p>${item.category}</p>` : ''}
+          ${variantName !== 'Standard' ? `<p class="wishlist-variant">${variantName}</p>` : ''}
+          <p class="wishlist-price">${formatCurrency(item.price || 0)}</p>
         </div>
         <div class="wishlist-actions">
-          <button type="button" class="btn-small add-to-cart-btn" data-wishlist-action="addtocart">Add to Cart</button>
-          <button type="button" class="btn-small" data-wishlist-action="view">View</button>
-          <button type="button" class="btn-small btn-danger" data-wishlist-action="remove">Remove</button>
+          <button type="button" class="btn-small" onclick="addToCart('${productId}', '${variantName}')">Add to Cart</button>
+          <button type="button" class="btn-small" onclick="window.location.href='product-detail.html?id=${productId}'">View</button>
+          <button type="button" class="btn-small btn-danger" onclick="removeSavedItem('${productId}', '${variantName}')">Remove</button>
         </div>
       </div>
     `;
   }).join('');
-
-  if (wishlistContainer._wishlistListener) {
-    wishlistContainer.removeEventListener('click', wishlistContainer._wishlistListener);
-  }
-  const wishlistHandler = (e) => {
-    const card = e.target.closest('.wishlist-card');
-    if (!card) return;
-    const id = decodeURIComponent(card.dataset.wishlistId || '');
-    const variant = decodeURIComponent(card.dataset.wishlistVariant || 'Standard');
-    const action = e.target.closest('[data-wishlist-action]')?.dataset.wishlistAction;
-    if (action === 'addtocart') {
-      addToCart(id, variant);
-    } else if (action === 'view') {
-      window.location.href = `product-detail.html?id=${id}`;
-    } else if (action === 'remove') {
-      removeSavedItem(id, variant);
-    }
-  };
-  wishlistContainer.addEventListener('click', wishlistHandler);
-  wishlistContainer._wishlistListener = wishlistHandler;
 }
 
 function renderAccountInvoices(orders = []) {
@@ -5391,11 +4983,6 @@ async function handleEditProfileSubmit(event) {
   const name = document.getElementById('edit-name')?.value.trim();
   const phone = document.getElementById('edit-phone')?.value.trim();
 
-  if (!name) {
-    showToast('Please enter your name.');
-    return;
-  }
-
   const profileUpdates = { name };
   if (phone) {
     profileUpdates.shippingAddress = {
@@ -5528,21 +5115,6 @@ async function handleAddAddressSubmit(event) {
   } catch (error) {
     showToast(error.message || 'Unable to save address.');
   }
-}
-
-function closeAddressModal() {
-  const modal = document.getElementById('add-address-modal');
-  if (modal) modal.classList.remove('active');
-  const form = document.getElementById('add-address-form');
-  if (form) {
-    form.reset();
-    form.onsubmit = handleAddAddressSubmit;
-  }
-}
-
-function closeEditModal() {
-  const modal = document.getElementById('edit-profile-modal');
-  if (modal) modal.classList.remove('active');
 }
 
 function populateEditProfileForm(user) {
@@ -5749,21 +5321,13 @@ async function initProductFilters() {
   await performSearch();
 }
 
-let searchAbortController = null;
-
 async function performSearch() {
-  if (searchInProgress) return;
-  searchInProgress = true;
-
-  if (searchAbortController) searchAbortController.abort();
-  searchAbortController = new AbortController();
-
   const searchInput = document.getElementById('search-products');
   const sortFilter = document.getElementById('sort-filter');
   const inStockFilter = document.getElementById('in-stock-filter');
   const priceMinRange = document.getElementById('price-min');
   const priceMaxRange = document.getElementById('price-max');
-  const productGrid = document.getElementById('product-grid') || document.querySelector('.product-grid');
+  const productGrid = document.getElementById('product-grid');
   const categoryInput = document.getElementById('filter-category');
 
   const q = searchInput?.value || '';
@@ -5784,38 +5348,54 @@ async function performSearch() {
   const size = selectedSizes.join('|');
   const color = selectedColors.join('|');
 
-  if (productGrid) {
-    productGrid.innerHTML = `<div class="loading-state">Loading products...</div>`;
-  }
-
   try {
     const result = await searchProducts({
-      q, category, sort, inStock, priceMin, priceMax, brand, size, color,
-      signal: searchAbortController.signal
+      q, category, sort, inStock, priceMin, priceMax, brand, size, color
     });
 
-    if (searchAbortController.signal.aborted) return;
-
-    const rawProducts = Array.isArray(result.products) ? result.products : [];
-    products = rawProducts.map(normalizeProduct).filter(Boolean);
-
+    products = result.products.map(normalizeProduct).filter(Boolean);
+    
     if (productGrid) {
-      if (!products.length) {
-        productGrid.innerHTML = `<div class="empty-state">No products found matching your criteria.</div>`;
-        const statusEl = document.getElementById('product-status');
-        if (statusEl) statusEl.textContent = '0 products found';
-        return;
-      }
-
       const fragment = document.createDocumentFragment();
       products.forEach((product) => {
-        const card = createProductCardElement(product);
-        if (card) fragment.appendChild(card);
+        const productCard = document.createElement('div');
+        productCard.className = 'product-card';
+        productCard.onclick = () => {
+          window.location.href = getProductLink(product);
+        };
+
+        const imageUrls = getProductImageUrls(product);
+        const primaryImage = imageUrls[0] || product.image || 'https://via.placeholder.com/800x800?text=PAP-JOY';
+        const invStatus = getInventoryStatus(product);
+
+        productCard.innerHTML = `
+          <div class="product-image">
+            <img src="${primaryImage}" alt="${product.name}" loading="lazy">
+            ${product.isFeatured ? '<div class="badge featured">Featured</div>' : ''}
+            <div class="badge ${invStatus.class}" style="background-color: ${invStatus.color}">${invStatus.status}</div>
+          </div>
+          <div class="product-info">
+            <div class="category">${product.category}</div>
+            <h3 class="product-name">${product.name}</h3>
+        <p class="product-subtitle">${product.subtitle || (product.description || '').slice(0, 80) + '...'}</p>
+            <div class="price">${formatCurrency(product.price)}</div>
+            <div class="product-actions">
+              <button class="btn btn-primary add-to-cart-btn" type="button" data-product-id="${product.id || product._id}" ${product.inventory?.quantity === 0 ? 'disabled' : ''}>
+                <i class="fas fa-cart-plus"></i> ${product.inventory?.quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
+              </button>
+              <button class="btn btn-secondary buy-now-btn" type="button" data-product-id="${product.id || product._id}" ${product.inventory?.quantity === 0 ? 'disabled' : ''}>
+                <i class="fas fa-bolt"></i> Buy Now
+              </button>
+            </div>
+          </div>
+        `;
+
+        attachProductCardListeners(productCard);
+        fragment.appendChild(productCard);
       });
 
       productGrid.innerHTML = '';
       productGrid.appendChild(fragment);
-      initProductGridDelegation();
     }
 
     const statusEl = document.getElementById('product-status');
@@ -5823,17 +5403,28 @@ async function performSearch() {
       statusEl.textContent = `${products.length} ${products.length === 1 ? 'product' : 'products'} found`;
     }
   } catch (error) {
-    if (error.name === 'AbortError') return;
     console.error('Search error:', error);
-    if (productGrid) {
-      productGrid.innerHTML = `
-        <div class="error-state">
-          <p>Failed to load products. Please try again.</p>
-          <button class="btn btn-primary" onclick="performSearch()">Retry</button>
-        </div>`;
-    }
-  } finally {
-    searchInProgress = false;
+    if (productGrid) productGrid.innerHTML = '<p>Failed to load products. Please try again.</p>';
+  }
+}
+
+function attachProductCardListeners(productCard) {
+  const addButton = productCard.querySelector('.add-to-cart-btn');
+  const buyButton = productCard.querySelector('.buy-now-btn');
+  const productId = addButton?.dataset.productId;
+
+  if (addButton && !addButton.disabled) {
+    addButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      addToCartFlow(productId);
+    });
+  }
+
+  if (buyButton && !buyButton.disabled) {
+    buyButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      buyNowFlow(productId);
+    });
   }
 }
 
@@ -5844,15 +5435,12 @@ async function renderPage() {
   const hasCartContainer = !!document.getElementById('cart-items');
   const hasSavedContainer = !!document.getElementById('saved-items');
 
-  injectWishlistNav();
-  updateWishlistCount();
-
   if (hasProductGrid || page === 'home' || page === 'product' || page === 'shop' || page === 'product-detail') {
     await loadProducts();
     initFeaturedControls();
   }
 
-  const needsSavedItemsSync = page === 'cart' || page === 'checkout' || page === 'product' || page === 'shop' || page === 'account' || page === 'product-detail';
+  const needsSavedItemsSync = page === 'cart' || page === 'checkout' || page === 'product' || page === 'shop' || page === 'account';
   const needsCartSync = page === 'cart' || page === 'checkout' || page === 'account';
 
   if (getCurrentUser() && needsSavedItemsSync) {
@@ -6362,16 +5950,15 @@ function initCookieConsent() {
   // Check if user has already made a choice
   const consent = localStorage.getItem('papjoy-cookie-consent');
   if (consent) {
-    try {
-      const preferences = JSON.parse(consent);
-      // Apply saved preferences (stub for future use)
-      if (preferences.analytics) { /* Enable analytics */ }
-      if (preferences.marketing) { /* Enable marketing cookies */ }
-      return; // Don't show modal if already consented
-    } catch (e) {
-      localStorage.removeItem('papjoy-cookie-consent');
-      // Fall through to show the modal again
+    const preferences = JSON.parse(consent);
+    // Apply saved preferences
+    if (preferences.analytics) {
+      // Enable analytics
     }
+    if (preferences.marketing) {
+      // Enable marketing cookies
+    }
+    return; // Don't show modal if already consented
   }
 
   // Show modal
@@ -6535,11 +6122,6 @@ async function restoreSessionFromStorage() {
   const storedToken = localStorage.getItem(AUTH_TOKEN_KEY) || sessionStorage.getItem(AUTH_TOKEN_KEY);
   const storedRefreshToken = localStorage.getItem(AUTH_REFRESH_TOKEN_KEY) || sessionStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
   
-  if ((storedUser && !storedToken) || (!storedUser && storedToken)) {
-    setCurrentUser(null);
-    return;
-  }
-
   if (storedUser && storedToken) {
     const remember = !!localStorage.getItem(AUTH_TOKEN_KEY);
     const user = { ...storedUser, token: storedToken };
@@ -6575,8 +6157,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => renderPage().catch(console.error));
+    requestIdleCallback(renderPage);
   } else {
-    setTimeout(() => renderPage().catch(console.error), 200);
+    setTimeout(renderPage, 200);
   }
 });
