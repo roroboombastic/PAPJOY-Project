@@ -122,9 +122,4 @@ function updateLocaleSwitcher() {
 }
 window.updateLocaleSwitcher = updateLocaleSwitcher;
 
-function updateLanguageSwitcher() {
-  const select = document.getElementById('language-selector');
-  if (!select) return;
-  select.value = selectedLanguage;
-}
-window.updateLanguageSwitcher = updateLanguageSwitcher;
+

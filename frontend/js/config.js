@@ -95,22 +95,6 @@ function formatCurrency(amount) {
   return currencyFormatter.format(Math.round(Number(amount) || 0));
 }
 
-const availableLanguages = {
-  en: { label: 'English' },
-  hi: { label: 'हिन्दी' },
-  es: { label: 'Español' },
-  fr: { label: 'Français' },
-  ar: { label: 'العربية' },
-};
-
-function inferLanguageFromBrowserLang() {
-  const locale = navigator.language || navigator.userLanguage || 'en';
-  const [lang] = locale.split(/[-_]/);
-  return availableLanguages[lang] ? lang : 'en';
-}
-
-let selectedLanguage = localStorage.getItem('papjoy-lang') || inferLanguageFromBrowserLang();
-
 window.PRODUCT_FALLBACK_IMAGE = PRODUCT_FALLBACK_IMAGE;
 window.GST_RATE = GST_RATE;
 window.cacheExpiry = cacheExpiry;
@@ -130,6 +114,3 @@ window.getCurrentLocaleRegion = getCurrentLocaleRegion;
 window.inferRegionFromBrowser = inferRegionFromBrowser;
 window.updateCurrencyFormatter = updateCurrencyFormatter;
 window.formatCurrency = formatCurrency;
-window.availableLanguages = availableLanguages;
-window.selectedLanguage = selectedLanguage;
-window.inferLanguageFromBrowserLang = inferLanguageFromBrowserLang;

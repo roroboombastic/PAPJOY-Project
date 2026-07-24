@@ -2,7 +2,6 @@
 let products = [];
 let currentProduct = null;
 let productsCache = null;
-let cacheExpiry = 5 * 60 * 1000;
 let productsLoadPromise = null;
 let productRenderCount = 0;
 let searchInProgress = false;
@@ -220,15 +219,6 @@ function initFeaturedControls() {
   featuredControlsInitialized = true;
 }
 window.initFeaturedControls = initFeaturedControls;
-
-function getProductById(productId) {
-  return products.find((product) =>
-    String(product._id) === String(productId) ||
-    String(product.id) === String(productId) ||
-    String(product.slug) === String(productId)
-  );
-}
-window.getProductById = getProductById;
 
 async function renderProductDetailPage() {
   const container = document.getElementById('product-detail');
@@ -778,7 +768,6 @@ async function renderPage() {
 window.products = products;
 window.currentProduct = currentProduct;
 window.productsCache = productsCache;
-window.cacheExpiry = cacheExpiry;
 window.productsLoadPromise = productsLoadPromise;
 window.productRenderCount = productRenderCount;
 window.searchInProgress = searchInProgress;
@@ -797,7 +786,6 @@ window.getProductBySlug = getProductBySlug;
 window.renderProducts = renderProducts;
 window.updateFeaturedControlState = updateFeaturedControlState;
 window.initFeaturedControls = initFeaturedControls;
-window.getProductById = getProductById;
 window.renderProductDetailPage = renderProductDetailPage;
 window.renderReviewForm = renderReviewForm;
 window.renderReviews = renderReviews;

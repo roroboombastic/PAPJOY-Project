@@ -27,4 +27,8 @@ coverage/
 *.msi
 *.7z
 
+# Windows reserved device-name files that should never be tracked
+nul
+NUL
+
 mongodb*/
