@@ -74,6 +74,7 @@ window.addEventListener('pagehide', () => {
   window.removeEventListener('error', onPageError);
   window.removeEventListener('unhandledrejection', onUnhandledRejection);
   if (syncCartTimer) clearTimeout(syncCartTimer);
+  syncCartImmediate();
   if (trackingInterval) clearInterval(trackingInterval);
   productsLoadPromise = null;
 });
@@ -709,6 +710,7 @@ function renderProducts() {
 }
 
 let cart = JSON.parse(localStorage.getItem('papjoy-cart')) || [];
+let cartUpdateInProgress = false;
 let selectedCategory = '';
 let searchQuery = '';
 let selectedSort = 'featured';
@@ -1650,30 +1652,50 @@ async function apiRequest(path, options = {}, retry = true) {
 }
 
 let syncCartTimer = null;
+let syncCartPromise = null;
 function syncCart() {
   const user = getCurrentUser();
   const token = getAuthToken();
   if (!user || !user.id || !token) return;
   if (syncCartTimer) clearTimeout(syncCartTimer);
+  if (syncCartPromise) return;
   syncCartTimer = setTimeout(async () => {
     syncCartTimer = null;
-    try {
-      const response = await apiRequest('/api/v1/cart/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cart })
-      });
-      if (!response.ok) return;
-      const data = await response.json();
-      if (data && Array.isArray(data.items)) {
-        cart = data.items.map(normalizeServerCartItem);
-        saveCart();
-        renderCart();
+    syncCartPromise = (async () => {
+      try {
+        const response = await apiRequest('/api/v1/cart/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cart })
+        });
+      } catch (error) {
+        console.error('Failed to sync cart to server:', error);
+      } finally {
+        syncCartPromise = null;
       }
-    } catch (error) {
-      console.error('Failed to sync cart to server:', error);
+    })();
+    try {
+      await syncCartPromise;
+    } catch {
+      // ignored, error already logged
     }
   }, 300);
+}
+
+function syncCartImmediate() {
+  const user = getCurrentUser();
+  const token = getAuthToken();
+  if (!user || !user.id || !token) return;
+  if (syncCartTimer) clearTimeout(syncCartTimer);
+  try {
+    const payload = JSON.stringify({ cart });
+    navigator.sendBeacon(
+      `${API_BASE_URL}/api/v1/cart/sync`,
+      new Blob([payload], { type: 'application/json' })
+    );
+  } catch (error) {
+    console.error('Failed to sync cart on unload:', error);
+  }
 }
 
 async function syncUserProfile() {
@@ -1814,20 +1836,26 @@ function normalizeServerCartItem(item) {
 
 function mergeServerCart(remoteItems) {
   const merged = [...cart];
+  const seenKeys = new Set();
+
+  cart.forEach(item => {
+    seenKeys.add(getItemIdentity(item, item.variant || 'Standard'));
+  });
 
   remoteItems.forEach((item) => {
     const normalized = normalizeServerCartItem(item);
-    const existing = merged.find((entry) => entry.id === normalized.id && (entry.variant || 'Standard') === normalized.variant);
-    if (existing) {
-      existing.quantity = Math.max(existing.quantity, normalized.quantity);
-      existing.price = normalized.price;
-    } else {
+    const key = getItemIdentity(normalized, normalized.variant || 'Standard');
+    if (seenKeys.has(key)) return;
+    seenKeys.add(key);
+    const existing = merged.find((entry) => getItemIdentity(entry, entry.variant || 'Standard') === key);
+    if (!existing) {
       merged.push(normalized);
     }
   });
 
   cart = merged;
   saveCart();
+  renderCart();
 }
 
 async function loadUserCart() {
@@ -1867,6 +1895,7 @@ async function signOut() {
   }
 
   setCurrentUser(null);
+  remoteCartLoaded = false;
   window.location.href = 'signin.html';
 }
 
@@ -2325,8 +2354,14 @@ async function renderProductDetailPage() {
 }
 
 function addToCart(productId, variantName = 'Standard', variantPrice = null, redirectToCheckout = false) {
+  if (cartUpdateInProgress) return;
+  cartUpdateInProgress = true;
+
   const product = getProductById(productId);
-  if (!product) return;
+  if (!product) {
+    cartUpdateInProgress = false;
+    return;
+  }
 
   const selectedVariant = normalizeVariantName(variantName);
   const price = typeof variantPrice === 'number' ? variantPrice : product.price;
@@ -2339,7 +2374,8 @@ function addToCart(productId, variantName = 'Standard', variantPrice = null, red
   }
 
   if (availableStock <= 0) {
-    showToast('❌ This product is out of stock');
+    showToast('This product is out of stock');
+    cartUpdateInProgress = false;
     return;
   }
 
@@ -2347,7 +2383,8 @@ function addToCart(productId, variantName = 'Standard', variantPrice = null, red
   const currentQuantity = existing?.quantity || 0;
 
   if (currentQuantity >= availableStock) {
-    showToast(`❌ Only ${availableStock} items available (${currentQuantity} already in cart)`);
+    showToast(`Only ${availableStock} items available (${currentQuantity} already in cart)`);
+    cartUpdateInProgress = false;
     return;
   }
 
@@ -2358,7 +2395,7 @@ function addToCart(productId, variantName = 'Standard', variantPrice = null, red
       id: product.id || product._id,
       productId: product.id || product._id,
       name: product.name,
-      image: product.image,
+      image: getProductImageUrls(product)[0] || product.image || PRODUCT_FALLBACK_IMAGE,
       price,
       quantity: 1,
       variant: selectedVariant,
@@ -2374,6 +2411,8 @@ function addToCart(productId, variantName = 'Standard', variantPrice = null, red
   const quantity = existing ? existing.quantity : 1;
   const message = `${product.name}${selectedVariant !== 'Standard' ? ' - ' + selectedVariant : ''} (x${quantity}) ${translate('toast.addedCart')}`;
   showToast(message);
+
+  cartUpdateInProgress = false;
 
   if (redirectToCheckout) {
     window.location.href = 'checkout.html';
@@ -2405,17 +2444,41 @@ function removeFromCart(productId, variantName = 'Standard') {
 }
 
 function changeQuantity(productId, delta, variantName = 'Standard') {
+  if (cartUpdateInProgress) return;
+  cartUpdateInProgress = true;
+
   const item = cart.find((entry) => getItemIdentity(entry, entry.variant || 'Standard') === getItemIdentity({ id: productId, variant: variantName }, variantName));
-  if (!item) return;
+  if (!item) {
+    cartUpdateInProgress = false;
+    return;
+  }
+
+  if (delta > 0) {
+    const product = getProductById(productId);
+    if (product) {
+      let availableStock = product.inventory?.quantity || 0;
+      const selectedVariant = normalizeVariantName(variantName);
+      if (selectedVariant !== 'Standard') {
+        const variant = product.variants?.find(v => v.name === selectedVariant);
+        availableStock = variant?.inventory || product.inventory?.quantity || 0;
+      }
+      if (item.quantity + delta > availableStock) {
+        showToast(`Only ${availableStock} items available`);
+        cartUpdateInProgress = false;
+        return;
+      }
+    }
+  }
 
   item.quantity += delta;
   if (item.quantity <= 0) {
+    cartUpdateInProgress = false;
     removeFromCart(productId, variantName);
   } else {
     saveCart();
     syncCart();
     renderCart();
-    showToast(`${item.name} quantity updated to ${item.quantity}.`);
+    cartUpdateInProgress = false;
   }
 }
 
@@ -2549,7 +2612,7 @@ function renderCart() {
     li.innerHTML = `
       <div class="cart-item-meta">
         <div class="cart-item-avatar">
-          <img src="${item.image || item.product?.image || 'https://via.placeholder.com/180'}" alt="${item.name}" loading="lazy" />
+          <img src="${item.image || item.product?.image || PRODUCT_FALLBACK_IMAGE}" alt="${item.name}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
         </div>
         <div class="cart-item-content">
           <h3>${item.name}</h3>
@@ -2599,6 +2662,7 @@ function resetCartState() {
   appliedPromoCode = '';
   localStorage.removeItem('papjoy-promo');
   saveCart();
+  syncCart();
 }
 
 function clearCart() {
@@ -2623,6 +2687,7 @@ function saveForLater(productId, variantName = 'Standard') {
   }
 
   saveCart();
+  syncCart();
   localStorage.setItem('papjoy-saved', JSON.stringify(savedItems));
   showToast(`${item.name} saved for later!`);
   renderCart();
@@ -2642,6 +2707,7 @@ function moveFromSaved(productId, variantName = 'Standard') {
   }
 
   saveCart();
+  syncCart();
   localStorage.setItem('papjoy-saved', JSON.stringify(savedItems));
   showToast(`${item.name} moved to cart!`);
   renderCart();
