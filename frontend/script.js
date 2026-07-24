@@ -5,6 +5,9 @@ let productsCache = null;
 let cacheExpiry = 5 * 60 * 1000; // 5 minutes
 let productsLoadPromise = null;
 let productRenderCount = 0;
+let searchInProgress = false;
+let productsLoading = false;
+const PRODUCT_FALLBACK_IMAGE = 'https://via.placeholder.com/800x800?text=PAP-JOY';
 
 function getDefaultApiBaseUrl() {
   if (typeof window === 'undefined') return 'http://127.0.0.1:3000';
@@ -267,6 +270,9 @@ async function loadProducts() {
     return productsLoadPromise;
   }
 
+  productsLoading = true;
+  showLoadingState();
+
   productsLoadPromise = (async () => {
     const now = Date.now();
     const cached = localStorage.getItem('papjoy-products-cache');
@@ -277,6 +283,9 @@ async function loadProducts() {
         const { data, timestamp } = JSON.parse(cached);
         if (Array.isArray(data) && data.length && now - timestamp < cacheExpiry) {
           cachedProducts = data.map(normalizeProduct).filter(Boolean);
+          products = cachedProducts;
+          showLoadedState();
+          renderProducts();
         }
       } catch (error) {
         localStorage.removeItem('papjoy-products-cache');
@@ -284,7 +293,7 @@ async function loadProducts() {
     }
 
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/products`, { timeout: 5000 });
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/products`, { timeout: 8000 });
       if (!response.ok) {
         throw new Error(`Product API returned ${response.status}`);
       }
@@ -292,12 +301,33 @@ async function loadProducts() {
       const data = await response.json();
       const receivedProducts = Array.isArray(data.products) ? data.products : [];
 
+      if (!receivedProducts.length) {
+        if (cachedProducts.length) {
+          products = cachedProducts;
+          renderProducts();
+          productsLoading = false;
+          return products;
+        }
+        products = [];
+        renderProducts();
+        showEmptyState();
+        productsLoading = false;
+        return products;
+      }
+
       const loadedProducts = receivedProducts.map(normalizeProduct).filter(Boolean);
 
-      products = loadedProducts;
-      if (loadedProducts.length) {
-        localStorage.setItem('papjoy-products-cache', JSON.stringify({ data: products, timestamp: now }));
+      if (!loadedProducts.length) {
+        products = cachedProducts.length ? cachedProducts : [];
+        renderProducts();
+        if (!products.length) showEmptyState();
+        productsLoading = false;
+        return products;
       }
+
+      products = loadedProducts;
+      localStorage.setItem('papjoy-products-cache', JSON.stringify({ data: products, timestamp: now }));
+      showLoadedState();
       renderProducts();
       return products;
     } catch (error) {
@@ -305,12 +335,16 @@ async function loadProducts() {
 
       if (cachedProducts.length) {
         products = cachedProducts;
+        showLoadedState();
+        renderProducts();
       } else {
         localStorage.removeItem('papjoy-products-cache');
-        products = fallbackProducts;
+        products = [];
+        showErrorState('Failed to load products');
       }
-      renderProducts();
       return products;
+    } finally {
+      productsLoading = false;
     }
   })();
 
@@ -614,10 +648,16 @@ function renderProducts() {
     return;
   }
 
+  if (!products || !products.length) {
+    productGrid.innerHTML = `<div class="empty-state">No products available</div>`;
+    return;
+  }
+
   const renderStart = performance.now();
   productRenderCount += 1;
   const fragment = document.createDocumentFragment();
   products.forEach((product) => {
+    if (!product || !product.name) return;
     const productCard = document.createElement('div');
     productCard.className = 'product-card';
     productCard.onclick = () => {
@@ -625,20 +665,20 @@ function renderProducts() {
     };
 
     const imageUrls = getProductImageUrls(product);
-    const primaryImage = imageUrls[0] || product.image || 'https://via.placeholder.com/800x800?text=PAP-JOY';
+    const primaryImage = imageUrls[0] || product.image || PRODUCT_FALLBACK_IMAGE;
     const invStatus = getInventoryStatus(product);
 
     productCard.innerHTML = `
       <div class="product-image">
-        <img src="${primaryImage}" alt="${product.name}" loading="lazy">
+        <img src="${primaryImage}" alt="${product.name || 'Product'}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'">
         ${product.isFeatured ? '<div class="badge featured">Featured</div>' : ''}
         <div class="badge ${invStatus.class}" style="background-color: ${invStatus.color}">${invStatus.status}</div>
       </div>
       <div class="product-info">
-        <div class="category">${product.category}</div>
+        <div class="category">${product.category || 'Uncategorized'}</div>
         <h3 class="product-name">${product.name}</h3>
         <p class="product-subtitle">${product.subtitle || (product.description || '').slice(0, 80) + '...'}</p>
-        <div class="price">${formatCurrency(product.price)}</div>
+        <div class="price">${formatCurrency(product.price || 0)}</div>
         <div class="product-actions">
           <button class="btn btn-primary add-to-cart-btn" type="button" data-product-id="${product.id || product._id}" ${product.inventory?.quantity === 0 ? 'disabled' : ''}>
             <i class="fas fa-cart-plus"></i> ${product.inventory?.quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
@@ -656,7 +696,11 @@ function renderProducts() {
   });
 
   productGrid.innerHTML = '';
-  productGrid.appendChild(fragment);
+  if (fragment.childNodes.length) {
+    productGrid.appendChild(fragment);
+  } else {
+    productGrid.innerHTML = `<div class="empty-state">No products available</div>`;
+  }
   const renderedCount = products.length;
   const renderDuration = performance.now() - renderStart;
   console.debug('Product render count:', productRenderCount);
@@ -2148,6 +2192,11 @@ function getProductById(productId) {
 }
 
 async function renderProductDetailPage() {
+  const container = document.getElementById('product-detail');
+  if (!container) return;
+
+  container.innerHTML = `<div class="loading-state">Loading product details...</div>`;
+
   const params = getQueryParams();
   const productIdOrSlug = params.slug || params.id;
   let product = getProductById(productIdOrSlug);
@@ -2159,18 +2208,15 @@ async function renderProductDetailPage() {
     }
   }
 
-  const container = document.getElementById('product-detail');
-
-  if (!container) return;
   if (!product) {
     container.innerHTML = `<div class="empty-state">${translate('product.notFound')}</div>`;
     return;
   }
 
-  const activeImage = product.images && product.images.length ? product.images[0] : product.image;
+  const activeImage = product.images && product.images.length ? product.images[0] : (product.image || PRODUCT_FALLBACK_IMAGE);
   const variantButtons = (product.variants || []).map((variant, index) => `
-        <button class="variant-option${index === 0 ? ' active' : ''}" data-price-delta="${variant.priceDelta}" data-variant="${variant.name}">
-          ${variant.name}${variant.priceDelta ? ` +${formatCurrency(variant.priceDelta)}` : ''}
+        <button class="variant-option${index === 0 ? ' active' : ''}" data-price-delta="${variant.priceDelta || 0}" data-variant="${variant.name || 'Standard'}">
+          ${variant.name || 'Standard'}${variant.priceDelta ? ` +${formatCurrency(variant.priceDelta)}` : ''}
         </button>
       `).join('');
   const detailsList = (product.details || []).map((detail) => `<li>${detail}</li>`).join('');
@@ -2178,27 +2224,27 @@ async function renderProductDetailPage() {
   container.innerHTML = `
     <div class="product-detail-card">
       <div class="product-gallery">
-        <img id="detail-main-image" src="${activeImage}" alt="${product.name}" />
+        <img id="detail-main-image" src="${activeImage}" alt="${product.name || 'Product'}" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
         <div class="gallery-thumbs">
-          ${(product.images || [product.image]).map((src, index) => `
+          ${(product.images || [product.image || PRODUCT_FALLBACK_IMAGE]).map((src, index) => `
             <button class="gallery-thumb${index === 0 ? ' active' : ''}" type="button" data-image="${src}">
-              <img src="${src}" alt="${product.name} image ${index + 1}" loading="lazy" />
+              <img src="${src}" alt="${product.name || 'Product'} image ${index + 1}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
             </button>
           `).join('')}
         </div>
       </div>
       <div class="detail-copy">
-        <p class="eyebrow">${product.category}</p>
-        <h2>${product.name}</h2>
-        <p class="detail-subtitle">${product.subtitle}</p>
-        <p class="detail-description">${product.description}</p>
+        <p class="eyebrow">${product.category || 'Uncategorized'}</p>
+        <h2>${product.name || 'Product'}</h2>
+        <p class="detail-subtitle">${product.subtitle || ''}</p>
+        <p class="detail-description">${product.description || ''}</p>
         <div class="product-variants">
           <p class="variant-label">Choose variant</p>
           <div class="variant-list">${variantButtons}</div>
         </div>
         <ul class="detail-features">${detailsList}</ul>
         <div class="detail-meta">
-          <span id="detail-price">${formatCurrency(product.price)}</span>
+          <span id="detail-price">${formatCurrency(product.price || 0)}</span>
           <button id="detail-add-button" type="button">${translate('product.addToCart')}</button>
           <button id="detail-buy-button" type="button" class="buy-now-button">Buy now</button>
         </div>
@@ -5373,6 +5419,9 @@ async function initProductFilters() {
 }
 
 async function performSearch() {
+  if (searchInProgress) return;
+  searchInProgress = true;
+
   const searchInput = document.getElementById('search-products');
   const sortFilter = document.getElementById('sort-filter');
   const inStockFilter = document.getElementById('in-stock-filter');
@@ -5399,16 +5448,30 @@ async function performSearch() {
   const size = selectedSizes.join('|');
   const color = selectedColors.join('|');
 
+  if (productGrid) {
+    productGrid.innerHTML = `<div class="loading-state">Loading products...</div>`;
+  }
+
   try {
     const result = await searchProducts({
       q, category, sort, inStock, priceMin, priceMax, brand, size, color
     });
 
-    products = result.products.map(normalizeProduct).filter(Boolean);
-    
+    const rawProducts = Array.isArray(result.products) ? result.products : [];
+    products = rawProducts.map(normalizeProduct).filter(Boolean);
+
     if (productGrid) {
+      if (!products.length) {
+        productGrid.innerHTML = `<div class="empty-state">No products found matching your criteria.</div>`;
+        const statusEl = document.getElementById('product-status');
+        if (statusEl) statusEl.textContent = '0 products found';
+        searchInProgress = false;
+        return;
+      }
+
       const fragment = document.createDocumentFragment();
       products.forEach((product) => {
+        if (!product || !product.name) return;
         const productCard = document.createElement('div');
         productCard.className = 'product-card';
         productCard.onclick = () => {
@@ -5416,20 +5479,20 @@ async function performSearch() {
         };
 
         const imageUrls = getProductImageUrls(product);
-        const primaryImage = imageUrls[0] || product.image || 'https://via.placeholder.com/800x800?text=PAP-JOY';
+        const primaryImage = imageUrls[0] || product.image || PRODUCT_FALLBACK_IMAGE;
         const invStatus = getInventoryStatus(product);
 
         productCard.innerHTML = `
           <div class="product-image">
-            <img src="${primaryImage}" alt="${product.name}" loading="lazy">
+            <img src="${primaryImage}" alt="${product.name || 'Product'}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'">
             ${product.isFeatured ? '<div class="badge featured">Featured</div>' : ''}
             <div class="badge ${invStatus.class}" style="background-color: ${invStatus.color}">${invStatus.status}</div>
           </div>
           <div class="product-info">
-            <div class="category">${product.category}</div>
+            <div class="category">${product.category || 'Uncategorized'}</div>
             <h3 class="product-name">${product.name}</h3>
         <p class="product-subtitle">${product.subtitle || (product.description || '').slice(0, 80) + '...'}</p>
-            <div class="price">${formatCurrency(product.price)}</div>
+            <div class="price">${formatCurrency(product.price || 0)}</div>
             <div class="product-actions">
               <button class="btn btn-primary add-to-cart-btn" type="button" data-product-id="${product.id || product._id}" ${product.inventory?.quantity === 0 ? 'disabled' : ''}>
                 <i class="fas fa-cart-plus"></i> ${product.inventory?.quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
@@ -5455,7 +5518,15 @@ async function performSearch() {
     }
   } catch (error) {
     console.error('Search error:', error);
-    if (productGrid) productGrid.innerHTML = '<p>Failed to load products. Please try again.</p>';
+    if (productGrid) {
+      productGrid.innerHTML = `
+        <div class="error-state">
+          <p>Failed to load products. Please try again.</p>
+          <button class="btn btn-primary" onclick="performSearch()">Retry</button>
+        </div>`;
+    }
+  } finally {
+    searchInProgress = false;
   }
 }
 
