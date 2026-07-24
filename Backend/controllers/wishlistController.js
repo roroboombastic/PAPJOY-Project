@@ -44,17 +44,15 @@ async function removeWishlist(req, res) {
 
 async function syncWishlist(req, res) {
   try {
-    const items = Array.isArray(req.body.items) ? req.body.items : [];
-    if (!items.length) return res.status(400).json({ error: 'Wishlist items must be an array' });
+    const incomingItems = Array.isArray(req.body.items) ? req.body.items : [];
     let wishlist = await Wishlist.findOne({ userId: req.userId });
     if (!wishlist) wishlist = await Wishlist.create({ userId: req.userId, items: [] });
     const map = new Map();
     wishlist.items.forEach((item) => map.set(`${item.productId}-${item.variant || 'Standard'}`, item));
-    items.forEach((item) => map.set(`${item.productId}-${item.variant || 'Standard'}`, { productId: item.productId, variant: item.variant || 'Standard', addedAt: item.addedAt || new Date() }));
+    incomingItems.forEach((item) => map.set(`${item.productId}-${item.variant || 'Standard'}`, { productId: item.productId, variant: item.variant || 'Standard', addedAt: item.addedAt || new Date() }));
     wishlist.items = Array.from(map.values());
     await wishlist.save();
-    await wishlist.populate('items.productId');
-    res.json(wishlist);
+    res.json({ success: true });
   } catch (err) {
     logger.error('Sync wishlist failed', { error: err.message });
     res.status(500).json({ error: 'Failed to sync wishlist' });

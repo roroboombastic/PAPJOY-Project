@@ -77,6 +77,7 @@ window.addEventListener('pagehide', () => {
   syncCartImmediate();
   if (trackingInterval) clearInterval(trackingInterval);
   productsLoadPromise = null;
+  wishlistUpdated = false;
 });
 
 // GST configuration (18% default). Use CGST/SGST split for display.
@@ -672,6 +673,7 @@ function renderProducts() {
     productCard.innerHTML = `
       <div class="product-image">
         <img src="${primaryImage}" alt="${product.name || 'Product'}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'">
+        <button class="wishlist-heart" data-product-id="${product.id || product._id}" title="Add to wishlist"><i class="${isInWishlist(product.id || product._id) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
         ${product.isFeatured ? '<div class="badge featured">Featured</div>' : ''}
         <div class="badge ${invStatus.class}" style="background-color: ${invStatus.color}">${invStatus.status}</div>
       </div>
@@ -720,8 +722,65 @@ let featuredControlsInitialized = false;
 
 // Promo codes, saved items and personalization
 let savedItems = JSON.parse(localStorage.getItem('papjoy-saved')) || [];
+let wishlistUpdated = false;
 let browsingHistory = JSON.parse(localStorage.getItem('papjoy-history')) || [];
 let appliedPromoCode = localStorage.getItem('papjoy-promo') || '';
+
+function isInWishlist(productId) {
+  return savedItems.some((item) =>
+    String(item.id || item._id || item.productId) === String(productId)
+  );
+}
+
+function toggleWishlist(productId, event) {
+  if (event) event.stopPropagation();
+  const existing = savedItems.find((item) =>
+    String(item.id || item._id || item.productId) === String(productId)
+  );
+  if (existing) {
+    removeSavedItem(productId, existing.variant || 'Standard');
+  } else {
+    const product = getProductById(productId);
+    if (!product) return;
+    savedItems.push({
+      id: product.id || product._id,
+      productId: product.id || product._id,
+      name: product.name,
+      image: getProductImageUrls(product)[0] || product.image || PRODUCT_FALLBACK_IMAGE,
+      price: product.price,
+      variant: 'Standard',
+      category: product.category,
+      subtitle: product.subtitle,
+    });
+    localStorage.setItem('papjoy-saved', JSON.stringify(savedItems));
+    syncWishlistItem({ id: product.id || product._id, variant: 'Standard' });
+    showToast(`${product.name} added to wishlist`);
+  }
+  updateWishlistCount();
+  updateProductCardHearts();
+}
+
+function updateWishlistCount() {
+  const count = savedItems.length;
+  const badge = document.getElementById('wishlist-count');
+  if (badge) {
+    badge.textContent = count;
+    badge.style.display = count > 0 ? '' : 'none';
+  }
+}
+
+function updateProductCardHearts() {
+  document.querySelectorAll('.wishlist-heart').forEach((heart) => {
+    const productId = heart.dataset.productId;
+    if (!productId) return;
+    const saved = isInWishlist(productId);
+    const icon = heart.querySelector('i');
+    if (icon) {
+      icon.className = saved ? 'fas fa-heart' : 'far fa-heart';
+    }
+    heart.classList.toggle('active', saved);
+  });
+}
 let remoteCartLoaded = false;
 let adminCategories = [];
 const validPromoCodes = {
@@ -1911,6 +1970,23 @@ function showCart() {
   window.location.href = 'cart.html';
 }
 
+function injectWishlistNav() {
+  if (document.getElementById('wishlist-nav-link')) return;
+  const nav = document.querySelector('.sidebar-nav');
+  if (!nav) return;
+  const accountLink = nav.querySelector('a[href="account.html"]');
+  const wishlistLink = document.createElement('a');
+  wishlistLink.id = 'wishlist-nav-link';
+  wishlistLink.href = 'account.html#wishlist';
+  wishlistLink.className = 'nav-link';
+  wishlistLink.innerHTML = '<i class="fas fa-heart"></i><span>Wishlist</span><span class="cart-badge" id="wishlist-count" style="display:none">0</span>';
+  if (accountLink) {
+    nav.insertBefore(wishlistLink, accountLink);
+  } else {
+    nav.appendChild(wishlistLink);
+  }
+}
+
 function updateUserLinks() {
   const user = getCurrentUser();
   const links = Array.from(document.querySelectorAll('.site-nav a, .sidebar-nav a'));
@@ -2254,6 +2330,7 @@ async function renderProductDetailPage() {
     <div class="product-detail-card">
       <div class="product-gallery">
         <img id="detail-main-image" src="${activeImage}" alt="${product.name || 'Product'}" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
+        <button class="wishlist-heart detail-wishlist-heart" data-product-id="${product.id || product._id}" title="Add to wishlist"><i class="${isInWishlist(product.id || product._id) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
         <div class="gallery-thumbs">
           ${(product.images || [product.image || PRODUCT_FALLBACK_IMAGE]).map((src, index) => `
             <button class="gallery-thumb${index === 0 ? ' active' : ''}" type="button" data-image="${src}">
@@ -2322,6 +2399,14 @@ async function renderProductDetailPage() {
       updateDetailActions(variantName, product.price + priceDelta);
     });
   });
+
+  const detailWishlistHeart = container.querySelector('.detail-wishlist-heart');
+  if (detailWishlistHeart) {
+    detailWishlistHeart.addEventListener('click', (event) => {
+      event.preventDefault();
+      toggleWishlist(product.id || product._id, event);
+    });
+  }
 
   // Track product views and load personalized recommendations
   const productId = product.id || product._id;
@@ -2720,6 +2805,8 @@ function removeSavedItem(productId, variantName = 'Standard') {
   localStorage.setItem('papjoy-saved', JSON.stringify(savedItems));
   removeWishlistItem(productId, variantName);
   renderSavedItems();
+  updateWishlistCount();
+  updateProductCardHearts();
 }
 
 async function fetchUserWishlist() {
@@ -2770,7 +2857,7 @@ async function removeWishlistItem(productId, variantName = 'Standard') {
   if (!token) return;
 
   try {
-    await fetch(`${API_BASE_URL}/api/v1/wishlist/${encodeURIComponent(productId)}`, {
+    await fetch(`${API_BASE_URL}/api/v1/wishlist/${encodeURIComponent(productId)}?variant=${encodeURIComponent(variantName)}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -2783,38 +2870,64 @@ async function removeWishlistItem(productId, variantName = 'Standard') {
 }
 
 async function loadUserWishlist() {
+  if (wishlistUpdated) return;
+  wishlistUpdated = true;
+
   const remoteItems = await fetchUserWishlist();
+  if (!remoteItems.length && savedItems.length) {
+    await syncSavedItemsToServer();
+    return;
+  }
+
   if (!remoteItems.length) return;
 
-  const merged = dedupeItemsByKey([...savedItems], (item) => getItemIdentity(item, item.variant || 'Standard'));
+  const merged = [...savedItems];
+  const seenKeys = new Set();
+  savedItems.forEach(item => seenKeys.add(getItemIdentity(item, item.variant || 'Standard')));
+
   remoteItems.forEach((item) => {
     const remoteProductId = item.productId?._id || item.productId;
     const variantName = item.variant || 'Standard';
-    const alreadySaved = merged.some((saved) => getItemIdentity(saved, saved.variant || 'Standard') === getItemIdentity({ id: remoteProductId, variant: variantName }, variantName));
-    if (!alreadySaved) {
-      const product = typeof item.productId === 'string' ? getProductById(item.productId) : item.productId;
-      if (product) {
-        merged.push({
-          ...product,
-          id: remoteProductId,
-          variant: variantName,
-          quantity: 1,
-        });
-      }
+    const key = getItemIdentity({ id: remoteProductId, variant: variantName }, variantName);
+    if (seenKeys.has(key)) return;
+    seenKeys.add(key);
+
+    const product = getProductById(remoteProductId);
+    if (product) {
+      merged.push({
+        ...product,
+        id: remoteProductId,
+        variant: variantName,
+        quantity: 1,
+      });
+    } else {
+      merged.push({
+        id: remoteProductId,
+        productId: remoteProductId,
+        name: item.productId?.name || 'Saved item',
+        variant: variantName,
+        quantity: 1,
+      });
     }
   });
 
   savedItems = dedupeItemsByKey(merged, (item) => getItemIdentity(item, item.variant || 'Standard'));
   localStorage.setItem('papjoy-saved', JSON.stringify(savedItems));
+  updateWishlistCount();
+  updateProductCardHearts();
+
+  if (savedItems.length) {
+    await syncSavedItemsToServer();
+  }
 }
 
 async function syncSavedItemsToServer() {
   const token = getAuthToken();
-  if (!token || !savedItems.length) return;
+  if (!token) return;
 
   try {
     const payload = dedupeItemsByKey(savedItems, (item) => getItemIdentity(item, item.variant || 'Standard')).map((item) => ({
-      productId: item.id,
+      productId: item.id || item.productId,
       variant: item.variant || 'Standard',
     }));
 
@@ -2951,7 +3064,7 @@ function renderSavedItems() {
     <li class="saved-item" data-saved-id="${safeId}" data-saved-variant="${safeVariant}">
       <div class="saved-item-meta">
         <div class="saved-item-avatar">
-          <img src="${item.image || item.product?.image || 'https://via.placeholder.com/100'}" alt="${item.name}" loading="lazy" />
+          <img src="${item.image || item.product?.image || PRODUCT_FALLBACK_IMAGE}" alt="${item.name}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
         </div>
         <div class="saved-item-content">
           <h4>${item.name}</h4>
@@ -4962,22 +5075,48 @@ function renderAccountWishlist() {
   wishlistContainer.innerHTML = savedItems.map((item) => {
     const productId = item.id || item._id || item.productId || '';
     const variantName = item.variant || 'Standard';
+    const itemImage = item.image || item.product?.image || PRODUCT_FALLBACK_IMAGE;
+    const safeId = encodeURIComponent(String(productId));
+    const safeVariant = encodeURIComponent(String(variantName));
     return `
-      <div class="wishlist-card">
+      <div class="wishlist-card" data-wishlist-id="${safeId}" data-wishlist-variant="${safeVariant}">
         <div class="wishlist-card-meta">
-          <strong>${item.name || item.title || 'Saved item'}</strong>
-          ${item.category ? `<p>${item.category}</p>` : ''}
-          ${variantName !== 'Standard' ? `<p class="wishlist-variant">${variantName}</p>` : ''}
-          <p class="wishlist-price">${formatCurrency(item.price || 0)}</p>
+          <img src="${itemImage}" alt="${item.name || 'Saved item'}" loading="lazy" class="wishlist-card-image" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
+          <div class="wishlist-card-details">
+            <strong>${item.name || item.title || 'Saved item'}</strong>
+            ${item.category ? `<p>${item.category}</p>` : ''}
+            ${variantName !== 'Standard' ? `<p class="wishlist-variant">${variantName}</p>` : ''}
+            <p class="wishlist-price">${formatCurrency(item.price || 0)}</p>
+          </div>
         </div>
         <div class="wishlist-actions">
-          <button type="button" class="btn-small" onclick="addToCart('${productId}', '${variantName}')">Add to Cart</button>
-          <button type="button" class="btn-small" onclick="window.location.href='product-detail.html?id=${productId}'">View</button>
-          <button type="button" class="btn-small btn-danger" onclick="removeSavedItem('${productId}', '${variantName}')">Remove</button>
+          <button type="button" class="btn-small add-to-cart-btn" data-wishlist-action="addtocart">Add to Cart</button>
+          <button type="button" class="btn-small" data-wishlist-action="view">View</button>
+          <button type="button" class="btn-small btn-danger" data-wishlist-action="remove">Remove</button>
         </div>
       </div>
     `;
   }).join('');
+
+  if (wishlistContainer._wishlistListener) {
+    wishlistContainer.removeEventListener('click', wishlistContainer._wishlistListener);
+  }
+  const wishlistHandler = (e) => {
+    const card = e.target.closest('.wishlist-card');
+    if (!card) return;
+    const id = decodeURIComponent(card.dataset.wishlistId || '');
+    const variant = decodeURIComponent(card.dataset.wishlistVariant || 'Standard');
+    const action = e.target.closest('[data-wishlist-action]')?.dataset.wishlistAction;
+    if (action === 'addtocart') {
+      addToCart(id, variant);
+    } else if (action === 'view') {
+      window.location.href = `product-detail.html?id=${id}`;
+    } else if (action === 'remove') {
+      removeSavedItem(id, variant);
+    }
+  };
+  wishlistContainer.addEventListener('click', wishlistHandler);
+  wishlistContainer._wishlistListener = wishlistHandler;
 }
 
 function renderAccountInvoices(orders = []) {
@@ -5551,6 +5690,7 @@ async function performSearch() {
         productCard.innerHTML = `
           <div class="product-image">
             <img src="${primaryImage}" alt="${product.name || 'Product'}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'">
+        <button class="wishlist-heart" data-product-id="${product.id || product._id}" title="Add to wishlist"><i class="${isInWishlist(product.id || product._id) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
             ${product.isFeatured ? '<div class="badge featured">Featured</div>' : ''}
             <div class="badge ${invStatus.class}" style="background-color: ${invStatus.color}">${invStatus.status}</div>
           </div>
@@ -5599,6 +5739,7 @@ async function performSearch() {
 function attachProductCardListeners(productCard) {
   const addButton = productCard.querySelector('.add-to-cart-btn');
   const buyButton = productCard.querySelector('.buy-now-btn');
+  const wishlistHeart = productCard.querySelector('.wishlist-heart');
   const productId = addButton?.dataset.productId;
 
   if (addButton && !addButton.disabled) {
@@ -5614,6 +5755,12 @@ function attachProductCardListeners(productCard) {
       buyNowFlow(productId);
     });
   }
+
+  if (wishlistHeart) {
+    wishlistHeart.addEventListener('click', (event) => {
+      toggleWishlist(productId, event);
+    });
+  }
 }
 
 async function renderPage() {
@@ -5623,12 +5770,15 @@ async function renderPage() {
   const hasCartContainer = !!document.getElementById('cart-items');
   const hasSavedContainer = !!document.getElementById('saved-items');
 
+  injectWishlistNav();
+  updateWishlistCount();
+
   if (hasProductGrid || page === 'home' || page === 'product' || page === 'shop' || page === 'product-detail') {
     await loadProducts();
     initFeaturedControls();
   }
 
-  const needsSavedItemsSync = page === 'cart' || page === 'checkout' || page === 'product' || page === 'shop' || page === 'account';
+  const needsSavedItemsSync = page === 'cart' || page === 'checkout' || page === 'product' || page === 'shop' || page === 'account' || page === 'product-detail';
   const needsCartSync = page === 'cart' || page === 'checkout' || page === 'account';
 
   if (getCurrentUser() && needsSavedItemsSync) {
