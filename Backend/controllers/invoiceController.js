@@ -188,8 +188,11 @@ async function downloadInvoicePDF(req, res) {
     const pdf = new PDFDocument({ margin: 36, size: 'A4', bufferPages: true });
     const filename = `invoice-${invoice.invoiceNumber}.pdf`;
     const buffers = [];
+    let responseSent = false;
     pdf.on('data', (chunk) => buffers.push(chunk));
     pdf.on('end', async () => {
+      if (responseSent) return;
+      responseSent = true;
       const pdfBuffer = Buffer.concat(buffers);
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -202,6 +205,8 @@ async function downloadInvoicePDF(req, res) {
     });
 
     pdf.on('error', (err) => {
+      if (responseSent) return;
+      responseSent = true;
       logger.error('PDF generation error', { error: err.message });
       res.status(500).json({ error: 'Failed to generate PDF' });
     });

@@ -1350,11 +1350,7 @@ label {
   gap: 14px;
 }
 
-.auth-form {
-  display: grid;
-  width: 100%;
-  gap: 18px;
-}
+
 
 .auth-tabs {
   display: flex;
@@ -1382,11 +1378,6 @@ label {
   color: var(--accent);
   background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 8px 24px rgba(66, 83, 72, 0.08);
-  border-bottom-color: transparent;
-}
-
-.auth-tab.active {
-  color: var(--accent);
   border-bottom-color: var(--accent);
 }
 
@@ -1431,14 +1422,8 @@ label {
 }
 
 .password-field {
+  position: relative;
   width: 100%;
-}
-
-.checkbox-group {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 12px 16px;
-  align-items: center;
 }
 
 .checkbox-group input {
@@ -1625,10 +1610,6 @@ label {
 .auth-message {
   min-height: 24px;
   color: var(--accent);
-}
-
-.checkbox-group {
-  gap: 10px;
 }
 
 .auth-form label {
@@ -2107,11 +2088,6 @@ textarea {
   border-radius: 18px;
 }
 
-.password-field {
-  position: relative;
-  width: 100%;
-}
-
 .password-field input {
   width: 100%;
 }
@@ -2207,28 +2183,7 @@ textarea {
   line-height: 1.4;
 }
 
-.checkbox-group input {
-  margin-top: 4px;
-  flex-shrink: 0;
-}
 
-.auth-message {
-  min-height: 24px;
-  color: var(--accent);
-}
-
-.oauth-button {
-  margin-top: 8px;
-  width: 100%;
-  min-height: 52px;
-  border: 1px solid rgba(108, 129, 114, 0.18);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.96);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text);
-}
 
 .auth-footnote {
   color: var(--text-muted);

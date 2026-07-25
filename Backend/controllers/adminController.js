@@ -2,6 +2,10 @@ const { User, Product, Order, Category, Invoice } = require('../models');
 const PDFDocument = require('pdfkit');
 const logger = require('../utils/logger');
 
+function escapeRegex(str) {
+  return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function getRangeBounds(range = 'month', from, to) {
   const end = to ? new Date(to) : new Date();
   let start;
@@ -92,7 +96,10 @@ async function getProducts(req, res) {
   try {
     const { page = 1, limit = 50, search = '' } = req.query;
     const query = {};
-    if (search) query.$or = [{ name: { $regex: search, $options: 'i' } }, { slug: { $regex: search, $options: 'i' } }, { sku: { $regex: search, $options: 'i' } }];
+    if (search) {
+      const safeSearch = escapeRegex(search);
+      query.$or = [{ name: { $regex: safeSearch, $options: 'i' } }, { slug: { $regex: safeSearch, $options: 'i' } }, { sku: { $regex: safeSearch, $options: 'i' } }];
+    }
     const products = await Product.find(query).sort({ createdAt: -1 }).limit(Number(limit)).skip((Number(page) - 1) * Number(limit));
     const total = await Product.countDocuments(query);
     res.json({ products, pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) } });
@@ -107,7 +114,10 @@ async function getOrders(req, res) {
     const { page = 1, limit = 50, status, search = '' } = req.query;
     const query = {};
     if (status) query.status = status;
-    if (search) query.$or = [{ orderNumber: { $regex: search, $options: 'i' } }, { 'shippingAddress.name': { $regex: search, $options: 'i' } }, { 'billingAddress.name': { $regex: search, $options: 'i' } }];
+    if (search) {
+      const safeSearch = escapeRegex(search);
+      query.$or = [{ orderNumber: { $regex: safeSearch, $options: 'i' } }, { 'shippingAddress.name': { $regex: safeSearch, $options: 'i' } }, { 'billingAddress.name': { $regex: safeSearch, $options: 'i' } }];
+    }
     const orders = await Order.find(query).sort({ createdAt: -1 }).limit(Number(limit)).skip((Number(page) - 1) * Number(limit));
     const total = await Order.countDocuments(query);
     res.json({ orders, pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) } });
@@ -121,7 +131,10 @@ async function getUsers(req, res) {
   try {
     const { page = 1, limit = 50, search = '', role = 'all' } = req.query;
     const query = {};
-    if (search) query.$or = [{ name: { $regex: search, $options: 'i' } }, { email: { $regex: search, $options: 'i' } }];
+    if (search) {
+      const safeSearch = escapeRegex(search);
+      query.$or = [{ name: { $regex: safeSearch, $options: 'i' } }, { email: { $regex: safeSearch, $options: 'i' } }];
+    }
     if (role !== 'all') query.role = role;
     const users = await User.find(query).select('-passwordHash -passwordResetToken -passwordResetExpires').sort({ createdAt: -1 }).limit(Number(limit)).skip((Number(page) - 1) * Number(limit));
     const total = await User.countDocuments(query);

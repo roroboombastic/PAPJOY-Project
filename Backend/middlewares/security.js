@@ -2,7 +2,7 @@ const path = require('path');
 const helmet = require('helmet');
 const cors = require('cors');
 const compression = require('compression');
-const mongoSanitize = require('express-mongo-sanitize');
+const rateLimit = require('express-rate-limit');
 const hpp = require('hpp');
 const config = require('../config');
 
@@ -41,7 +41,13 @@ function createSecurityMiddleware(app) {
       if (!origin) {
         return callback(null, true);
       }
-      if (corsOrigins.length === 0 || corsOrigins.includes('*') || corsOrigins.includes(origin)) {
+      if (corsOrigins.length === 0 || corsOrigins.includes('*')) {
+        if (config.isProd) {
+          console.warn('[WARN] CORS allows all origins in production');
+        }
+        return callback(null, true);
+      }
+      if (corsOrigins.includes(origin)) {
         return callback(null, true);
       }
       console.warn('[WARN] CORS origin rejected', { origin, allowedOrigins: corsOrigins });
@@ -59,9 +65,43 @@ function createSecurityMiddleware(app) {
   const express = require('express');
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+  const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please try again later' }
+  });
+  app.use(generalLimiter);
+
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many authentication attempts, please try again later' }
+  });
+  app.use('/api/v1/auth/login', authLimiter);
+  app.use('/api/v1/auth/register', authLimiter);
+  app.use('/api/v1/auth/forgot-password', authLimiter);
   
-  // mongoSanitize disabled due to Express 5 incompatibility - query property is read-only
-  // app.use(mongoSanitize({ replaceWith: '_' }));
+  app.use((req, res, next) => {
+    const sanitize = (obj) => {
+      if (!obj || typeof obj !== 'object') return;
+      for (const key of Object.keys(obj)) {
+        if (key.startsWith('$')) {
+          delete obj[key];
+        } else if (typeof obj[key] === 'object') {
+          sanitize(obj[key]);
+        }
+      }
+    };
+    if (req.body) sanitize(req.body);
+    if (req.query) sanitize(req.query);
+    if (req.params) sanitize(req.params);
+    next();
+  });
   app.use(hpp());
 
   if (config.https.force) {

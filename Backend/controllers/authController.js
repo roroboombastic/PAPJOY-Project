@@ -175,7 +175,10 @@ async function googleOAuth(req, res) {
 
 async function forgotPassword(req, res) {
   const { email } = req.body;
-  const normalizedEmail = email.toLowerCase();
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+  const normalizedEmail = String(email).toLowerCase();
   try {
     const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
@@ -188,7 +191,8 @@ async function forgotPassword(req, res) {
     await user.save({ validateBeforeSave: false });
 
     const resetUrl = `${APP_URL}/reset-password.html?token=${resetToken}`;
-    res.json({ message: 'Password reset token generated', resetToken, resetUrl });
+    logger.info('Password reset token generated', { userId: user._id, email: normalizedEmail });
+    res.json({ message: 'If that email is registered, password reset instructions will be sent.', resetUrl });
   } catch (err) {
     logger.error('Password reset request failed', { error: err.message });
     res.status(500).json({ error: 'Unable to create password reset token' });
@@ -363,7 +367,12 @@ async function updateAddress(req, res) {
     if (!address) return res.status(404).json({ error: 'Address not found' });
 
     // Update address fields
-    Object.assign(address, updates);
+    const allowedFields = ['type', 'name', 'phone', 'street', 'city', 'state', 'zipCode', 'country', 'isDefault'];
+    for (const field of allowedFields) {
+      if (typeof updates[field] !== 'undefined') {
+        address[field] = updates[field];
+      }
+    }
 
     // If marking as default, unset other defaults of same type
     if (updates.isDefault === true) {

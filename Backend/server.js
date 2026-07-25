@@ -34,7 +34,7 @@ app.use((req, res, next) => {
 
 app.use((req, res, next) => {
   if (req.originalUrl.startsWith('/api/') && !req.originalUrl.startsWith(config.apiBasePath)) {
-    req.url = `${config.apiBasePath}${req.url.slice(4)}`;
+    req.url = `${config.apiBasePath}${req.originalUrl.slice(5)}`;
   }
   next();
 });

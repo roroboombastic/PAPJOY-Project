@@ -232,8 +232,13 @@ async function verifyRazorpayPayment(req, res) {
     }
     const { paymentId, orderId, signature, products = [], amount } = req.body;
     if (!paymentId || !orderId || !signature) return res.status(400).json({ error: 'Missing Razorpay payment details' });
-    const generated = require('crypto').createHmac('sha256', RAZORPAY_KEY_SECRET).update(`${orderId}|${paymentId}`).digest('hex');
-    if (generated !== signature) return res.status(400).json({ error: 'Signature mismatch' });
+    const crypto = require('crypto');
+    const generated = crypto.createHmac('sha256', RAZORPAY_KEY_SECRET).update(`${orderId}|${paymentId}`).digest('hex');
+    const sigBuf = Buffer.from(generated, 'hex');
+    const expectedBuf = Buffer.from(signature, 'hex');
+    if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
+      return res.status(400).json({ error: 'Signature mismatch' });
+    }
     const lineItems = [];
     for (const item of products) {
       const quantity = Math.max(1, Number(item.quantity) || 1);

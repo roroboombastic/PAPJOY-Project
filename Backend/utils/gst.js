@@ -42,7 +42,7 @@ const GST_STATE_CODES = {
   dadra: 26,
   lakshadweep: 31,
   'daman and diu': 26,
-  'daman and diu': 26,
+  'dadra and nagar haveli and daman and diu': 26,
   'dadra and nagar haveli': 26
 };
 

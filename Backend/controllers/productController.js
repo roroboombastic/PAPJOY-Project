@@ -1,6 +1,10 @@
 const { Category, Product } = require('../models');
 const logger = require('../utils/logger');
 
+function escapeRegex(str) {
+  return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 async function listProducts(req, res) {
   try {
     const { category, featured, limit = 20, page = 1 } = req.query;
@@ -62,10 +66,11 @@ async function searchProducts(req, res) {
     const and = [];
 
     if (q) {
+      const safeQ = escapeRegex(q);
       and.push({ $or: [
-        { name: { $regex: q, $options: 'i' } },
-        { description: { $regex: q, $options: 'i' } },
-        { tags: { $in: [new RegExp(q, 'i')] } }
+        { name: { $regex: safeQ, $options: 'i' } },
+        { description: { $regex: safeQ, $options: 'i' } },
+        { tags: { $in: [new RegExp(safeQ, 'i')] } }
       ]});
     }
     if (category) {
@@ -78,12 +83,13 @@ async function searchProducts(req, res) {
       if (priceMax) priceQuery.$lte = Number(priceMax);
       query.price = priceQuery;
     }
-    if (brand) query.brand = { $regex: brand, $options: 'i' };
-    if (size) query['variants.value'] = { $regex: size, $options: 'i' };
+    if (brand) query.brand = { $regex: escapeRegex(brand), $options: 'i' };
+    if (size) query['variants.value'] = { $regex: escapeRegex(size), $options: 'i' };
     if (color) {
+      const safeColor = escapeRegex(color);
       and.push({ $or: [
-        { 'variants.value': { $regex: color, $options: 'i' } },
-        { 'attributes.value': { $regex: color, $options: 'i' } }
+        { 'variants.value': { $regex: safeColor, $options: 'i' } },
+        { 'attributes.value': { $regex: safeColor, $options: 'i' } }
       ]});
     }
     if (inStock === 'true') {
@@ -163,7 +169,10 @@ async function updateProduct(req, res) {
   try {
     const { id } = req.params;
     const payload = req.body;
-    const conflict = await Product.findOne({ _id: { $ne: id }, $or: [{ slug: payload.slug }, { sku: payload.sku }] });
+    const conflictQuery = { _id: { $ne: id }, $or: [] };
+    if (payload.slug) conflictQuery.$or.push({ slug: payload.slug });
+    if (payload.sku) conflictQuery.$or.push({ sku: payload.sku });
+    const conflict = conflictQuery.$or.length ? await Product.findOne(conflictQuery) : null;
     if (conflict) return res.status(400).json({ error: 'Slug or SKU already exists' });
     const product = await Product.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
     if (!product) return res.status(404).json({ error: 'Product not found' });

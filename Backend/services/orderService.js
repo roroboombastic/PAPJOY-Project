@@ -234,7 +234,7 @@ async function createOrderFromData({
         note: 'Order failed, restoring inventory'
       });
     } catch (restoreErr) {
-      logger.error('Failed to restore inventory after order creation failure', { error: restoreErr.message, orderNumber: orderPayload.orderNumber });
+      logger.error('CRITICAL: Failed to restore inventory after order creation failure — manual intervention required', { error: restoreErr.message, orderNumber: orderPayload.orderNumber, items: lineItems.map(i => ({ productId: i.productId, quantity: i.quantity })) });
     }
     throw err;
   }

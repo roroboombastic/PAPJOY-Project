@@ -1,4 +1,5 @@
 const { User, Product } = require('../models');
+const logger = require('../utils/logger');
 
 async function saveHistory(req, res) {
   const { productId } = req.body;
@@ -27,6 +28,7 @@ async function saveHistory(req, res) {
     await existingUser.save();
     res.json({ message: 'Browsing history updated' });
   } catch (err) {
+    logger.error('Save browsing history failed', { error: err.message });
     res.status(500).json({ error: 'Failed to save browsing history' });
   }
 }

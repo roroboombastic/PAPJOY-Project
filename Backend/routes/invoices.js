@@ -4,6 +4,9 @@ const invoiceController = require('../controllers/invoiceController');
 
 const router = express.Router();
 
+// List user invoices (must be before /:orderId to avoid route conflict)
+router.get('/', auth, invoiceController.listUserInvoices);
+
 // Admin invoice management
 router.get('/admin', auth, verifyAdmin, invoiceController.listAllInvoices);
 
@@ -15,8 +18,5 @@ router.get('/:orderId/preview', optionalAuth, invoiceController.getInvoicePrevie
 
 // Download invoice as PDF
 router.get('/:orderId/download', optionalAuth, invoiceController.downloadInvoicePDF);
-
-// List user invoices
-router.get('/', auth, invoiceController.listUserInvoices);
 
 module.exports = router;

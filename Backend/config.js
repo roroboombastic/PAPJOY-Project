@@ -45,14 +45,8 @@ const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET || process.env.PAY
 const PAYPAL_MODE = process.env.PAYPAL_MODE || 'sandbox';
 const PAYPAL_SUCCESS_URL = process.env.PAYPAL_SUCCESS_URL || `${APP_URL}/success.html?provider=paypal`;
 const PAYPAL_CANCEL_URL = process.env.PAYPAL_CANCEL_URL || `${APP_URL}/checkout.html?paypal=canceled`;
-process.env.PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET || process.env.PAYPAL_SECRET || '';
-process.env.PAYPAL_SECRET = process.env.PAYPAL_CLIENT_SECRET;
-process.env.RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY || '';
-process.env.RAZORPAY_KEY = process.env.RAZORPAY_KEY_ID;
-process.env.RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_SECRET || '';
-process.env.RAZORPAY_SECRET = process.env.RAZORPAY_KEY_SECRET;
-const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || '';
-const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || '';
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY || '';
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_SECRET || '';
 const RAZORPAY_KEY = RAZORPAY_KEY_ID;
 const RAZORPAY_SECRET = RAZORPAY_KEY_SECRET;
 const RAZORPAY_CURRENCY = process.env.RAZORPAY_CURRENCY || 'INR';

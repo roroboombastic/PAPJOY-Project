@@ -61,8 +61,8 @@ async function testInvoiceFlow() {
       phone: '+919876543210'
     });
 
-    if (res.statusCode === 201 && res.body?.accessToken) {
-      signinToken = res.body.accessToken;
+    if (res.statusCode === 201 && res.body?.token) {
+      signinToken = res.body.token;
       console.log('✅ Signup successful\n');
       testsPassed++;
     } else {

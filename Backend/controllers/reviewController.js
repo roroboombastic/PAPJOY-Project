@@ -7,7 +7,8 @@ async function createReview(req, res) {
     if (!productId || !rating || !comment) return res.status(400).json({ error: 'Missing required fields' });
     const purchase = await Order.findOne({ userId: req.userId, 'items.productId': productId, status: { $in: ['delivered', 'shipped', 'completed'] } });
     const isVerified = Boolean(purchase);
-    const review = await Review.create({ userId: req.userId, productId, orderId: orderId || (purchase?.id || null), rating, title, comment, images, isVerified, status: 'approved' });
+    const status = isVerified ? 'approved' : 'pending';
+    const review = await Review.create({ userId: req.userId, productId, orderId: orderId || (purchase?.id || null), rating, title, comment, images, isVerified, status });
     const reviews = await Review.find({ productId, status: 'approved' });
     const avgRating = reviews.length ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
     await Product.findByIdAndUpdate(productId, { rating: Number(avgRating.toFixed(1)), reviewCount: reviews.length });
