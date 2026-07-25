@@ -752,7 +752,7 @@ const availableLanguages = {
   es: { label: 'Español' },
   fr: { label: 'Français' },
   ar: { label: 'العربية' },
-};
+};               
 
 let selectedLanguage = localStorage.getItem('papjoy-lang') || inferLanguageFromBrowserLang();
 
