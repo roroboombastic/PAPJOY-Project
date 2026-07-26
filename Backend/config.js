@@ -24,6 +24,7 @@ const DEFAULT_DEV_ORIGINS = [
 const DEFAULT_PROD_ORIGINS = [
   APP_URL,
   'https://papjoy-project.vercel.app',
+  'https://papjoy.com',
   'https://www.papjoy.com'
 ];
 const CORS_ORIGIN = process.env.CORS_ORIGIN || (NODE_ENV === 'production' ? DEFAULT_PROD_ORIGINS.join(',') : DEFAULT_DEV_ORIGINS.join(','));

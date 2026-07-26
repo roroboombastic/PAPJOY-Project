@@ -23,7 +23,9 @@ function getDefaultApiBaseUrl() {
   if (window.API_BASE_URL) return window.API_BASE_URL;
   if (window.__PAPJOY_API_BASE_URL) return window.__PAPJOY_API_BASE_URL;
   if (window.location.protocol === 'file:') return 'http://127.0.0.1:3000';
-  if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' || window.location.hostname === '0.0.0.0') return 'http://127.0.0.1:3000';
+  const h = window.location.hostname;
+  if (h === '127.0.0.1' || h === 'localhost' || h === '0.0.0.0') return 'http://127.0.0.1:3000';
+  if (h === 'papjoy.com' || h === 'www.papjoy.com') return 'https://papjoy-project.onrender.com';
   return 'https://papjoy-project.onrender.com';
 }
 
