@@ -35,6 +35,5 @@ router.use('/admin', adminRoutes);
 router.use('/invoices', invoiceRoutes);
 router.use('/shipments', shipmentRoutes);
 router.use('/coupons', couponRoutes);
-router.use('/seed-temp', require('./seed-temp'));
 
 module.exports = router;
