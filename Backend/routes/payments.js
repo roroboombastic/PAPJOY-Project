@@ -1,15 +1,20 @@
 const express = require('express');
-const { optionalAuth } = require('../middlewares/auth');
+const { auth, optionalAuth, verifyAdmin } = require('../middlewares/auth');
 const paymentController = require('../controllers/paymentController');
+const { validateRazorpayCreate, validateRazorpayVerify } = require('../validations/paymentValidation');
 
 const router = express.Router();
 
-router.post('/paypal/create', optionalAuth, paymentController.createPaypalOrder);
-router.post('/paypal/capture', optionalAuth, paymentController.capturePaypalOrder);
-router.post('/stripe/session', optionalAuth, paymentController.createStripeSession);
-router.post('/stripe/order', optionalAuth, paymentController.createStripeOrder);
+router.get('/config', paymentController.getPaymentConfig);
+
 router.post('/razorpay/create', optionalAuth, paymentController.createRazorpayOrder);
 router.post('/razorpay/verify', optionalAuth, paymentController.verifyRazorpayPayment);
-router.get('/config', paymentController.getPaymentConfig);
+router.get('/razorpay/status/:orderId', paymentController.getRazorpayPaymentStatus);
+
+router.post('/upi/qr', optionalAuth, paymentController.createUPIQR);
+
+router.post('/refund', auth, verifyAdmin, paymentController.initiateRefund);
+
+router.post('/webhook/razorpay', paymentController.razorpayWebhook);
 
 module.exports = router;

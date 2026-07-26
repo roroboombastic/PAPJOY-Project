@@ -17,5 +17,7 @@ categorySchema.pre('save', function () {
 });
 
 categorySchema.index({ parentId: 1 });
+categorySchema.index({ isActive: 1 });
+categorySchema.index({ sortOrder: 1 });
 
 module.exports = mongoose.model('Category', categorySchema);

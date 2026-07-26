@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="PAP-JOY - Admin dashboard. Manage products, orders, users, and analytics." />
   <meta name="theme-color" content="#0a0a0a" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <title>Admin Dashboard - PAP-JOY</title>
   <script>
     // Configure API base URL for production
@@ -13,9 +14,19 @@
     }
   </script>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="preconnect" href="https://papjoy-project.onrender.com" />
 </head>
 <body>
+  <div class="admin-mobile-header" id="admin-mobile-header">
+    <button class="admin-hamburger" id="admin-hamburger" onclick="toggleAdminSidebar()">
+      <i class="fas fa-bars"></i>
+    </button>
+    <span class="admin-mobile-title">PAP-JOY Admin</span>
+  </div>
   <div class="admin-container">
     <!-- Sidebar Navigation -->
     <aside class="admin-sidebar">
@@ -119,7 +130,7 @@
       <section id="products-page" class="admin-page">
         <div class="admin-header">
           <h2>Products Management</h2>
-          <button class="btn btn-primary" onclick="showProductForm()">➕ Add Product</button>
+          <button class="btn btn-primary" onclick="window.location.href='product-edit.html'">➕ Add Product</button>
         </div>
 
         <!-- Search & Filters -->
@@ -128,7 +139,7 @@
             type="text"
             id="product-search"
             placeholder="Search products..."
-            oninput="loadAdminProducts()"
+            oninput="adminDebounce('products', () => loadAdminProducts())"
           />
           <select id="product-status" onchange="loadAdminProducts()">
             <option value="all">All Status</option>
@@ -168,6 +179,12 @@
 
         <!-- Filters -->
         <div class="admin-filters">
+          <input
+            type="text"
+            id="order-search"
+            placeholder="Search by order # or customer name..."
+            oninput="adminDebounce('orders', () => loadAdminOrders())"
+          />
           <select id="order-status-filter" onchange="loadAdminOrders()">
             <option value="all">All Orders</option>
             <option value="pending">Pending</option>
@@ -221,11 +238,11 @@
             type="text"
             id="user-search"
             placeholder="Search users by name or email..."
-            oninput="loadAdminUsers()"
+            oninput="adminDebounce('users', () => loadAdminUsers())"
           />
           <select id="user-role-filter" onchange="loadAdminUsers()">
             <option value="all">All Users</option>
-            <option value="user">Customers</option>
+            <option value="customer">Customers</option>
             <option value="admin">Admins</option>
           </select>
         </div>
@@ -313,63 +330,6 @@
     </main>
   </div>
 
-  <!-- Product Modal -->
-  <div id="product-modal" class="modal">
-    <div class="modal-content">
-      <span class="modal-close" onclick="closeProductModal()">&times;</span>
-      <h2>Product Form</h2>
-      <form id="product-form" onsubmit="saveProduct(event)">
-        <input type="hidden" id="product-id" />
-        <div class="form-group">
-          <label>Product Name *</label>
-          <input type="text" id="product-name" required />
-        </div>
-        <div class="form-group">
-          <label>Slug *</label>
-          <input type="text" id="product-slug" required />
-        </div>
-        <div class="form-group">
-          <label>Description *</label>
-          <textarea id="product-description" required></textarea>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Price (₹) *</label>
-            <input type="number" id="product-price" min="0" step="0.01" required />
-          </div>
-          <div class="form-group">
-            <label>Category *</label>
-            <select id="product-category" required></select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>SKU</label>
-            <input type="text" id="product-sku" />
-          </div>
-          <div class="form-group">
-            <label>Brand</label>
-            <input type="text" id="product-brand" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Stock Quantity</label>
-          <input type="number" id="product-stock" min="0" />
-        </div>
-        <div class="form-group">
-          <label>
-            <input type="checkbox" id="product-active" checked />
-            Active
-          </label>
-        </div>
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary">Save Product</button>
-          <button type="button" class="btn btn-secondary" onclick="closeProductModal()">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <!-- Order Modal -->
   <div id="order-modal" class="modal">
     <div class="modal-content">
@@ -448,7 +408,6 @@
     </div>
   </div>
   <script>
-    // Initialize admin page
     document.addEventListener('DOMContentLoaded', async () => {
       const user = getCurrentUser();
       if (!user || !user.token) {
@@ -456,12 +415,15 @@
         return;
       }
 
+      if (user.role !== 'admin' && user.role !== 'super_admin') {
+        window.location.href = 'signin.html';
+        return;
+      }
+
       document.getElementById('admin-user-name').textContent = user.name || 'Admin';
       
-      // Load dashboard
       loadAdminDashboard();
 
-      // Setup navigation
       document.querySelectorAll('.admin-nav-item').forEach(btn => {
         btn.addEventListener('click', () => {
           document.querySelectorAll('.admin-nav-item').forEach(b => b.classList.remove('active'));
@@ -470,6 +432,9 @@
           btn.classList.add('active');
           const page = btn.dataset.page;
           document.getElementById(`${page}-page`).classList.add('active');
+
+          const sidebar = document.querySelector('.admin-sidebar');
+          if (sidebar) sidebar.classList.remove('mobile-open');
 
           if (page === 'dashboard') loadAdminDashboard();
           else if (page === 'products') loadAdminProducts();
@@ -482,8 +447,17 @@
     });
 
     function logoutAdmin() {
-      localStorage.removeItem('user');
-      window.location.href = 'index.html';
+      if (typeof signOut === 'function') {
+        signOut();
+      } else {
+        localStorage.removeItem('papjoy-user');
+        localStorage.removeItem('papjoy-token');
+        localStorage.removeItem('papjoy-refresh-token');
+        sessionStorage.removeItem('papjoy-user');
+        sessionStorage.removeItem('papjoy-token');
+        sessionStorage.removeItem('papjoy-refresh-token');
+        window.location.href = 'signin.html';
+      }
     }
   </script>
     <script src="js/config.js" defer></script>
@@ -492,15 +466,8 @@
     <script src="js/i18n.js" defer></script>
     <script src="js/api.js" defer></script>
     <script src="js/auth.js" defer></script>
-    <script src="js/navigation.js" defer></script>
-    <script src="js/cart.js" defer></script>
-    <script src="js/wishlist.js" defer></script>
     <script src="js/ui.js" defer></script>
-    <script src="js/products.js" defer></script>
-    <script src="js/tracking.js" defer></script>
-    <script src="js/checkout.js" defer></script>
     <script src="js/admin.js" defer></script>
-    <script src="js/account.js" defer></script>
     <script src="js/main.js" defer></script>
 </body>
 </html>

@@ -16,6 +16,9 @@ Thumbs.db
 Backend/mongodb/
 Backend/mongodb*/
 
+# Uploaded files
+uploads/
+
 node_modules/
 .env
 dist/

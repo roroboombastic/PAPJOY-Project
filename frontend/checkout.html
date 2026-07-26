@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="PAP-JOY - Secure checkout. Complete your order with Stripe, PayPal, Razorpay, or COD." />
+  <meta name="description" content="PAP-JOY - Secure checkout. Complete your order with COD, Card, or UPI." />
   <meta name="theme-color" content="#0a0a0a" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <title>PAP-JOY | Checkout</title>
   <script>
-    // Configure API base URL for production
     if (window.location.hostname === 'papjoy-project.vercel.app' || window.location.hostname === 'www.papjoy.com') {
       window.API_BASE_URL = 'https://papjoy-project.onrender.com';
     }
@@ -16,11 +16,11 @@
   <link rel="preconnect" href="https://papjoy-project.onrender.com" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 <body data-page="checkout">
-  <!-- Global Error Notification -->
   <div id="global-error" class="global-error" style="display: none;"></div>
   <aside id="site-sidebar" class="site-sidebar"></aside>
   <button class="mobile-menu-toggle" id="mobile-menu-toggle"><i class="fas fa-bars"></i></button>
@@ -30,10 +30,10 @@
     <div class="section-header">
       <div>
         <p class="eyebrow" data-i18n="checkout.eyebrow">Secure Checkout</p>
-        <h1 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">Complete your order with delivery details</h1>
+        <h1 class="sr-only">Complete your order</h1>
         <h2 data-i18n="checkout.heading">Complete your order with delivery details</h2>
       </div>
-      <p class="product-intro" data-i18n="checkout.text">Enter your delivery information and choose from multiple secure payment options.</p>
+      <p class="product-intro" data-i18n="checkout.text">Enter your delivery information and choose a payment method.</p>
     </div>
 
     <div class="checkout-layout">
@@ -42,18 +42,24 @@
         <div id="checkout-items" class="checkout-items"></div>
         <div class="checkout-totals">
           <div class="checkout-row"><span data-i18n="checkout.items">Items</span><strong id="checkout-count">0</strong></div>
-          <div class="checkout-row"><span data-i18n="checkout.subtotal">Subtotal</span><strong id="checkout-subtotal">â‚¹0</strong></div>
+          <div class="checkout-row"><span data-i18n="checkout.subtotal">Subtotal</span><strong id="checkout-subtotal">&#8377;0</strong></div>
           <div class="checkout-row"><span data-i18n="checkout.shipping">Shipping</span><strong id="checkout-shipping">FREE</strong></div>
           <div class="checkout-row" id="checkout-discount-row" style="display:none;"><span>Promo discount</span><strong id="checkout-discount">0</strong></div>
-          <div class="checkout-row"><span data-i18n="checkout.tax">Tax</span><strong id="checkout-tax">â‚¹0</strong></div>
-          <div class="checkout-row total-row"><span data-i18n="checkout.total">Total</span><strong id="checkout-total">â‚¹0</strong></div>
+          <div class="checkout-row"><span data-i18n="checkout.tax">Tax (GST)</span><strong id="checkout-tax">&#8377;0</strong></div>
+          <div class="checkout-row total-row"><span data-i18n="checkout.total">Total</span><strong id="checkout-total">&#8377;0</strong></div>
         </div>
       </section>
 
       <section class="checkout-actions">
-        <!-- Delivery Information Form -->
+        <div id="checkout-message" class="checkout-notice"></div>
+
+        <div class="signin-prompt" id="signin-prompt" style="display: none;">
+          <p>Sign in for faster checkout and order tracking.</p>
+          <button class="checkout-button secondary" onclick="window.location.href='signin.html'">Sign In</button>
+        </div>
+
         <div class="delivery-section">
-          <h3>Delivery Information</h3>
+          <h3><i class="fas fa-truck"></i> Delivery Information</h3>
           <div id="checkout-addresses" style="margin-bottom: 1rem;"></div>
           <form id="delivery-form" class="delivery-form">
             <div class="form-row">
@@ -66,13 +72,13 @@
                 <input type="tel" id="delivery-phone" required />
               </div>
             </div>
-            
             <div class="form-group">
               <label for="delivery-address">Street Address</label>
-              <input type="text" id="delivery-address" placeholder="Street address" required />
-              <button type="button" id="fill-delivery-address-btn" class="checkout-button secondary" style="margin-top: 0.75rem;">Autofill with GPS</button>
+              <input type="text" id="delivery-address" placeholder="Street address, apartment, landmark" required />
+              <button type="button" id="fill-delivery-address-btn" class="checkout-button secondary gps-btn">
+                <i class="fas fa-location-crosshairs"></i> Autofill with GPS
+              </button>
             </div>
-            
             <div class="form-row">
               <div class="form-group">
                 <label for="delivery-city">City</label>
@@ -83,7 +89,6 @@
                 <input type="text" id="delivery-state" required />
               </div>
             </div>
-            
             <div class="form-row">
               <div class="form-group">
                 <label for="delivery-postal">Postal Code</label>
@@ -94,125 +99,97 @@
                 <input type="text" id="delivery-country" value="India" required />
               </div>
             </div>
-            
             <div class="form-group">
               <label for="delivery-instructions">Delivery Instructions (Optional)</label>
-              <textarea id="delivery-instructions" rows="3" placeholder="Any special delivery instructions..."></textarea>
+              <textarea id="delivery-instructions" rows="2" placeholder="Landmark, gate code, preferred time..."></textarea>
             </div>
           </form>
         </div>
 
-        <!-- Payment Methods -->
         <div class="payment-methods">
-          <h3>Select Payment Method</h3>
-          <div id="checkout-message" class="checkout-notice"></div>
-          
-          <!-- Sign In Option -->
-          <div class="signin-prompt" id="signin-prompt" style="display: none;">
-            <p>Please sign in to continue with payment</p>
-            <button class="checkout-button secondary" onclick="window.location.href='signin.html'">Sign In to Pay</button>
-          </div>
+          <h3><i class="fas fa-lock"></i> Payment Method</h3>
 
           <div class="payment-options">
-            <div class="payment-card">
-              <h3 data-i18n="checkout.stripe.title">Pay with Stripe</h3>
-              <p data-i18n="checkout.stripe.text">Fast checkout with card payments and secure hosted sessions.</p>
-              <button class="checkout-button" onclick="startStripeCheckout()" data-i18n="checkout.stripe.button">Pay with Stripe</button>
-            </div>
-            <div class="payment-card">
-              <h3 data-i18n="checkout.paypal.title">Pay with PayPal</h3>
-              <p data-i18n="checkout.paypal.text">Use PayPal to complete the purchase quickly and safely.</p>
-              <button class="checkout-button" onclick="startPayPalCheckout()" data-i18n="checkout.paypal.button">Pay with PayPal</button>
-            </div>
-            <div class="payment-card">
-              <h3 data-i18n="checkout.razorpay.title">Pay with Razorpay</h3>
-              <p data-i18n="checkout.razorpay.text">Pay securely in INR with Razorpay's checkout experience.</p>
-              <button class="checkout-button" onclick="startRazorpayCheckout()" data-i18n="checkout.razorpay.button">Pay with Razorpay</button>
-            </div>
-            
-            <!-- COD Option -->
-            <div class="payment-card cod-card">
-              <h3>Cash on Delivery (COD)</h3>
-              <p>Pay when your order arrives at your doorstep. Additional â‚¹50 COD fee applies.</p>
-              <div class="cod-form" id="cod-form" style="display: none;">
-                <div class="form-group">
-                  <label for="cod-amount">Amount to be collected</label>
-                  <input type="text" id="cod-amount" readonly />
+            <div class="payment-tab active" data-method="card" onclick="selectPaymentMethod('card')">
+              <div class="payment-tab-header">
+                <div class="payment-tab-icon"><i class="fas fa-credit-card"></i></div>
+                <div class="payment-tab-info">
+                  <h4>Card Payment</h4>
+                  <p>Credit or Debit Card</p>
                 </div>
-                <div class="form-group">
-                  <label for="cod-notes">Additional Notes</label>
-                  <textarea id="cod-notes" rows="2" placeholder="Any notes for COD delivery..."></textarea>
-                </div>
-                <button class="checkout-button" onclick="startCODCheckout()">Confirm COD Order</button>
+                <div class="payment-tab-check"><i class="fas fa-circle-check"></i></div>
               </div>
-              <button class="checkout-button" onclick="showCODForm()">Toggle COD details</button>
-            </div>
-            
-            <!-- Credit Card Option -->
-            <div class="payment-card card-card">
-              <h3>Credit Card Payment</h3>
-              <p>Secure payment with your credit card.</p>
-              <div class="card-form" id="credit-form" style="display: none;">
-                <div class="form-group">
-                  <label for="credit-number">Card Number</label>
-                  <input type="text" id="credit-number" placeholder="1234 5678 9012 3456" maxlength="19" />
+              <div class="payment-tab-body" id="card-body">
+                <div class="card-info-box">
+                  <i class="fas fa-shield-halved"></i>
+                  <p>Card details are securely handled by Razorpay. You'll see the secure payment form after clicking Pay Now.</p>
                 </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="credit-expiry">Expiry Date</label>
-                    <input type="text" id="credit-expiry" placeholder="MM/YY" maxlength="5" />
-                  </div>
-                  <div class="form-group">
-                    <label for="credit-cvv">CVV</label>
-                    <input type="text" id="credit-cvv" placeholder="123" maxlength="4" />
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label for="credit-name">Cardholder Name</label>
-                  <input type="text" id="credit-name" placeholder="John Doe" />
-                </div>
-                <button class="checkout-button" onclick="startCreditCardCheckout()">Pay with Credit Card</button>
+                <button class="checkout-button pay-now-btn" onclick="startCardCheckout()">
+                  <i class="fas fa-lock"></i> Pay Securely with Card
+                </button>
               </div>
-              <button class="checkout-button" onclick="showCreditForm()">Toggle Credit Form</button>
             </div>
-            
-            <!-- Debit Card Option -->
-            <div class="payment-card card-card">
-              <h3>Debit Card Payment</h3>
-              <p>Secure payment with your debit card.</p>
-              <div class="card-form" id="debit-form" style="display: none;">
-                <div class="form-group">
-                  <label for="debit-number">Card Number</label>
-                  <input type="text" id="debit-number" placeholder="1234 5678 9012 3456" maxlength="19" />
+
+            <div class="payment-tab" data-method="upi" onclick="selectPaymentMethod('upi')">
+              <div class="payment-tab-header">
+                <div class="payment-tab-icon"><i class="fas fa-mobile-screen-button"></i></div>
+                <div class="payment-tab-info">
+                  <h4>UPI Payment</h4>
+                  <p>Google Pay, PhonePe, Paytm & more</p>
                 </div>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="debit-expiry">Expiry Date</label>
-                    <input type="text" id="debit-expiry" placeholder="MM/YY" maxlength="5" />
-                  </div>
-                  <div class="form-group">
-                    <label for="debit-cvv">CVV</label>
-                    <input type="text" id="debit-cvv" placeholder="123" maxlength="4" />
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label for="debit-name">Cardholder Name</label>
-                  <input type="text" id="debit-name" placeholder="John Doe" />
-                </div>
-                <button class="checkout-button" onclick="startDebitCardCheckout()">Pay with Debit Card</button>
+                <div class="payment-tab-check"><i class="fas fa-circle-check"></i></div>
               </div>
-              <button class="checkout-button" onclick="showDebitForm()">Toggle Debit Form</button>
+              <div class="payment-tab-body" id="upi-body" style="display: none;">
+                <div class="upi-form-grid">
+                  <div class="form-group">
+                    <label for="upi-id">UPI ID (Optional - for QR payment)</label>
+                    <input type="text" id="upi-id" placeholder="yourname@upi" />
+                  </div>
+                  <p class="upi-hint">Leave blank for default merchant UPI. Scan the QR code with any UPI app to pay.</p>
+                </div>
+                <div id="upi-qr-container" class="upi-qr-container" style="display: none;">
+                  <div id="upi-qr-image" class="upi-qr-image"></div>
+                  <p class="upi-qr-instructions">Scan this QR code with Google Pay, PhonePe, Paytm, or any UPI app</p>
+                  <div class="upi-qr-amount">
+                    <span>Amount to pay:</span>
+                    <strong id="upi-qr-amount">₹0</strong>
+                  </div>
+                  <div id="upi-qr-status" class="upi-qr-status">
+                    <div class="upi-qr-spinner"></div>
+                    <span>Waiting for payment...</span>
+                  </div>
+                  <button class="checkout-button secondary" onclick="cancelUPIQR()" style="margin-top: 0.75rem;">Cancel</button>
+                </div>
+                <button id="upi-pay-btn" class="checkout-button pay-now-btn" onclick="startUPICheckout()">
+                  <i class="fas fa-qrcode"></i> Generate UPI QR Code
+                </button>
+              </div>
             </div>
-            
-            <div class="payment-card">
-              <h3>Pay with Paytm</h3>
-              <p>Fast and secure payment via Paytm wallet.</p>
-              <button class="checkout-button" onclick="startPaytmCheckout()">Pay with Paytm</button>
-            </div>
-            <div class="payment-card">
-              <h3>UPI ID</h3>
-              <p>Pay instantly using your UPI ID.</p>
-              <button class="checkout-button" onclick="startUPICheckout()">Pay with UPI</button>
+
+            <div class="payment-tab" data-method="cod" onclick="selectPaymentMethod('cod')">
+              <div class="payment-tab-header">
+                <div class="payment-tab-icon"><i class="fas fa-money-bill-wave"></i></div>
+                <div class="payment-tab-info">
+                  <h4>Cash on Delivery</h4>
+                  <p>Pay when your order arrives (+&#8377;50 fee)</p>
+                </div>
+                <div class="payment-tab-check"><i class="fas fa-circle-check"></i></div>
+              </div>
+              <div class="payment-tab-body" id="cod-body" style="display: none;">
+                <div class="cod-info">
+                  <div class="cod-amount-display">
+                    <span>Amount to collect</span>
+                    <strong id="cod-amount">&#8377;0</strong>
+                  </div>
+                  <div class="form-group">
+                    <label for="cod-notes">Notes for delivery (Optional)</label>
+                    <textarea id="cod-notes" rows="2" placeholder="Any notes for the delivery partner..."></textarea>
+                  </div>
+                </div>
+                <button class="checkout-button pay-now-btn" onclick="startCODCheckout()">
+                  <i class="fas fa-money-bill-wave"></i> Confirm COD Order
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -224,62 +201,44 @@
     <div class="connect-with-us">
       <h3>Connect With Us</h3>
     </div>
-    
     <div class="footer-grid">
       <div class="footer-brand">
         <div class="brand"><a href="index.html">PAP-JOY</a></div>
         <p>Premium footwear for every journey.</p>
       </div>
-      
       <div class="social-section">
         <h4>Follow Us</h4>
         <div class="social-links">
-          <a href="#" class="social-link" title="Instagram" aria-label="Follow us on Instagram">
-            <i class="fab fa-instagram"></i>
-          </a>
-          <a href="#" class="social-link" title="Facebook" aria-label="Follow us on Facebook">
-            <i class="fab fa-facebook-f"></i>
-          </a>
-          <a href="#" class="social-link" title="YouTube" aria-label="Subscribe on YouTube">
-            <i class="fab fa-youtube"></i>
-          </a>
+          <a href="https://instagram.com/papjoy" class="social-link" title="Instagram" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
+          <a href="https://facebook.com/papjoy" class="social-link" title="Facebook" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook-f"></i></a>
+          <a href="https://youtube.com/@papjoy" class="social-link" title="YouTube" target="_blank" rel="noopener noreferrer"><i class="fab fa-youtube"></i></a>
         </div>
       </div>
-      
       <div class="contact-info">
         <h4>Contact Us</h4>
-        <div class="contact-item">
-          <i class="fas fa-envelope"></i>
-          <a href="mailto:hello@papjoy.com">hello@papjoy.com</a>
-        </div>
-        <div class="contact-item">
-          <i class="fas fa-phone"></i>
-          <a href="tel:+1234567890">+1 (234) 567-8900</a>
-        </div>
+        <div class="contact-item"><i class="fas fa-envelope"></i><a href="mailto:hello@papjoy.com">hello@papjoy.com</a></div>
+        <div class="contact-item"><i class="fas fa-phone"></i><a href="tel:+1234567890">+1 (234) 567-8900</a></div>
       </div>
     </div>
-    
     <div class="copyright">
       <p>&copy; 2026 PAP-JOY. Crafted for every journey. All rights reserved.</p>
     </div>
   </footer>
-    <script src="js/config.js" defer></script>
-    <script src="js/helpers.js" defer></script>
-    <script src="js/storage.js" defer></script>
-    <script src="js/i18n.js" defer></script>
-    <script src="js/api.js" defer></script>
-    <script src="js/auth.js" defer></script>
-    <script src="js/navigation.js" defer></script>
-    <script src="js/cart.js" defer></script>
-    <script src="js/wishlist.js" defer></script>
-    <script src="js/ui.js" defer></script>
-    <script src="js/products.js" defer></script>
-    <script src="js/tracking.js" defer></script>
-    <script src="js/checkout.js" defer></script>
-    <script src="js/admin.js" defer></script>
-    <script src="js/account.js" defer></script>
-    <script src="js/main.js" defer></script>
+  <script src="js/config.js" defer></script>
+  <script src="js/helpers.js" defer></script>
+  <script src="js/storage.js" defer></script>
+  <script src="js/i18n.js" defer></script>
+  <script src="js/api.js" defer></script>
+  <script src="js/auth.js" defer></script>
+  <script src="js/navigation.js" defer></script>
+  <script src="js/cart.js" defer></script>
+  <script src="js/wishlist.js" defer></script>
+  <script src="js/ui.js" defer></script>
+  <script src="js/products.js" defer></script>
+  <script src="js/tracking.js" defer></script>
+  <script src="js/checkout.js" defer></script>
+  <script src="js/admin.js" defer></script>
+  <script src="js/account.js" defer></script>
+  <script src="js/main.js" defer></script>
 </body>
 </html>
-
-

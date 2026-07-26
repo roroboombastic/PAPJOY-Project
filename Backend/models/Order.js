@@ -62,8 +62,25 @@ const orderSchema = new mongoose.Schema({
   currency: { type: String, default: 'INR' },
   billingAddress: addressSchema,
   shippingAddress: addressSchema,
-  paymentMethod: { type: String, enum: ['card', 'paypal', 'bank_transfer', 'cod', 'upi', 'bnpl', 'wallet', 'web'], required: true },
+  paymentMethod: { type: String, enum: ['card', 'cod', 'upi'], required: true },
   paymentStatus: { type: String, enum: ['pending', 'paid', 'failed', 'refunded'], default: 'pending' },
+  paymentDetails: {
+    razorpayPaymentId: String,
+    razorpayOrderId: String,
+    razorpaySignature: String,
+    method: String,
+    amount: Number,
+    bank: String,
+    cardType: String,
+    last4: String,
+    capturedAt: Date
+  },
+  refundDetails: {
+    razorpayRefundId: String,
+    amount: Number,
+    reason: String,
+    initiatedAt: Date
+  },
   shipment: shipmentSchema,
   notes: String,
   createdAt: { type: Date, default: Date.now },

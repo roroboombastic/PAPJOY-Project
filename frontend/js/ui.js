@@ -1,31 +1,11 @@
 // ================== UI FUNCTIONS ==================
 
-function showLoadingState() {
-  const grid = document.querySelector('.product-grid');
-  if (!grid) return;
-  grid.innerHTML = `<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>Loading products...</p></div>`;
-}
-window.showLoadingState = showLoadingState;
-
-function showLoadedState() {
-  const grid = document.querySelector('.product-grid');
-  if (!grid) return;
-}
-window.showLoadedState = showLoadedState;
-
 function showEmptyState() {
   const grid = document.querySelector('.product-grid');
   if (!grid) return;
   grid.innerHTML = `<div class="empty-state"><i class="fas fa-box-open"></i><p>No products available</p></div>`;
 }
 window.showEmptyState = showEmptyState;
-
-function showErrorState(message) {
-  const grid = document.querySelector('.product-grid');
-  if (!grid) return;
-  grid.innerHTML = `<div class="error-state"><i class="fas fa-exclamation-circle"></i><p>${message || 'Failed to load products'}</p><button class="btn btn-primary" onclick="loadProducts()">Retry</button></div>`;
-}
-window.showErrorState = showErrorState;
 
 function createToastContainer() {
   if (document.getElementById('cart-toast')) return;
@@ -36,10 +16,12 @@ function createToastContainer() {
 }
 window.createToastContainer = createToastContainer;
 
-function showToast(message) {
+function showToast(message, type) {
   createToastContainer();
   const toast = document.getElementById('cart-toast');
   if (!toast) return;
+  toast.className = 'cart-toast';
+  if (type) toast.classList.add('toast-' + type);
   toast.textContent = message;
   toast.classList.add('visible');
   window.setTimeout(() => toast.classList.remove('visible'), 3000);
@@ -108,8 +90,7 @@ window.updateNavLinkText = updateNavLinkText;
 
 function updateCartCount() {
   const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const countEls = document.querySelectorAll('#cart-count');
-  countEls.forEach((el) => {
+  document.querySelectorAll('#cart-count, #utility-cart-count').forEach((el) => {
     el.textContent = count;
   });
 }

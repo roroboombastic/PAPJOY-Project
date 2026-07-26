@@ -83,22 +83,45 @@ function createSidebar() {
   }
 
   sidebar.innerHTML = `
-    <div class="sidebar-brand"><a href="index.html">PAP-JOY</a></div>
-    <nav class="sidebar-nav">
-      <a href="index.html" class="nav-link${isActiveNavPage('index.html') ? ' active' : ''}"${isActiveNavPage('index.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-home"></i><span>Home</span></a>
-      <a href="product.html" class="nav-link${isActiveNavPage('product.html') ? ' active' : ''}"${isActiveNavPage('product.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-store"></i><span>Shop</span></a>
-      <a href="cart.html" class="nav-link${isActiveNavPage('cart.html') ? ' active' : ''}"${isActiveNavPage('cart.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-shopping-cart"></i><span>Cart</span><span class="cart-badge" id="cart-count">${currentCartCount}</span></a>
-      <a href="tracking.html" class="nav-link${isActiveNavPage('tracking.html') ? ' active' : ''}"${isActiveNavPage('tracking.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-truck"></i><span>Track Order</span></a>
-      <a href="account.html" class="nav-link${isActiveNavPage('account.html') ? ' active' : ''}"${isActiveNavPage('account.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-user"></i><span>Account</span></a>
-      <a href="signin.html" class="nav-link${isActiveNavPage('signin.html') ? ' active' : ''}"${isActiveNavPage('signin.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-sign-in-alt"></i><span>Sign In</span></a>
-    </nav>
-    <div class="sidebar-meta">
-      <div class="sidebar-stats">
-        <div class="stat-item"><div class="stat-number">12</div><div class="stat-label">Products</div></div>
-        <div class="stat-item"><div class="stat-number">2.5K+</div><div class="stat-label">Premium styles</div></div>
+    <div class="sidebar-top">
+      <div class="sidebar-brand"><a href="index.html">PAP-JOY</a></div>
+      <nav class="sidebar-nav">
+        <a href="index.html" class="nav-link${isActiveNavPage('index.html') ? ' active' : ''}"${isActiveNavPage('index.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-home"></i><span>Home</span></a>
+        <a href="product.html" class="nav-link${isActiveNavPage('product.html') ? ' active' : ''}"${isActiveNavPage('product.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-store"></i><span>Shop</span></a>
+        <a href="cart.html" class="nav-link${isActiveNavPage('cart.html') ? ' active' : ''}"${isActiveNavPage('cart.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-shopping-cart"></i><span>Cart</span><span class="cart-badge" id="cart-count">${currentCartCount}</span></a>
+        <a href="tracking.html" class="nav-link${isActiveNavPage('tracking.html') ? ' active' : ''}"${isActiveNavPage('tracking.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-truck"></i><span>Track Order</span></a>
+        <a href="account.html" class="nav-link${isActiveNavPage('account.html') ? ' active' : ''}"${isActiveNavPage('account.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-user"></i><span>Account</span></a>
+        <a href="signin.html" class="nav-link${isActiveNavPage('signin.html') ? ' active' : ''}"${isActiveNavPage('signin.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-sign-in-alt"></i><span>Sign In</span></a>
+      </nav>
+    </div>
+    <div class="sidebar-utility">
+      <button class="utility-btn" id="quick-cart-btn" onclick="showCart()"><i class="fas fa-shopping-bag"></i><span>Quick Cart</span><span class="cart-badge" id="utility-cart-count">${currentCartCount}</span></button>
+      <div class="sidebar-notifications">
+        <button class="utility-btn notification-bell" id="notification-bell" title="Notifications">
+          <i class="fas fa-bell"></i><span>Notifications</span>
+          <span class="notification-badge" id="notification-badge" style="display:none;">0</span>
+        </button>
+        <div class="notification-dropdown" id="notification-dropdown">
+          <div class="notification-header">
+            <h4>Notifications</h4>
+            <button id="mark-all-read" class="btn-small">Mark all read</button>
+          </div>
+          <div class="notification-list" id="notification-list">
+            <p class="text-center" style="padding: 20px; color: var(--text-muted);">No notifications</p>
+          </div>
+        </div>
       </div>
-      <div class="sidebar-actions">
-        <button class="action-btn" onclick="showCart()"><i class="fas fa-shopping-bag"></i><span>Quick Cart</span></button>
+      <div class="utility-separator"></div>
+      <div class="theme-picker" id="theme-picker">
+        <button class="theme-option" data-theme-value="light" title="Light Mode">
+          <i class="fas fa-sun"></i><span>Light</span>
+        </button>
+        <button class="theme-option" data-theme-value="dark" title="Dark Mode">
+          <i class="fas fa-moon"></i><span>Dark</span>
+        </button>
+        <button class="theme-option" data-theme-value="auto" title="System preference">
+          <i class="fas fa-circle-half-stroke"></i><span>Auto</span>
+        </button>
       </div>
     </div>
   `;
@@ -161,8 +184,8 @@ function createSidebar() {
 function createLocaleSwitcher() {
   if (document.getElementById('region-switcher-wrapper')) return;
 
-  const sidebarMeta = document.querySelector('.sidebar-meta');
-  const target = sidebarMeta || document.querySelector('.sidebar-brand');
+  const utilitySection = document.querySelector('.sidebar-utility');
+  const target = utilitySection || document.querySelector('.sidebar-top');
   if (!target) return;
 
   const wrapper = document.createElement('div');
@@ -171,12 +194,12 @@ function createLocaleSwitcher() {
   wrapper.innerHTML = `
     <div class="locale-controls">
       <div class="locale-group">
-        <label for="region-selector" class="region-switcher-label" data-i18n="selector.region">Region</label>
-        <select id="region-selector" class="region-switcher"></select>
+        <label for="region-selector" class="locale-label" data-i18n="selector.region">Region</label>
+        <select id="region-selector" class="locale-select"></select>
       </div>
       <div class="locale-group">
-        <label for="language-selector" class="language-switcher-label" data-i18n="selector.language">Language</label>
-        <select id="language-selector" class="region-switcher"></select>
+        <label for="language-selector" class="locale-label" data-i18n="selector.language">Language</label>
+        <select id="language-selector" class="locale-select"></select>
       </div>
     </div>
   `;
@@ -212,7 +235,7 @@ function createLocaleSwitcher() {
     });
   }
 
-  target.appendChild(wrapper);
+  target.prepend(wrapper);
 }
 
 function initPageTransitions() {
@@ -237,6 +260,122 @@ function initPageTransitions() {
   });
 }
 
+function initThemeToggle() {
+  const picker = document.getElementById('theme-picker');
+  if (!picker) return;
+
+  const options = picker.querySelectorAll('.theme-option');
+
+  function applyTheme(value) {
+    document.body.removeAttribute('data-theme');
+
+    if (value === 'dark') {
+      document.body.setAttribute('data-theme', 'dark');
+    } else if (value === 'light') {
+      document.body.setAttribute('data-theme', 'light');
+    }
+    // 'auto' = no attribute, follows prefers-color-scheme via CSS
+
+    localStorage.setItem('papjoy-theme', value);
+
+    options.forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.themeValue === value);
+    });
+  }
+
+  const saved = localStorage.getItem('papjoy-theme') || 'auto';
+  applyTheme(saved);
+
+  options.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      applyTheme(btn.dataset.themeValue);
+    });
+  });
+}
+
+async function loadNotifications() {
+  const user = getCurrentUser();
+  if (!user) return;
+
+  const badge = document.getElementById('notification-badge');
+  const list = document.getElementById('notification-list');
+  const markAllBtn = document.getElementById('mark-all-read');
+  const bellBtn = document.getElementById('notification-bell');
+  const dropdown = document.getElementById('notification-dropdown');
+  if (!badge || !list) return;
+
+  bellBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('active');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!dropdown.contains(e.target) && e.target !== bellBtn) {
+      dropdown.classList.remove('active');
+    }
+  });
+
+  if (markAllBtn) {
+    markAllBtn.addEventListener('click', async () => {
+      const unreadItems = list.querySelectorAll('.notification-item.unread');
+      for (const item of unreadItems) {
+        const id = item.dataset.id;
+        if (id) {
+          try {
+            await fetch(`${API_BASE_URL}/api/v1/notifications/${id}/read`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token || ''}` } });
+          } catch (_) {}
+        }
+      }
+      loadNotifications();
+    });
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/v1/notifications`, {
+      headers: { Authorization: `Bearer ${user.token || ''}` }
+    });
+    if (!response.ok) return;
+    const notifications = await response.json();
+
+    if (!Array.isArray(notifications) || notifications.length === 0) {
+      list.innerHTML = '<p class="text-center" style="padding: 20px; color: var(--text-muted);">No notifications</p>';
+      badge.style.display = 'none';
+      return;
+    }
+
+    const unreadCount = notifications.filter(n => !n.read).length;
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+
+    list.innerHTML = notifications.map(n => {
+      const iconMap = { order: 'fa-box', promo: 'fa-tag', info: 'fa-info-circle', success: 'fa-check-circle' };
+      const icon = iconMap[n.type] || 'fa-bell';
+      const timeAgo = n.createdAt ? getTimeAgo(n.createdAt) : '';
+      return `<div class="notification-item ${n.read ? '' : 'unread'}" data-id="${n._id || ''}">
+        <i class="fas ${icon}"></i>
+        <div class="notification-text">${n.message || n.text || ''}</div>
+        <div class="notification-time">${timeAgo}</div>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    console.error('Failed to load notifications:', err);
+  }
+}
+
+function getTimeAgo(dateString) {
+  const now = Date.now();
+  const then = new Date(dateString).getTime();
+  const diff = Math.floor((now - then) / 1000);
+  if (diff < 60) return 'Just now';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+}
+
 window.sidebarCreated = sidebarCreated;
 window.navResizeHandler = navResizeHandler;
 window.updateUserLinks = updateUserLinks;
@@ -247,3 +386,5 @@ window.isActiveNavPage = isActiveNavPage;
 window.createSidebar = createSidebar;
 window.createLocaleSwitcher = createLocaleSwitcher;
 window.initPageTransitions = initPageTransitions;
+window.initThemeToggle = initThemeToggle;
+window.loadNotifications = loadNotifications;

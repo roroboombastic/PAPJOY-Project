@@ -15,6 +15,7 @@ const webhookRoutes = require('./webhook');
 const adminRoutes = require('./admin');
 const invoiceRoutes = require('./invoices');
 const shipmentRoutes = require('./shipments');
+const couponRoutes = require('./coupons');
 
 const router = express.Router();
 
@@ -33,5 +34,6 @@ router.use('/webhook-status', webhookRoutes);
 router.use('/admin', adminRoutes);
 router.use('/invoices', invoiceRoutes);
 router.use('/shipments', shipmentRoutes);
+router.use('/coupons', couponRoutes);
 
 module.exports = router;

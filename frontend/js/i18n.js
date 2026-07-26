@@ -708,12 +708,6 @@ window.selectedLanguage = localStorage.getItem('papjoy-lang') || (function() {
 })();
 var selectedLanguage = window.selectedLanguage;
 
-function inferLanguageFromBrowserLang() {
-  const locale = navigator.language || navigator.userLanguage || 'en';
-  const [lang] = locale.split(/[-_]/);
-  return availableLanguages[lang] ? lang : 'en';
-}
-
 function translate(key) {
   return translations[selectedLanguage]?.[key] || translations.en[key] || key;
 }
@@ -758,15 +752,8 @@ function setRegion(regionCode) {
   updateLocaleSwitcher();
 }
 
-function saveCart() {
-  localStorage.setItem('papjoy-cart', JSON.stringify(cart));
-  updateCartCount();
-}
-
-window.inferLanguageFromBrowserLang = inferLanguageFromBrowserLang;
 window.translate = translate;
 window.translatePage = translatePage;
 window.updateLanguageSwitcher = updateLanguageSwitcher;
 window.setLanguage = setLanguage;
 window.setRegion = setRegion;
-window.saveCart = saveCart;

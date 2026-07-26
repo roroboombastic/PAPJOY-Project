@@ -21,97 +21,6 @@ async function fetchWithTimeout(resource, options = {}) {
   }
 }
 
-const fallbackProducts = [
-  {
-    id: 'jetblack-runner',
-    slug: 'jetblack-runner',
-    name: 'JetBlack Runner',
-    category: 'Street Performance',
-    subtitle: 'Lightweight sneakers built for speed, comfort, and everyday style.',
-    description: 'A versatile running sneaker with breathable knit upper, responsive cushioning, and a sleek, all-black profile designed for both streetwear and training.',
-    price: 7999,
-    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1528701800489-20db3000e734?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80'
-    ],
-    details: ['Breathable knit upper', 'Responsive EVA midsole', 'Slip-resistant rubber outsole', 'Ergonomic fit for all-day wear'],
-    variants: [
-      { name: 'Black / Standard', priceDelta: 0 },
-      { name: 'Black / Wide', priceDelta: 500 }
-    ],
-    isFeatured: true,
-    inventory: { quantity: 18, lowStockThreshold: 5 }
-  },
-  {
-    id: 'sunset-sole',
-    slug: 'sunset-sole',
-    name: 'Sunset Sole',
-    category: 'Casual Comfort',
-    subtitle: 'A relaxed fit sneaker with warm tones and cushioned support.',
-    description: 'An everyday lifestyle shoe with soft suede accents, memory foam footbed, and a textured outsole for confident summer style.',
-    price: 8999,
-    image: 'https://images.unsplash.com/photo-1528701800489-20db3000e734?auto=format&fit=crop&w=800&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1528701800489-20db3000e734?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1552346154-d71229018c9f?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1519741498540-c3b7d4f4b9cd?auto=format&fit=crop&w=800&q=80'
-    ],
-    details: ['Soft suede overlays', 'Memory foam footbed', 'Flexible grooved outsole', 'Perfect for city strolls'],
-    variants: [
-      { name: 'Sand / Standard', priceDelta: 0 },
-      { name: 'Sand / Premium', priceDelta: 700 }
-    ],
-    isFeatured: true,
-    inventory: { quantity: 24, lowStockThreshold: 6 }
-  },
-  {
-    id: 'nova-trail',
-    slug: 'nova-trail',
-    name: 'Nova Trail',
-    category: 'Active Explorer',
-    subtitle: 'Durable hiking footwear engineered for unpredictable terrain.',
-    description: 'A rugged trail shoe with weather-resistant uppers, reinforced heel support, and a grippy outsole that keeps you confident on the move.',
-    price: 10999,
-    image: 'https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?auto=format&fit=crop&w=800&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1503341455253-b2e723bb3dbb?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&w=800&q=80'
-    ],
-    details: ['Water-resistant upper', 'Trail-ready rubber outsole', 'Reinforced arch support', 'Stabilizing heel counter'],
-    variants: [
-      { name: 'Oak / Standard', priceDelta: 0 },
-      { name: 'Oak / Wide', priceDelta: 600 }
-    ],
-    isNewArrival: true,
-    inventory: { quantity: 12, lowStockThreshold: 4 }
-  },
-  {
-    id: 'crimson-sneak',
-    slug: 'crimson-sneak',
-    name: 'Crimson Sneak',
-    category: 'Modern Streetwear',
-    subtitle: 'Bold red sneakers with a sleek silhouette and premium detailing.',
-    description: 'A fashion-forward sneaker with plush cushioning, tonal design accents, and a flexible sole that moves with every step.',
-    price: 8499,
-    image: 'https://images.unsplash.com/photo-1519741498540-c3b7d4f4b9cd?auto=format&fit=crop&w=800&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1519741498540-c3b7d4f4b9cd?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1528701800489-20db3000e734?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80'
-    ],
-    details: ['Bold color-block finish', 'Cushioned tongue and collar', 'Flexible outsole geometry', 'Street-ready comfort'],
-    variants: [
-      { name: 'Red / Standard', priceDelta: 0 },
-      { name: 'Red / Premium', priceDelta: 650 }
-    ],
-    isNewArrival: true,
-    inventory: { quantity: 10, lowStockThreshold: 3 }
-  }
-];
-
 function getProductImageUrls(product) {
   if (!product) return [];
   if (Array.isArray(product.images)) {
@@ -218,13 +127,8 @@ async function loadScript(src) {
   });
 }
 
-function getAvailableCategories() {
-  return Array.from(new Set(products.map((product) => product.category))).filter(Boolean);
-}
-
 window.debounce = debounce;
 window.fetchWithTimeout = fetchWithTimeout;
-window.fallbackProducts = fallbackProducts;
 window.getProductImageUrls = getProductImageUrls;
 window.normalizeVariantName = normalizeVariantName;
 window.getItemIdentity = getItemIdentity;
@@ -235,4 +139,3 @@ window.getProductLink = getProductLink;
 window.getProductById = getProductById;
 window.getQueryParams = getQueryParams;
 window.loadScript = loadScript;
-window.getAvailableCategories = getAvailableCategories;

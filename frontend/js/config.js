@@ -1,5 +1,21 @@
 let cacheExpiry = 5 * 60 * 1000;
-const PRODUCT_FALLBACK_IMAGE = 'https://via.placeholder.com/800x800?text=PAP-JOY';
+const PRODUCT_FALLBACK_IMAGES = [
+  'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1600185365926-3a2ce3cdb9eb?w=600&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=600&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=600&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1584735175315-9d5df23860e6?w=600&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1539185441755-769473a23570?w=600&h=600&fit=crop',
+  'https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=600&h=600&fit=crop'
+];
+const PRODUCT_FALLBACK_IMAGE = PRODUCT_FALLBACK_IMAGES[0];
+let _fallbackIndex = 0;
+function getNextFallbackImage() {
+  const img = PRODUCT_FALLBACK_IMAGES[_fallbackIndex % PRODUCT_FALLBACK_IMAGES.length];
+  _fallbackIndex++;
+  return img;
+}
 const GST_RATE = 0.18;
 
 function getDefaultApiBaseUrl() {
@@ -30,6 +46,7 @@ async function safeParseJson(response) {
 
 async function apiFetch(path, options = {}) {
   const url = apiUrl(path);
+  options.credentials = options.credentials || 'include';
   try {
     const response = await fetch(url, options);
     const data = await safeParseJson(response);
@@ -39,13 +56,6 @@ async function apiFetch(path, options = {}) {
     throw error;
   }
 }
-
-const validPromoCodes = {
-  WELCOME10: { discount: 0.10, label: '10% off' },
-  SAVE20: { discount: 0.20, label: '20% off' },
-  SUMMER15: { discount: 0.15, label: '15% off summer collection' },
-  NEWUSER5: { discount: 0.05, label: 'Welcome 5% off' }
-};
 
 const localeRegionMap = {
   IN: { locale: 'en-IN', currency: 'INR', label: 'India (₹)' },
@@ -96,6 +106,8 @@ function formatCurrency(amount) {
 }
 
 window.PRODUCT_FALLBACK_IMAGE = PRODUCT_FALLBACK_IMAGE;
+window.PRODUCT_FALLBACK_IMAGES = PRODUCT_FALLBACK_IMAGES;
+window.getNextFallbackImage = getNextFallbackImage;
 window.GST_RATE = GST_RATE;
 window.cacheExpiry = cacheExpiry;
 window.API_BASE_URL = API_BASE_URL;
@@ -103,7 +115,6 @@ window.getDefaultApiBaseUrl = getDefaultApiBaseUrl;
 window.apiUrl = apiUrl;
 window.safeParseJson = safeParseJson;
 window.apiFetch = apiFetch;
-window.validPromoCodes = validPromoCodes;
 window.localeRegionMap = localeRegionMap;
 window.regionRates = regionRates;
 window.selectedRegion = selectedRegion;

@@ -4,6 +4,12 @@ let remoteCartLoaded = false;
 let syncCartTimer = null;
 let syncCartPromise = null;
 let appliedPromoCode = localStorage.getItem('papjoy-promo') || '';
+let validatedDiscount = JSON.parse(localStorage.getItem('papjoy-discount') || 'null');
+
+function saveCart() {
+  localStorage.setItem('papjoy-cart', JSON.stringify(cart));
+  if (typeof updateCartCount === 'function') updateCartCount();
+}
 
 function normalizeServerCartItem(item) {
   const product = item.productId || {};
@@ -11,7 +17,7 @@ function normalizeServerCartItem(item) {
     id: product._id || product.slug || String(item.productId),
     productId: product._id || String(item.productId),
     name: product.name || item.name || 'Product',
-    image: getProductImageUrls(product)[0] || product.image || 'https://via.placeholder.com/240',
+    image: getProductImageUrls(product)[0] || product.image || PRODUCT_FALLBACK_IMAGE,
     variant: item.variant || 'Standard',
     price: Number(item.price || product.price || 0),
     quantity: Number(item.quantity || 1),
@@ -265,8 +271,8 @@ function calculateOrderTotals(items = [], options = {}) {
 function getCartTotals() {
   const totals = calculateOrderTotals(cart);
 
-  if (appliedPromoCode && validPromoCodes[appliedPromoCode]) {
-    totals.discount = Math.round(totals.subtotal * validPromoCodes[appliedPromoCode].discount);
+  if (appliedPromoCode && validatedDiscount && validatedDiscount.valid) {
+    totals.discount = validatedDiscount.discount;
     totals.total = totals.subtotal + totals.shipping + totals.tax - totals.discount;
   }
 
@@ -355,7 +361,15 @@ function renderCart() {
 
   container.innerHTML = '';
   if (cart.length === 0) {
-    container.innerHTML = `<li class="cart-item empty-cart">${translate('cart.empty')}</li>`;
+    container.innerHTML = `
+      <li class="cart-item empty-cart">
+        <div class="empty-cart-icon"><i class="fas fa-shopping-bag"></i></div>
+        <h3>${translate('cart.empty')}</h3>
+        <p>Looks like you haven't added any shoes yet.</p>
+        <a href="product.html" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:8px;padding:14px 32px;border-radius:16px;background:var(--accent);color:#fff;text-decoration:none;font-weight:600;">
+          <i class="fas fa-arrow-left"></i> Continue Shopping
+        </a>
+      </li>`;
     updateCartSummary();
     return;
   }
@@ -371,7 +385,7 @@ function renderCart() {
     li.innerHTML = `
       <div class="cart-item-meta">
         <div class="cart-item-avatar">
-          <img src="${item.image || item.product?.image || PRODUCT_FALLBACK_IMAGE}" alt="${item.name}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
+          <img src="${item.image || item.product?.image || PRODUCT_FALLBACK_IMAGE}" alt="${item.name}" loading="lazy" onerror="if(!this.dataset.fb){this.dataset.fb='1';this.src=getNextFallbackImage();}else{this.style.display='none';}" />
         </div>
         <div class="cart-item-content">
           <h3>${item.name}</h3>
@@ -419,7 +433,9 @@ function renderCart() {
 function resetCartState() {
   cart = [];
   appliedPromoCode = '';
+  validatedDiscount = null;
   localStorage.removeItem('papjoy-promo');
+  localStorage.removeItem('papjoy-discount');
   saveCart();
   syncCart();
 }
@@ -429,6 +445,7 @@ function clearCart() {
     showToast('Your cart is already empty.');
     return;
   }
+  if (!confirm('Are you sure you want to clear your cart? This cannot be undone.')) return;
   resetCartState();
   renderCart();
   showToast('Cart cleared.');
@@ -500,7 +517,7 @@ function renderSavedItems() {
     <li class="saved-item" data-saved-id="${safeId}" data-saved-variant="${safeVariant}">
       <div class="saved-item-meta">
         <div class="saved-item-avatar">
-          <img src="${item.image || item.product?.image || PRODUCT_FALLBACK_IMAGE}" alt="${item.name}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
+          <img src="${item.image || item.product?.image || PRODUCT_FALLBACK_IMAGE}" alt="${item.name}" loading="lazy" onerror="if(!this.dataset.fb){this.dataset.fb='1';this.src=getNextFallbackImage();}else{this.style.display='none';}" />
         </div>
         <div class="saved-item-content">
           <h4>${item.name}</h4>
@@ -537,7 +554,7 @@ function showCart() {
   window.location.href = 'cart.html';
 }
 
-function applyPromoCode() {
+async function applyPromoCode() {
   const input = document.getElementById('promo-code');
   const message = document.getElementById('promo-message');
   const code = input?.value.toUpperCase().trim();
@@ -551,34 +568,58 @@ function applyPromoCode() {
     return;
   }
 
-  if (!validPromoCodes[code]) {
+  const subtotal = calculateOrderTotals(cart).subtotal;
+
+  try {
+    const { response, data } = await apiFetch('/api/v1/coupons/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, subtotal, items: getCheckoutItems() })
+    });
+
+    if (!response.ok || !data?.valid) {
+      if (message) {
+        message.textContent = data?.error || 'Invalid promo code';
+        message.className = 'promo-message error';
+      }
+      appliedPromoCode = '';
+      validatedDiscount = null;
+      localStorage.removeItem('papjoy-promo');
+      localStorage.removeItem('papjoy-discount');
+      showToast(data?.error || 'Promo code is not valid.');
+    } else {
+      appliedPromoCode = code;
+      validatedDiscount = data;
+      localStorage.setItem('papjoy-promo', code);
+      localStorage.setItem('papjoy-discount', JSON.stringify(data));
+      if (message) {
+        message.textContent = `${data.label} applied! You save ${formatCurrency(data.discount)}`;
+        message.className = 'promo-message success';
+      }
+      if (input) input.value = code;
+      showToast(`${data.label} applied.`);
+    }
+  } catch (error) {
+    console.error('Coupon validation error:', error);
     if (message) {
-      message.textContent = 'Invalid promo code';
+      message.textContent = 'Failed to validate promo code. Please try again.';
       message.className = 'promo-message error';
     }
-    appliedPromoCode = '';
-    localStorage.removeItem('papjoy-promo');
-    showToast('Promo code is not valid.');
-  } else {
-    appliedPromoCode = code;
-    localStorage.setItem('papjoy-promo', code);
-    if (message) {
-      message.textContent = `${validPromoCodes[code].label} applied!`;
-      message.className = 'promo-message success';
-    }
-    if (input) input.value = code;
-    showToast(`${validPromoCodes[code].label} applied.`);
+    showToast('Failed to validate promo code.');
   }
 
   updateCartSummary();
 }
 
-window.cart = cart;
-window.cartUpdateInProgress = cartUpdateInProgress;
-window.remoteCartLoaded = remoteCartLoaded;
-window.syncCartTimer = syncCartTimer;
-window.syncCartPromise = syncCartPromise;
-window.appliedPromoCode = appliedPromoCode;
+window.getCart = function() { return cart; };
+window.getCartUpdateInProgress = function() { return cartUpdateInProgress; };
+window.setCartUpdateInProgress = function(val) { cartUpdateInProgress = val; };
+window.isRemoteCartLoaded = function() { return remoteCartLoaded; };
+window.setRemoteCartLoaded = function(val) { remoteCartLoaded = val; };
+window.getAppliedPromoCode = function() { return appliedPromoCode; };
+window.setAppliedPromoCode = function(val) { appliedPromoCode = val; };
+window.getValidatedDiscount = function() { return validatedDiscount; };
+window.setValidatedDiscount = function(val) { validatedDiscount = val; };
 window.normalizeServerCartItem = normalizeServerCartItem;
 window.mergeServerCart = mergeServerCart;
 window.loadUserCart = loadUserCart;

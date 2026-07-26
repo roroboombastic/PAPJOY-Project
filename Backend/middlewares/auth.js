@@ -4,7 +4,9 @@ const { User } = require('../models');
 const logger = require('../utils/logger');
 
 function auth(req, res, next) {
-  const token = req.headers.authorization?.split(' ')[1];
+  const headerToken = req.headers.authorization?.split(' ')[1];
+  const cookieToken = req.cookies?.['papjoy-auth'];
+  const token = headerToken || cookieToken;
   if (!token) {
     return res.status(401).json({ error: 'Authentication required' });
   }
@@ -21,7 +23,9 @@ function auth(req, res, next) {
 }
 
 async function optionalAuth(req, res, next) {
-  const token = req.headers.authorization?.split(' ')[1];
+  const headerToken = req.headers.authorization?.split(' ')[1];
+  const cookieToken = req.cookies?.['papjoy-auth'];
+  const token = headerToken || cookieToken;
   if (!token) return next();
 
   try {

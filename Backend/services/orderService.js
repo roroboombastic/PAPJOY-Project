@@ -38,7 +38,7 @@ async function buildOrderLineItems(items = [], deliveryInfo = {}) {
   return lineItems;
 }
 
-async function adjustInventory(items = [], { operation = 'decrement', reference = '', note = '' } = {}) {
+async function adjustInventory(items = [], { operation = 'decrement', reference = '', note: movementNote = '' } = {}) {
   const direction = operation === 'increment' ? 1 : -1;
   const productIds = items.map(item => item.productId || item.id).filter(Boolean);
   if (!productIds.length) return;
@@ -46,7 +46,7 @@ async function adjustInventory(items = [], { operation = 'decrement', reference 
   const products = await Product.find({ _id: { $in: productIds } });
   const productMap = new Map(products.map(p => [p._id.toString(), p]));
 
-  const saves = [];
+  const updates = [];
   for (const item of items) {
     const quantity = Math.max(1, Number(item.quantity) || 1);
     const productId = item.productId || item.id;
@@ -55,42 +55,89 @@ async function adjustInventory(items = [], { operation = 'decrement', reference 
     const product = productMap.get(productId.toString());
     if (!product || !product.inventory?.trackInventory) continue;
 
-    const variantKey = String(item.variant || '').trim().toLowerCase();
-    const variant = Array.isArray(product.variants)
-      ? product.variants.find((v) => {
-          const name = String(v.name || '').toLowerCase();
-          const value = String(v.value || '').toLowerCase();
-          const sku = String(v.sku || '').toLowerCase();
-          return variantKey && (variantKey === name || variantKey === value || variantKey === sku);
-        })
-      : null;
-
-    if (variant && typeof variant.inventory === 'number') {
-      const nextQuantity = variant.inventory + direction * quantity;
-      if (operation === 'decrement' && nextQuantity < 0) {
-        throw new Error(`Insufficient stock for ${product.name} (${variant.name || variant.value})`);
-      }
-      variant.inventory = Math.max(0, nextQuantity);
-    } else {
-      const nextQuantity = (product.inventory.quantity || 0) + direction * quantity;
-      if (operation === 'decrement' && nextQuantity < 0) {
-        throw new Error(`Insufficient stock for ${product.name}`);
-      }
-      product.inventory.quantity = Math.max(0, nextQuantity);
-    }
-
-    product.stockMovements = product.stockMovements || [];
-    product.stockMovements.push({
-      quantity: direction * quantity,
+    const quantityChange = direction * quantity;
+    const movement = {
+      quantity: quantityChange,
       type: operation === 'increment' ? 'inbound' : 'outbound',
       reference,
-      note: note || `Inventory ${operation} for order ${reference}`
-    });
+      note: movementNote || `Inventory ${operation} for order ${reference}`
+    };
 
-    saves.push(product.save());
+    const variantKey = String(item.variant || '').trim().toLowerCase();
+    let variantIndex = -1;
+    if (Array.isArray(product.variants)) {
+      variantIndex = product.variants.findIndex((v) => {
+        const name = String(v.name || '').toLowerCase();
+        const value = String(v.value || '').toLowerCase();
+        const sku = String(v.sku || '').toLowerCase();
+        return variantKey && (variantKey === name || variantKey === value || variantKey === sku);
+      });
+    }
+
+    const matchCondition = { _id: productId };
+    let incField;
+
+    if (variantIndex >= 0 && typeof product.variants[variantIndex].inventory === 'number') {
+      if (operation === 'decrement') {
+        matchCondition[`variants.${variantIndex}.inventory`] = { $gte: quantity };
+      }
+      incField = `variants.${variantIndex}.inventory`;
+    } else {
+      if (operation === 'decrement') {
+        matchCondition['inventory.quantity'] = { $gte: quantity };
+      }
+      incField = 'inventory.quantity';
+    }
+
+    const warehouseEntries = Array.isArray(product.warehouseInventory) ? product.warehouseInventory : [];
+    if (warehouseEntries.length > 0 && operation === 'decrement') {
+      const totalWarehouseQty = warehouseEntries.reduce((sum, e) => sum + (e.quantity || 0), 0);
+      if (totalWarehouseQty < quantity) {
+        const variantLabel = variantIndex >= 0
+          ? ` (${product.variants[variantIndex].name || product.variants[variantIndex].value})`
+          : '';
+        throw new Error(`Insufficient warehouse stock for ${product.name}${variantLabel}`);
+      }
+    }
+
+    const updateOps = {
+      $inc: { [incField]: quantityChange },
+      $push: { stockMovements: movement }
+    };
+
+    const updatePromise = Product.findOneAndUpdate(matchCondition, updateOps, { new: true })
+      .then((updatedProduct) => {
+        if (!updatedProduct && operation === 'decrement') {
+          const variantLabel = variantIndex >= 0
+            ? ` (${product.variants[variantIndex].name || product.variants[variantIndex].value})`
+            : '';
+          throw new Error(`Insufficient stock for ${product.name}${variantLabel}`);
+        }
+        return updatedProduct;
+      });
+
+    updates.push(updatePromise);
+
+    for (const entry of warehouseEntries) {
+      const warehouseMatch = { _id: productId, 'warehouseInventory.warehouseId': entry.warehouseId };
+      const warehouseUpdate = {
+        $inc: { 'warehouseInventory.$.quantity': quantityChange },
+        $push: {
+          stockMovements: {
+            ...movement,
+            warehouseId: entry.warehouseId
+          }
+        }
+      };
+
+      updates.push(
+        Product.findOneAndUpdate(warehouseMatch, warehouseUpdate, { new: true })
+          .catch(() => null)
+      );
+    }
   }
 
-  await Promise.all(saves);
+  await Promise.all(updates);
 }
 
 async function restoreInventoryForOrder(order) {
@@ -117,7 +164,7 @@ async function restoreInventoryForOrder(order) {
 async function createOrderFromData({
   userId = null,
   items = [],
-  paymentMethod = 'web',
+  paymentMethod = 'cod',
   shipping = 0,
   tax = 0,
   discount = 0,
@@ -175,7 +222,7 @@ async function createOrderFromData({
     currency,
     shippingAddress: normalizedAddress,
     billingAddress: normalizedAddress,
-    paymentMethod: paymentMethod || 'web',
+    paymentMethod: paymentMethod || 'cod',
     paymentStatus: finalPaymentStatus,
     shipment: {
       status: 'pending',

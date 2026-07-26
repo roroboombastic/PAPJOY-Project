@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="PAP-JOY - Premium shoe store with curated collections. Shop sneakers, boots, loafers and more." />
   <meta name="theme-color" content="#0a0a0a" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <title>PAP-JOY | Premium Shoe Store</title>
   <script>
     // Configure API base URL for production
@@ -91,60 +92,6 @@
 
     </section>
 
-    <!-- Interactive Categories Section -->
-    <section class="categories-section">
-      <div class="section-header">
-        <p class="eyebrow">Explore Categories</p>
-        <h2>Find Your Perfect Style</h2>
-      </div>
-
-      <div class="categories-grid">
-        <div class="category-card" data-category="Street Performance" onclick="window.location.href='product.html?category=Street+Performance'">
-          <div class="category-image">
-            <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=300&fit=crop" alt="Street Performance" loading="lazy" />
-          </div>
-          <div class="category-content">
-            <h3>Street Performance</h3>
-            <p>Urban style meets athletic performance</p>
-            <span class="category-count">4 products</span>
-          </div>
-        </div>
-
-        <div class="category-card" data-category="Casual Comfort" onclick="window.location.href='product.html?category=Casual+Comfort'">
-          <div class="category-image">
-            <img src="https://images.unsplash.com/photo-1528701800489-20db3000e734?w=400&h=300&fit=crop" alt="Casual Comfort" loading="lazy" />
-          </div>
-          <div class="category-content">
-            <h3>Casual Comfort</h3>
-            <p>Everyday comfort without compromise</p>
-            <span class="category-count">3 products</span>
-          </div>
-        </div>
-
-        <div class="category-card" data-category="Active Explorer" onclick="window.location.href='product.html?category=Active+Explorer'">
-          <div class="category-image">
-            <img src="https://images.unsplash.com/photo-1551107696-a4b0c5a0d9a2?w=400&h=300&fit=crop" alt="Active Explorer" loading="lazy" />
-          </div>
-          <div class="category-content">
-            <h3>Active Explorer</h3>
-            <p>Durable footwear for outdoor adventures</p>
-            <span class="category-count">2 products</span>
-          </div>
-        </div>
-
-        <div class="category-card" data-category="Modern Streetwear" onclick="window.location.href='product.html?category=Modern+Streetwear'">
-          <div class="category-image">
-            <img src="https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=300&fit=crop" alt="Modern Streetwear" loading="lazy" />
-          </div>
-          <div class="category-content">
-            <h3>Modern Streetwear</h3>
-            <p>Bold designs for urban fashion</p>
-            <span class="category-count">3 products</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- Featured Products Section -->
     <section class="featured-section">
       <div class="section-header">
@@ -167,77 +114,13 @@
       </div>
     </section>
 
-    <!-- Design Principles -->
-    <section class="insights-section">
+    <!-- Recently Viewed Products -->
+    <section class="recently-viewed-section" id="recently-viewed-section" style="display:none;">
       <div class="section-header">
-        <p class="eyebrow">Design Principles</p>
-        <h2>Built for reliable performance</h2>
+        <p class="eyebrow">Your history</p>
+        <h2>Recently Viewed</h2>
       </div>
-
-      <div class="insights-grid">
-        <div class="insight-card">
-          <h3>Precision fit</h3>
-          <p>Each style is refined for dependable fit and modern comfort.</p>
-        </div>
-        <div class="insight-card">
-          <h3>Refined materials</h3>
-          <p>Durable fabrics and premium construction for everyday wear.</p>
-        </div>
-        <div class="insight-card">
-          <h3>Balanced design</h3>
-          <p>Sleek silhouettes with thoughtful detail for a coherent aesthetic.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Enhanced Info Panels -->
-    <section class="info-panels">
-      <div class="info-panel">
-        <div class="panel-icon">
-          <i class="fas fa-shoe-prints"></i>
-        </div>
-        <div class="panel-content">
-          <h3>Premium Craftsmanship</h3>
-          <p>Every pair is handcrafted with attention to detail and built to last a lifetime.</p>
-        </div>
-      </div>
-      <div class="info-panel">
-        <div class="panel-icon">
-          <i class="fas fa-truck"></i>
-        </div>
-        <div class="panel-content">
-          <h3>Free Shipping</h3>
-          <p>Complimentary delivery on all orders over $100. Fast, reliable shipping worldwide.</p>
-        </div>
-      </div>
-      <div class="info-panel">
-        <div class="panel-icon">
-          <i class="fas fa-undo"></i>
-        </div>
-        <div class="panel-content">
-          <h3>Easy Returns</h3>
-          <p>30-day return policy for a confident fit and hassle-free exchange.</p>
-        </div>
-      </div>
-
-    </section>
-
-    <!-- Newsletter Section -->
-    <section class="newsletter-section">
-      <div class="newsletter-content">
-        <div class="newsletter-icon">
-          <i class="fas fa-envelope-open-text"></i>
-        </div>
-        <h3>Stay in Style</h3>
-        <p>Subscribe to get exclusive deals, new arrivals, and style tips delivered to your inbox.</p>
-        <div class="newsletter-form">
-          <input type="email" placeholder="Enter your email address" id="newsletter-email">
-          <button class="btn btn-primary" onclick="subscribeNewsletter()">
-            <i class="fas fa-paper-plane"></i>
-            Subscribe
-          </button>
-        </div>
-      </div>
+      <div class="product-grid" id="recently-viewed-grid"></div>
     </section>
   </main>
 
@@ -255,13 +138,13 @@
       <div class="social-section">
         <h4>Follow Us</h4>
         <div class="social-links">
-          <a href="#" class="social-link" title="Instagram" aria-label="Follow us on Instagram">
+          <a href="https://instagram.com/papjoy" class="social-link" title="Instagram" aria-label="Follow us on Instagram" target="_blank" rel="noopener noreferrer">
             <i class="fab fa-instagram"></i>
           </a>
-          <a href="#" class="social-link" title="Facebook" aria-label="Follow us on Facebook">
+          <a href="https://facebook.com/papjoy" class="social-link" title="Facebook" aria-label="Follow us on Facebook" target="_blank" rel="noopener noreferrer">
             <i class="fab fa-facebook-f"></i>
           </a>
-          <a href="#" class="social-link" title="YouTube" aria-label="Subscribe on YouTube">
+          <a href="https://youtube.com/@papjoy" class="social-link" title="YouTube" aria-label="Subscribe on YouTube" target="_blank" rel="noopener noreferrer">
             <i class="fab fa-youtube"></i>
           </a>
         </div>

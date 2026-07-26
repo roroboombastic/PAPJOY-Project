@@ -3,6 +3,7 @@ const path = require('path');
 const https = require('https');
 const crypto = require('crypto');
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const config = require('./config');
 const { initializeDatabase } = require('./db');
 const { createSecurityMiddleware } = require('./middlewares/security');
@@ -14,6 +15,7 @@ const logger = require('./utils/logger');
 
 const app = express();
 createSecurityMiddleware(app);
+app.use(cookieParser());
 
 process.on('uncaughtException', (err) => {
   logger.error('Uncaught exception', { error: err.message, stack: err.stack });
@@ -53,17 +55,6 @@ app.use((req, res, next) => {
 app.use(`${config.apiBasePath}`, routes);
 logger.info('Routes mounted', { apiBasePath: config.apiBasePath });
 
-app.get('/cors-test', (req, res) => {
-  const origin = req.get('origin') || null;
-  res.json({
-    success: true,
-    message: 'CORS test endpoint reached',
-    origin,
-    allowedOrigins: config.cors.origin,
-    apiBasePath: config.apiBasePath
-  });
-});
-
 app.get('/health', (req, res) => {
   const readyStates = {
     0: 'disconnected',
@@ -81,6 +72,9 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+const uploadsDir = path.join(__dirname, '../uploads');
+app.use('/uploads', express.static(uploadsDir, { maxAge: '30d', immutable: config.isProd }));
 
 const staticRoot = path.join(__dirname, '../frontend');
 app.use(express.static(staticRoot, {

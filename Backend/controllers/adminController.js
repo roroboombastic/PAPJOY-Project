@@ -1,4 +1,4 @@
-const { User, Product, Order, Category, Invoice } = require('../models');
+const { User, Product, Order, Category, Invoice, Shipment } = require('../models');
 const PDFDocument = require('pdfkit');
 const logger = require('../utils/logger');
 
@@ -57,10 +57,11 @@ async function getSummary(req, res) {
     const totalUsers = await User.countDocuments();
     const totalOrders = await Order.countDocuments();
     const totalProducts = await Product.countDocuments();
-    const [paymentRevenue, orderStatusBreakdown, invoiceStats] = await Promise.all([
+    const [paymentRevenue, orderStatusBreakdown, invoiceStats, recentOrders] = await Promise.all([
       Order.aggregate([{ $group: { _id: '$paymentStatus', total: { $sum: '$total' }, gstTotal: { $sum: { $ifNull: ['$gstTotal', '$tax'] } }, count: { $sum: 1 } } }]),
       Order.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
-      Invoice.aggregate([{ $group: { _id: '$paymentStatus', count: { $sum: 1 }, total: { $sum: '$total' }, gstTotal: { $sum: '$taxTotal' } } }])
+      Invoice.aggregate([{ $group: { _id: '$paymentStatus', count: { $sum: 1 }, total: { $sum: '$total' }, gstTotal: { $sum: '$taxTotal' } } }]),
+      Order.find().sort({ createdAt: -1 }).limit(10).populate('userId', 'name email')
     ]);
 
     const totalRevenue = paymentRevenue.find((item) => item._id === 'paid')?.total || 0;
@@ -73,18 +74,16 @@ async function getSummary(req, res) {
     const averageOrderValue = totalOrders ? Number((completedRevenue / totalOrders).toFixed(2)) : 0;
 
     res.json({
-      totalUsers,
-      totalOrders,
-      totalProducts,
+      stats: { totalUsers, totalOrders, totalProducts, totalRevenue, averageOrderValue },
+      recentOrders,
+      ordersByStatus: orderStatusBreakdown.reduce((acc, item) => ({ ...acc, [item._id]: item.count }), {}),
       totalRevenue,
       completedRevenue,
       pendingRevenue,
       refunds,
       gstCollected,
       invoiceCount,
-      invoiceRevenue,
-      averageOrderValue,
-      orderStatusBreakdown: orderStatusBreakdown.reduce((acc, item) => ({ ...acc, [item._id]: item.count }), {})
+      invoiceRevenue
     });
   } catch (err) {
     logger.error('Admin summary failed', { error: err.message });
@@ -94,12 +93,14 @@ async function getSummary(req, res) {
 
 async function getProducts(req, res) {
   try {
-    const { page = 1, limit = 50, search = '' } = req.query;
+    const { page = 1, limit = 50, search = '', status = 'all' } = req.query;
     const query = {};
     if (search) {
       const safeSearch = escapeRegex(search);
       query.$or = [{ name: { $regex: safeSearch, $options: 'i' } }, { slug: { $regex: safeSearch, $options: 'i' } }, { sku: { $regex: safeSearch, $options: 'i' } }];
     }
+    if (status === 'active') query.isActive = true;
+    else if (status === 'inactive') query.isActive = false;
     const products = await Product.find(query).sort({ createdAt: -1 }).limit(Number(limit)).skip((Number(page) - 1) * Number(limit));
     const total = await Product.countDocuments(query);
     res.json({ products, pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) } });
@@ -111,14 +112,18 @@ async function getProducts(req, res) {
 
 async function getOrders(req, res) {
   try {
-    const { page = 1, limit = 50, status, search = '' } = req.query;
+    const { page = 1, limit = 50, status, search = '', sort = 'newest' } = req.query;
     const query = {};
     if (status) query.status = status;
     if (search) {
       const safeSearch = escapeRegex(search);
       query.$or = [{ orderNumber: { $regex: safeSearch, $options: 'i' } }, { 'shippingAddress.name': { $regex: safeSearch, $options: 'i' } }, { 'billingAddress.name': { $regex: safeSearch, $options: 'i' } }];
     }
-    const orders = await Order.find(query).sort({ createdAt: -1 }).limit(Number(limit)).skip((Number(page) - 1) * Number(limit));
+    let sortObj = { createdAt: -1 };
+    if (sort === 'oldest') sortObj = { createdAt: 1 };
+    else if (sort === 'highest-value') sortObj = { total: -1 };
+    else if (sort === 'lowest-value') sortObj = { total: 1 };
+    const orders = await Order.find(query).populate('userId', 'name email').sort(sortObj).limit(Number(limit)).skip((Number(page) - 1) * Number(limit));
     const total = await Order.countDocuments(query);
     res.json({ orders, pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) } });
   } catch (err) {
@@ -282,6 +287,313 @@ async function getAdminCategories(req, res) {
   }
 }
 
+async function createProduct(req, res) {
+  try {
+    const parseJsonField = (val) => {
+      if (typeof val === 'string') { try { return JSON.parse(val); } catch { return val; } }
+      return val;
+    };
+
+    const body = { ...req.body };
+    ['images', 'videos', 'inventory', 'seo', 'tags', 'attributes', 'variants'].forEach(key => {
+      if (body[key]) body[key] = parseJsonField(body[key]);
+    });
+    if (typeof body.isActive === 'string') body.isActive = body.isActive === 'true';
+    if (typeof body.isFeatured === 'string') body.isFeatured = body.isFeatured === 'true';
+    if (typeof body.price === 'string') body.price = Number(body.price);
+    if (typeof body.comparePrice === 'string') body.comparePrice = Number(body.comparePrice);
+    if (typeof body.costPrice === 'string') body.costPrice = Number(body.costPrice);
+    if (typeof body.gstPercentage === 'string') body.gstPercentage = Number(body.gstPercentage);
+
+    const { name, slug, description, price, categoryId, sku, brand, inventory, isActive, isFeatured, tags, images, videos } = body;
+    const productSlug = slug || (name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+    const imageUrls = [];
+    const videoUrls = [];
+
+    if (req.files && req.files.length > 0) {
+      req.files.forEach(file => {
+        const fileUrl = `/uploads/products/${file.filename}`;
+        const isVideo = /\.(mp4|webm|mov)$/i.test(file.originalname);
+        if (isVideo) videoUrls.push(fileUrl);
+        else imageUrls.push({ url: fileUrl, alt: name || '', isPrimary: imageUrls.length === 0 });
+      });
+    }
+
+    const bodyImages = Array.isArray(images) ? images.map(img => {
+      if (typeof img === 'string') return { url: img, alt: name || '', isPrimary: false };
+      return img;
+    }) : [];
+    const bodyVideos = Array.isArray(videos) ? videos.filter(Boolean) : [];
+
+    const product = await Product.create({
+      ...body,
+      slug: productSlug,
+      images: [...imageUrls, ...bodyImages],
+      videos: [...videoUrls, ...bodyVideos]
+    });
+    res.status(201).json(product);
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(409).json({ error: 'Product with this slug or SKU already exists' });
+    }
+    logger.error('Create product failed', { error: err.message });
+    res.status(500).json({ error: 'Failed to create product' });
+  }
+}
+
+async function updateProduct(req, res) {
+  try {
+    const parseJsonField = (val) => {
+      if (typeof val === 'string') { try { return JSON.parse(val); } catch { return val; } }
+      return val;
+    };
+
+    const updateData = { ...req.body };
+    delete updateData._id;
+
+    ['images', 'videos', 'inventory', 'seo', 'tags', 'attributes', 'variants'].forEach(key => {
+      if (updateData[key]) updateData[key] = parseJsonField(updateData[key]);
+    });
+    if (typeof updateData.isActive === 'string') updateData.isActive = updateData.isActive === 'true';
+    if (typeof updateData.isFeatured === 'string') updateData.isFeatured = updateData.isFeatured === 'true';
+    ['price', 'comparePrice', 'costPrice', 'gstPercentage'].forEach(key => {
+      if (typeof updateData[key] === 'string') updateData[key] = Number(updateData[key]);
+    });
+
+    if (updateData.name && !updateData.slug) {
+      updateData.slug = updateData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+
+    if (req.files && req.files.length > 0) {
+      const newImages = [];
+      const newVideos = [];
+      req.files.forEach(file => {
+        const fileUrl = `/uploads/products/${file.filename}`;
+        const isVideo = /\.(mp4|webm|mov)$/i.test(file.originalname);
+        if (isVideo) newVideos.push(fileUrl);
+        else newImages.push({ url: fileUrl, alt: updateData.name || '', isPrimary: false });
+      });
+
+      const bodyImages = Array.isArray(updateData.images) ? updateData.images.map(img => {
+        if (typeof img === 'string') return { url: img, alt: updateData.name || '', isPrimary: false };
+        return img;
+      }) : [];
+
+      updateData.images = [...newImages, ...bodyImages];
+      if (newVideos.length > 0) {
+        const existingVideos = Array.isArray(updateData.videos) ? updateData.videos.filter(Boolean) : [];
+        updateData.videos = [...newVideos, ...existingVideos];
+      }
+    }
+
+    const product = await Product.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    res.json(product);
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(409).json({ error: 'Product with this slug or SKU already exists' });
+    }
+    logger.error('Update product failed', { error: err.message });
+    res.status(500).json({ error: 'Failed to update product' });
+  }
+}
+
+async function deleteProduct(req, res) {
+  try {
+    const product = await Product.findByIdAndDelete(req.params.id);
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    res.json({ message: 'Product deleted' });
+  } catch (err) {
+    logger.error('Delete product failed', { error: err.message });
+    res.status(500).json({ error: 'Failed to delete product' });
+  }
+}
+
+async function updateOrderStatus(req, res) {
+  try {
+    const { id } = req.params;
+    const { status, trackingNumber, note, carrier } = req.body;
+
+    const validStatuses = ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled', 'returned', 'refunded'];
+    if (status && !validStatuses.includes(status)) {
+      return res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+    }
+
+    const order = await Order.findById(id);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    if (status) order.status = status;
+
+    if (!order.shipment) order.shipment = {};
+    if (trackingNumber) order.shipment.trackingNumber = trackingNumber;
+    if (carrier) order.shipment.carrier = carrier;
+    if (status) order.shipment.status = status;
+
+    if (!order.shipment.events) order.shipment.events = [];
+    order.shipment.events.push({
+      timestamp: new Date(),
+      status: status || order.status,
+      message: note || `Status updated to ${status || order.status}`,
+      location: ''
+    });
+
+    if (status === 'delivered') order.paymentStatus = 'paid';
+
+    await order.save();
+
+    const shipmentOrder = await Shipment.findOne({ orderId: id });
+    if (shipmentOrder) {
+      if (status) shipmentOrder.status = status;
+      if (trackingNumber) shipmentOrder.trackingNumber = trackingNumber;
+      if (carrier) shipmentOrder.carrier = carrier;
+      shipmentOrder.events.push({
+        timestamp: new Date(),
+        status: status || shipmentOrder.status,
+        message: note || `Status updated to ${status || shipmentOrder.status}`,
+        location: ''
+      });
+      await shipmentOrder.save();
+    }
+
+    res.json(order);
+  } catch (err) {
+    logger.error('Update order status failed', { error: err.message });
+    res.status(500).json({ error: 'Failed to update order status' });
+  }
+}
+
+async function createCategory(req, res) {
+  try {
+    const { name, slug, description, image, isActive, sortOrder, parentId } = req.body;
+    const categorySlug = slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+    const category = await Category.create({ ...req.body, slug: categorySlug });
+    res.status(201).json(category);
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(409).json({ error: 'Category with this name or slug already exists' });
+    }
+    logger.error('Create category failed', { error: err.message });
+    res.status(500).json({ error: 'Failed to create category' });
+  }
+}
+
+async function updateCategory(req, res) {
+  try {
+    const { id } = req.params;
+    const updateData = { ...req.body };
+    delete updateData._id;
+
+    if (req.body.name && !req.body.slug) {
+      updateData.slug = req.body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+
+    const category = await Category.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+    if (!category) return res.status(404).json({ error: 'Category not found' });
+    res.json(category);
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(409).json({ error: 'Category with this name or slug already exists' });
+    }
+    logger.error('Update category failed', { error: err.message });
+    res.status(500).json({ error: 'Failed to update category' });
+  }
+}
+
+async function deleteCategory(req, res) {
+  try {
+    const { id } = req.params;
+    const productCount = await Product.countDocuments({ categoryId: id });
+    if (productCount > 0) {
+      return res.status(409).json({ error: `Cannot delete category: ${productCount} product(s) reference it. Reassign or remove them first.` });
+    }
+
+    const category = await Category.findByIdAndDelete(id);
+    if (!category) return res.status(404).json({ error: 'Category not found' });
+    res.json({ message: 'Category deleted' });
+  } catch (err) {
+    logger.error('Delete category failed', { error: err.message });
+    res.status(500).json({ error: 'Failed to delete category' });
+  }
+}
+
+async function getProductById(req, res) {
+  try {
+    const product = await Product.findById(req.params.id).populate('categoryId', 'name slug');
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    res.json(product);
+  } catch (err) {
+    logger.error('Get product by ID failed', { error: err.message });
+    res.status(500).json({ error: 'Failed to load product' });
+  }
+}
+
+async function updateUserStatus(req, res) {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+
+    if (typeof isActive !== 'boolean') {
+      return res.status(400).json({ error: 'isActive must be a boolean' });
+    }
+
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (String(user._id) === String(req.userId)) {
+      return res.status(400).json({ error: 'Cannot deactivate your own account' });
+    }
+
+    user.isActive = isActive;
+    await user.save();
+
+    const safeUser = user.toObject();
+    delete safeUser.passwordHash;
+    delete safeUser.passwordResetToken;
+    delete safeUser.passwordResetExpires;
+
+    res.json(safeUser);
+  } catch (err) {
+    logger.error('Update user status failed', { error: err.message });
+    res.status(500).json({ error: 'Failed to update user status' });
+  }
+}
+
+async function updateUserRole(req, res) {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    const validRoles = ['customer', 'admin', 'super_admin'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ error: `Invalid role. Must be one of: ${validRoles.join(', ')}` });
+    }
+
+    if (String(id) === String(req.userId)) {
+      return res.status(400).json({ error: 'Cannot change your own role' });
+    }
+
+    const user = await User.findByIdAndUpdate(id, { role }, { new: true }).select('-passwordHash -passwordResetToken -passwordResetExpires');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    logger.error('Update user role failed', { error: err.message });
+    res.status(500).json({ error: 'Failed to update user role' });
+  }
+}
+
+async function getCategoryById(req, res) {
+  try {
+    const category = await Category.findById(req.params.id);
+    if (!category) return res.status(404).json({ error: 'Category not found' });
+    res.json(category);
+  } catch (err) {
+    logger.error('Get category by ID failed', { error: err.message });
+    res.status(500).json({ error: 'Failed to load category' });
+  }
+}
+
 module.exports = {
   getSummary,
   getProducts,
@@ -289,5 +601,16 @@ module.exports = {
   getUsers,
   getAnalytics,
   getAdminCategories,
-  getReports
+  getReports,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  getProductById,
+  updateOrderStatus,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  getCategoryById,
+  updateUserRole,
+  updateUserStatus
 };

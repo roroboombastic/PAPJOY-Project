@@ -251,7 +251,7 @@ async function downloadInvoicePDF(req, res) {
     pdf.fontSize(9).font('Helvetica')
       .text(`Order Number: ${invoice.orderNumber || invoice.orderId}`, 36, 228)
       .text(`Order Date: ${new Date(invoice.invoiceDate).toLocaleString()}`, 36, 242)
-      .text(`Payment Method: ${(invoice.paymentMethod || 'web').toUpperCase()}`, 36, 256)
+      .text(`Payment Method: ${(invoice.paymentMethod || 'cod').toUpperCase()}`, 36, 256)
       .text(`Payment Status: ${(invoice.paymentStatus || 'pending').toUpperCase()}`, 36, 270);
 
     if (!isSameAddress) {
@@ -316,7 +316,7 @@ async function downloadInvoicePDF(req, res) {
 
     pdf.fontSize(10).font('Helvetica-Bold').text('Payment Details', 36, 540);
     pdf.fontSize(9).font('Helvetica')
-      .text(`Method: ${(invoice.paymentMethod || 'web').toUpperCase()}`, 36, 556)
+      .text(`Method: ${(invoice.paymentMethod || 'cod').toUpperCase()}`, 36, 556)
       .text(`Status: ${(invoice.paymentStatus || 'pending').toUpperCase()}`, 36, 570)
       .text(`Invoice Status: ${(invoice.status || 'issued').toUpperCase()}`, 36, 584);
 
@@ -374,11 +374,12 @@ async function listAllInvoices(req, res) {
     const query = {};
     if (status && status !== 'all') query.status = status;
     if (search) {
+      const safeSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { invoiceNumber: { $regex: search, $options: 'i' } },
-        { customerName: { $regex: search, $options: 'i' } },
-        { customerEmail: { $regex: search, $options: 'i' } },
-        { customerPhone: { $regex: search, $options: 'i' } }
+        { invoiceNumber: { $regex: safeSearch, $options: 'i' } },
+        { customerName: { $regex: safeSearch, $options: 'i' } },
+        { customerEmail: { $regex: safeSearch, $options: 'i' } },
+        { customerPhone: { $regex: safeSearch, $options: 'i' } }
       ];
     }
 

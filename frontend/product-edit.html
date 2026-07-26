@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="PAP-JOY Admin - Edit Product" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <title>Admin - Product Editor | PAP-JOY</title>
+  <script>
+    if (window.location.hostname === 'papjoy-project.vercel.app' || window.location.hostname === 'www.papjoy.com') {
+      window.API_BASE_URL = 'https://papjoy-project.onrender.com';
+    }
+  </script>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body data-page="product-edit">
+  <div class="product-editor">
+    <!-- Top Bar -->
+    <header class="editor-topbar">
+      <div class="editor-topbar-left">
+        <a href="admin.html" class="editor-back"><i class="fas fa-arrow-left"></i> Back to Admin</a>
+        <nav class="editor-breadcrumb" id="editor-breadcrumb">
+          <span>Admin</span> <i class="fas fa-chevron-right"></i> <span>Products</span> <i class="fas fa-chevron-right"></i> <span id="breadcrumb-action">New Product</span>
+        </nav>
+      </div>
+      <div class="editor-topbar-right">
+        <button type="button" class="editor-btn editor-btn-ghost" id="btn-preview" title="Preview"><i class="fas fa-eye"></i> Preview</button>
+        <button type="button" class="editor-btn editor-btn-danger" id="btn-delete" style="display:none"><i class="fas fa-trash"></i> Delete</button>
+        <button type="button" class="editor-btn editor-btn-secondary" id="btn-cancel">Cancel</button>
+        <button type="button" class="editor-btn editor-btn-draft" id="btn-draft"><i class="fas fa-file"></i> Save Draft</button>
+        <button type="button" class="editor-btn editor-btn-secondary" id="btn-save-stay" title="Save & continue editing"><i class="fas fa-arrow-right"></i> Save & Stay</button>
+        <button type="button" class="editor-btn editor-btn-primary" id="btn-save"><i class="fas fa-save"></i> Publish</button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="editor-body">
+      <!-- Left: Form -->
+      <div class="editor-form">
+        <!-- Basic Info -->
+        <section class="editor-section">
+          <h3 class="editor-section-title"><i class="fas fa-tag"></i> Basic Information</h3>
+          <div class="editor-field">
+            <label for="pe-name">Product Name *</label>
+            <input type="text" id="pe-name" placeholder="e.g. Classic Leather Sneakers" required />
+          </div>
+          <div class="editor-field">
+            <label for="pe-slug">URL Slug *</label>
+            <div class="editor-input-group">
+              <span class="editor-input-prefix">/products/</span>
+              <input type="text" id="pe-slug" placeholder="classic-leather-sneakers" required />
+            </div>
+            <small class="editor-hint">Auto-generated from name. Edit to customize.</small>
+          </div>
+          <div class="editor-field">
+            <label for="pe-short-desc">Short Description</label>
+            <input type="text" id="pe-short-desc" placeholder="One-line summary for listings" maxlength="200" />
+          </div>
+          <div class="editor-field">
+            <label for="pe-description">Description *</label>
+            <textarea id="pe-description" rows="6" placeholder="Detailed product description..." required></textarea>
+          </div>
+        </section>
+
+        <!-- Pricing -->
+        <section class="editor-section">
+          <h3 class="editor-section-title"><i class="fas fa-rupee-sign"></i> Pricing</h3>
+          <div class="editor-field-grid">
+            <div class="editor-field">
+              <label for="pe-price">Selling Price (₹) *</label>
+              <input type="number" id="pe-price" min="0" step="0.01" placeholder="0.00" required />
+            </div>
+            <div class="editor-field">
+              <label for="pe-compare-price">Compare / MRP Price (₹)</label>
+              <input type="number" id="pe-compare-price" min="0" step="0.01" placeholder="0.00" />
+            </div>
+            <div class="editor-field">
+              <label for="pe-cost-price">Cost Price (₹)</label>
+              <input type="number" id="pe-cost-price" min="0" step="0.01" placeholder="0.00" />
+            </div>
+            <div class="editor-field">
+              <label for="pe-gst">GST %</label>
+              <input type="number" id="pe-gst" min="0" max="100" step="0.01" value="18" />
+            </div>
+          </div>
+        </section>
+
+        <!-- Inventory -->
+        <section class="editor-section">
+          <h3 class="editor-section-title"><i class="fas fa-boxes-stacked"></i> Inventory</h3>
+          <div class="editor-field-grid">
+            <div class="editor-field">
+              <label for="pe-sku">SKU</label>
+              <input type="text" id="pe-sku" placeholder="e.g. SKU-CLN-001" />
+            </div>
+            <div class="editor-field">
+              <label for="pe-barcode">Barcode</label>
+              <input type="text" id="pe-barcode" placeholder="UPC / EAN" />
+            </div>
+            <div class="editor-field">
+              <label for="pe-stock">Stock Quantity *</label>
+              <input type="number" id="pe-stock" min="0" value="0" required />
+            </div>
+            <div class="editor-field">
+              <label for="pe-low-stock">Low Stock Alert</label>
+              <input type="number" id="pe-low-stock" min="0" value="10" />
+            </div>
+          </div>
+          <div class="editor-field editor-toggle-row">
+            <label for="pe-track-inventory">Track Inventory</label>
+            <label class="editor-toggle">
+              <input type="checkbox" id="pe-track-inventory" checked />
+              <span class="editor-toggle-slider"></span>
+            </label>
+          </div>
+        </section>
+
+        <!-- Classification -->
+        <section class="editor-section">
+          <h3 class="editor-section-title"><i class="fas fa-folder-tree"></i> Classification</h3>
+          <div class="editor-field-grid">
+            <div class="editor-field">
+              <label for="pe-category">Category *</label>
+              <select id="pe-category" required>
+                <option value="">Loading categories...</option>
+              </select>
+            </div>
+            <div class="editor-field">
+              <label for="pe-brand">Brand</label>
+              <input type="text" id="pe-brand" placeholder="e.g. PAP-JOY" />
+            </div>
+          </div>
+          <div class="editor-field">
+            <label for="pe-tags">Tags</label>
+            <input type="text" id="pe-tags" placeholder="sneakers, leather, casual (comma separated)" />
+            <small class="editor-hint">Separate tags with commas</small>
+          </div>
+          <div class="editor-field-grid">
+            <div class="editor-field">
+              <label for="pe-hsn">HSN Code</label>
+              <input type="text" id="pe-hsn" placeholder="For GST invoicing" />
+            </div>
+            <div class="editor-field">
+              <label for="pe-sac">SAC Code</label>
+              <input type="text" id="pe-sac" placeholder="Service Accounting Code" />
+            </div>
+          </div>
+        </section>
+
+        <!-- Images & Media -->
+        <section class="editor-section">
+          <h3 class="editor-section-title"><i class="fas fa-images"></i> Product Images</h3>
+          <div class="editor-upload-zone" id="editor-upload-zone">
+            <input type="file" id="pe-file-input" multiple accept="image/*" style="display:none" />
+            <div class="editor-upload-content">
+              <i class="fas fa-cloud-arrow-up"></i>
+              <p>Drag & drop images here or <button type="button" id="btn-browse-files" class="editor-upload-link">browse files</button></p>
+              <small>JPG, PNG, GIF, WebP, AVIF — up to 10 MB each</small>
+            </div>
+          </div>
+          <div class="editor-images-grid" id="editor-images-grid">
+            <!-- Images rendered by JS -->
+          </div>
+          <div class="editor-add-image">
+            <input type="url" id="pe-image-url" placeholder="Or paste an image URL: https://example.com/photo.jpg" />
+            <button type="button" class="editor-btn editor-btn-secondary" id="btn-add-image"><i class="fas fa-plus"></i> Add URL</button>
+          </div>
+          <small class="editor-hint">First image is the primary image. Drag to reorder.</small>
+        </section>
+
+        <!-- Videos -->
+        <section class="editor-section">
+          <h3 class="editor-section-title"><i class="fas fa-video"></i> Product Videos</h3>
+          <div class="editor-add-image">
+            <input type="url" id="pe-video-url" placeholder="YouTube, Vimeo, or direct video URL (mp4/webm)" />
+            <button type="button" class="editor-btn editor-btn-secondary" id="btn-add-video"><i class="fas fa-plus"></i> Add Video</button>
+          </div>
+          <small class="editor-hint">Paste a YouTube/Vimeo link or a direct .mp4/.webm URL.</small>
+          <div class="editor-videos-grid" id="editor-videos-grid">
+            <!-- Videos rendered by JS -->
+          </div>
+        </section>
+
+        <!-- Visibility -->
+        <section class="editor-section">
+          <h3 class="editor-section-title"><i class="fas fa-eye"></i> Visibility</h3>
+          <div class="editor-field editor-toggle-row">
+            <label for="pe-active">Active (visible on store)</label>
+            <label class="editor-toggle">
+              <input type="checkbox" id="pe-active" checked />
+              <span class="editor-toggle-slider"></span>
+            </label>
+          </div>
+          <div class="editor-field editor-toggle-row">
+            <label for="pe-featured">Featured (homepage highlight)</label>
+            <label class="editor-toggle">
+              <input type="checkbox" id="pe-featured" />
+              <span class="editor-toggle-slider"></span>
+            </label>
+          </div>
+        </section>
+
+        <!-- SEO -->
+        <section class="editor-section">
+          <h3 class="editor-section-title"><i class="fas fa-search"></i> SEO</h3>
+          <div class="editor-field">
+            <label for="pe-seo-title">Meta Title</label>
+            <input type="text" id="pe-seo-title" placeholder="SEO page title (defaults to product name)" maxlength="70" />
+          </div>
+          <div class="editor-field">
+            <label for="pe-seo-desc">Meta Description</label>
+            <textarea id="pe-seo-desc" rows="3" placeholder="SEO description for search engines" maxlength="160"></textarea>
+          </div>
+          <div class="editor-field">
+            <label for="pe-seo-keywords">Keywords</label>
+            <input type="text" id="pe-seo-keywords" placeholder="sneakers, shoes, leather (comma separated)" />
+          </div>
+        </section>
+      </div>
+
+      <!-- Right: Preview -->
+      <aside class="editor-preview">
+        <div class="editor-preview-card" id="editor-preview-card">
+          <div class="editor-preview-image" id="preview-image">
+            <div class="editor-preview-placeholder"><i class="fas fa-image"></i> No image</div>
+          </div>
+          <div class="editor-preview-body">
+            <span class="editor-preview-category" id="preview-category">Category</span>
+            <h4 id="preview-name">Product Name</h4>
+            <div class="editor-preview-pricing">
+              <span class="editor-preview-price" id="preview-price">₹0</span>
+              <span class="editor-preview-compare" id="preview-compare" style="display:none"></span>
+            </div>
+            <p class="editor-preview-desc" id="preview-desc">Product description will appear here...</p>
+            <div class="editor-preview-meta">
+              <span id="preview-sku" class="editor-preview-tag">SKU: —</span>
+              <span id="preview-stock" class="editor-preview-tag">Stock: 0</span>
+              <span id="preview-status" class="editor-preview-badge">Active</span>
+            </div>
+          </div>
+        </div>
+        <div class="editor-preview-info">
+          <h4>Live Preview</h4>
+          <p>This card updates in real-time as you edit. It shows how your product will appear to customers.</p>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="delete-modal" class="modal">
+    <div class="modal-content" style="max-width:420px">
+      <h3>Delete Product?</h3>
+      <p style="margin:12px 0;color:var(--text-muted)">This action cannot be undone. The product will be permanently removed from your store.</p>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+        <button class="editor-btn editor-btn-secondary" onclick="document.getElementById('delete-modal').classList.remove('active')">Cancel</button>
+        <button class="editor-btn editor-btn-danger" id="btn-confirm-delete"><i class="fas fa-trash"></i> Yes, Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js" defer></script>
+  <script src="js/helpers.js" defer></script>
+  <script src="js/storage.js" defer></script>
+  <script src="js/i18n.js" defer></script>
+  <script src="js/api.js" defer></script>
+  <script src="js/auth.js" defer></script>
+  <script src="js/ui.js" defer></script>
+  <script src="js/product-editor.js" defer></script>
+  <script src="js/main.js" defer></script>
+</body>
+</html>

@@ -66,11 +66,22 @@ const addressSchema = Joi.object({
   isDefault: Joi.boolean().optional()
 });
 
+const changePasswordSchema = Joi.object({
+  currentPassword: Joi.string().required(),
+  newPassword: Joi.string().min(8).required()
+});
+
+const deleteAccountSchema = Joi.object({
+  password: Joi.string().optional()
+});
+
 router.post('/register', validate(registerSchema), authController.register);
 router.post('/login', validate(loginSchema), authController.login);
 router.post('/refresh', validate(refreshSchema), authController.refreshToken);
 router.get('/me', auth, authController.me);
 router.put('/me', auth, validate(updateProfileSchema), authController.updateProfile);
+router.post('/change-password', auth, validate(changePasswordSchema), authController.changePassword);
+router.post('/delete-account', auth, validate(deleteAccountSchema), authController.deleteAccount);
 router.get('/addresses', auth, authController.getAddresses);
 router.post('/addresses', auth, validate(addressSchema), authController.addAddress);
 router.put('/addresses/:addressId', auth, validate(addressSchema), authController.updateAddress);

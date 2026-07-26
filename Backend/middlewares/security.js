@@ -85,6 +85,15 @@ function createSecurityMiddleware(app) {
   app.use('/api/v1/auth/login', authLimiter);
   app.use('/api/v1/auth/register', authLimiter);
   app.use('/api/v1/auth/forgot-password', authLimiter);
+
+  const adminLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many admin requests, please try again later' }
+  });
+  app.use('/api/v1/admin', adminLimiter);
   
   app.use((req, res, next) => {
     const sanitize = (obj) => {

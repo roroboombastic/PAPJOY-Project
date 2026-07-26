@@ -1,6 +1,6 @@
 const { Order, User } = require('../models');
 const logger = require('../utils/logger');
-const { createOrderFromData } = require('../services/orderService');
+const { createOrderFromData, restoreInventoryForOrder } = require('../services/orderService');
 const invoiceController = require('./invoiceController');
 
 async function createOrder(req, res) {
@@ -8,7 +8,7 @@ async function createOrder(req, res) {
     const order = await createOrderFromData({
       userId: req.userId || null,
       items: req.body.items || [],
-      paymentMethod: req.body.paymentMethod || 'web',
+      paymentMethod: req.body.paymentMethod || 'cod',
       shipping: req.body.shipping || 0,
       tax: req.body.tax || 0,
       discount: req.body.discount || 0,
@@ -98,24 +98,88 @@ async function getOrderTracking(req, res) {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    if (order.userId) {
-      if (order.userId.toString() !== req.userId?.toString()) {
-        const user = await User.findById(req.userId).select('role');
-        if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
-          return res.status(403).json({ error: 'Access denied' });
-        }
+    const isOwner = order.userId && req.userId
+      ? order.userId.toString() === req.userId.toString()
+      : false;
+
+    if (!isOwner && order.userId && req.userId) {
+      const user = await User.findById(req.userId).select('role');
+      if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
+
+    if (order.userId && !req.userId) {
+      const email = (req.query.email || req.body?.email || '').toLowerCase().trim();
+      if (!email) {
+        return res.status(403).json({ error: 'Email required to track this order' });
+      }
+      const orderEmail = (order.billingAddress?.email || order.shippingAddress?.email || '').toLowerCase().trim();
+      if (orderEmail && orderEmail !== email) {
+        return res.status(403).json({ error: 'Access denied' });
       }
     }
 
     res.json({
       orderId: order._id,
+      orderNumber: order.orderNumber,
       status: order.status,
       shipment: order.shipment || null,
-      estimatedDelivery: order.shipment?.estimatedDelivery || null
+      estimatedDelivery: order.shipment?.estimatedDelivery || null,
+      createdAt: order.createdAt,
+      items: order.items,
+      total: order.total,
+      paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus
     });
   } catch (err) {
     logger.error('Get order tracking failed', { error: err.message });
     res.status(500).json({ error: 'Failed to fetch shipment tracking' });
+  }
+}
+
+async function cancelOrder(req, res) {
+  try {
+    const { orderId } = req.params;
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    if (order.userId && order.userId.toString() !== req.userId?.toString()) {
+      const user = await User.findById(req.userId).select('role');
+      if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
+
+    const cancellableStatuses = ['pending', 'confirmed'];
+    if (!cancellableStatuses.includes(order.status)) {
+      return res.status(400).json({ error: `Cannot cancel order with status "${order.status}". Only pending or confirmed orders can be cancelled.` });
+    }
+
+    order.status = 'cancelled';
+    order.shipment = order.shipment || {};
+    order.shipment.status = 'cancelled';
+    order.shipment.events = order.shipment.events || [];
+    order.shipment.events.push({
+      status: 'cancelled',
+      message: req.body.reason || 'Cancelled by customer',
+      timestamp: new Date()
+    });
+    await order.save();
+
+    try {
+      await restoreInventoryForOrder(order);
+    } catch (invErr) {
+      logger.error('Inventory restore failed after cancellation', { error: invErr.message, orderId: order._id });
+    }
+
+    logger.info('Order cancelled', { orderId: order._id, orderNumber: order.orderNumber, userId: req.userId });
+    res.json({ success: true, message: 'Order cancelled successfully', order });
+  } catch (err) {
+    logger.error('Cancel order failed', { error: err.message });
+    res.status(500).json({ error: 'Failed to cancel order' });
   }
 }
 
@@ -124,5 +188,6 @@ module.exports = {
   getOrders,
   getUserOrders,
   getOrder,
-  getOrderTracking
+  getOrderTracking,
+  cancelOrder
 };

@@ -1,3 +1,5 @@
+const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } = require('../config');
+
 function looksConfigured(value) {
   if (typeof value !== 'string') return Boolean(value);
   const normalized = value.trim().toLowerCase();
@@ -6,39 +8,40 @@ function looksConfigured(value) {
   return !placeholderMarkers.some((marker) => normalized.includes(marker));
 }
 
-function getPaymentProviderStatus(env = {}) {
-  const hasOwnEnv = (key) => Object.prototype.hasOwnProperty.call(env, key);
-  const razorpayKey = hasOwnEnv('razorpayKey') ? env.razorpayKey : '';
-  const razorpaySecret = hasOwnEnv('razorpaySecret') ? env.razorpaySecret : '';
-  const stripeSecretKey = hasOwnEnv('stripeSecretKey') ? env.stripeSecretKey : '';
-  const paypalClientId = hasOwnEnv('paypalClientId') ? env.paypalClientId : '';
-  const paypalClientSecret = hasOwnEnv('paypalClientSecret') ? env.paypalClientSecret : '';
-
-  const razorpay = {
-    enabled: looksConfigured(razorpayKey) && looksConfigured(razorpaySecret),
-    key: razorpayKey,
-    secretConfigured: looksConfigured(razorpaySecret)
-  };
-
-  const stripe = {
-    enabled: looksConfigured(stripeSecretKey),
-    secretConfigured: looksConfigured(stripeSecretKey)
-  };
-
-  const paypal = {
-    enabled: looksConfigured(paypalClientId) && looksConfigured(paypalClientSecret),
-    clientIdConfigured: looksConfigured(paypalClientId),
-    secretConfigured: looksConfigured(paypalClientSecret)
-  };
-
-  return { razorpay, stripe, paypal };
+function isRazorpayConfigured() {
+  return looksConfigured(RAZORPAY_KEY_ID) && looksConfigured(RAZORPAY_KEY_SECRET);
 }
 
-function isPaymentConfigured(status) {
-  return Boolean(status?.razorpay?.enabled || status?.stripe?.enabled || status?.paypal?.enabled);
+function getPaymentProviderStatus() {
+  const razorpayReady = isRazorpayConfigured();
+  return {
+    razorpay: {
+      enabled: razorpayReady,
+      configured: razorpayReady,
+      keyId: razorpayReady ? RAZORPAY_KEY_ID : null
+    },
+    card: { enabled: razorpayReady },
+    upi: { enabled: razorpayReady || true },
+    cod: { enabled: true }
+  };
+}
+
+function isPaymentConfigured() {
+  return isRazorpayConfigured();
+}
+
+function getRazorpayInstance() {
+  if (!isRazorpayConfigured()) return null;
+  const Razorpay = require('razorpay');
+  return new Razorpay({
+    key_id: RAZORPAY_KEY_ID,
+    key_secret: RAZORPAY_KEY_SECRET
+  });
 }
 
 module.exports = {
   getPaymentProviderStatus,
-  isPaymentConfigured
+  isPaymentConfigured,
+  isRazorpayConfigured,
+  getRazorpayInstance
 };

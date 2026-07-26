@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="PAP-JOY - Your account dashboard. Manage orders, addresses, and profile settings." />
   <meta name="theme-color" content="#0a0a0a" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <title>PAP-JOY | My Account</title>
   <script>
     // Configure API base URL for production
@@ -18,479 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  <style>
-    .account-header {
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
-      color: white;
-      padding: 40px 28px;
-      border-radius: 16px;
-      margin-bottom: 32px;
-      box-shadow: 0 10px 40px rgba(92, 124, 99, 0.2);
-    }
 
-    .account-header-content {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-
-    .account-avatar-large {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2rem;
-      font-weight: 600;
-      flex-shrink: 0;
-    }
-
-    .account-intro {
-      flex: 1;
-    }
-
-    .account-intro h1 {
-      margin: 0 0 4px;
-      font-size: 1.8rem;
-      font-family: 'Playfair Display', serif;
-    }
-
-    .account-intro p {
-      margin: 0;
-      opacity: 0.95;
-      font-size: 0.95rem;
-    }
-
-    .account-actions-header {
-      display: flex;
-      gap: 12px;
-      margin-top: 16px;
-    }
-
-    .account-actions-header button {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      font-weight: 500;
-      transition: all 200ms ease;
-    }
-
-    .account-actions-header .btn-primary {
-      background: white;
-      color: var(--accent);
-    }
-
-    .account-actions-header .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-    }
-
-    .account-actions-header .btn-secondary {
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-
-    .account-actions-header .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.3);
-    }
-
-    .loyalty-summary-card {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 18px;
-      padding: 18px 22px;
-      margin-top: 24px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-    }
-
-    .loyalty-tier {
-      font-size: 1.05rem;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-    }
-
-    .loyalty-text {
-      margin: 8px 0 0;
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 0.95rem;
-      line-height: 1.5;
-    }
-
-    .loyalty-progress {
-      flex: 0 0 160px;
-      height: 10px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.2);
-      overflow: hidden;
-      position: relative;
-    }
-
-    .loyalty-progress::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      width: var(--progress-width, 32%);
-      background: var(--accent-strong);
-      border-radius: 999px;
-      transition: width 240ms ease;
-    }
-
-    .order-status-badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 18px;
-    }
-
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 14px;
-      border-radius: 999px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text);
-      font-size: 0.9rem;
-      font-weight: 500;
-      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
-    }
-
-    .status-badge i {
-      color: var(--accent);
-      width: 18px;
-      text-align: center;
-    }
-
-    .status-badge.completed {
-      background: rgba(92, 124, 99, 0.12);
-      border-color: rgba(92, 124, 99, 0.2);
-    }
-
-    .status-badge.pending {
-      background: rgba(255, 180, 0, 0.12);
-      border-color: rgba(255, 180, 0, 0.25);
-    }
-
-    .status-badge.shipped {
-      background: rgba(75, 129, 255, 0.12);
-      border-color: rgba(75, 129, 255, 0.25);
-    }
-
-    .status-badge.cancelled {
-      background: rgba(255, 90, 90, 0.12);
-      border-color: rgba(255, 90, 90, 0.22);
-    }
-
-    .account-main {
-      display: grid;
-      grid-template-columns: 1fr 320px;
-      gap: 28px;
-    }
-
-    .account-content {
-      display: flex;
-      flex-direction: column;
-      gap: 28px;
-    }
-
-    .account-section {
-      background: var(--surface);
-      border-radius: 12px;
-      padding: 24px;
-      border: 1px solid var(--border);
-    }
-
-    .account-section h3 {
-      margin: 0 0 16px;
-      font-size: 1.1rem;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: var(--text);
-    }
-
-    .account-section h3 i {
-      color: var(--accent);
-      font-size: 1.2rem;
-    }
-
-    .order-item {
-      padding: 16px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      transition: all 200ms ease;
-    }
-
-    .order-item:hover {
-      border-color: var(--accent);
-      background: var(--surface-soft);
-    }
-
-    .order-details {
-      flex: 1;
-    }
-
-    .order-id {
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-
-    .order-date {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-    }
-
-    .order-status {
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 500;
-      background: var(--accent-soft);
-      color: var(--accent);
-    }
-
-    .order-total {
-      font-weight: 600;
-      color: var(--accent);
-      margin-left: 16px;
-    }
-
-    .address-card {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 16px;
-      position: relative;
-      transition: all 200ms ease;
-    }
-
-    .address-card:hover {
-      border-color: var(--accent);
-      background: var(--surface-soft);
-    }
-
-    .address-card.default {
-      border-color: var(--accent);
-      background: var(--accent-soft);
-    }
-
-    .address-badge {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      background: var(--accent);
-      color: white;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-
-    .address-name {
-      font-weight: 600;
-      margin-bottom: 8px;
-      color: var(--text);
-    }
-
-    .address-text {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      line-height: 1.5;
-      margin-bottom: 8px;
-    }
-
-    .address-actions {
-      display: flex;
-      gap: 8px;
-      font-size: 0.9rem;
-    }
-
-    .address-actions button {
-      background: none;
-      border: none;
-      color: var(--accent);
-      cursor: pointer;
-      font-weight: 500;
-      transition: all 200ms ease;
-    }
-
-    .address-actions button:hover {
-      color: var(--accent-strong);
-    }
-
-    .account-sidebar {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .sidebar-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-    }
-
-    .sidebar-card h4 {
-      margin: 0 0 12px;
-      color: var(--text);
-      font-size: 0.95rem;
-    }
-
-    .sidebar-card p {
-      margin: 0 0 12px;
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      line-height: 1.4;
-    }
-
-    .sidebar-card button {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid var(--border);
-      background: var(--surface-soft);
-      border-radius: 6px;
-      cursor: pointer;
-      color: var(--text);
-      font-weight: 500;
-      transition: all 200ms ease;
-    }
-
-    .sidebar-card button:hover {
-      background: var(--accent-soft);
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 32px;
-      color: var(--text-muted);
-    }
-
-    .empty-state i {
-      font-size: 2rem;
-      display: block;
-      margin-bottom: 12px;
-      opacity: 0.5;
-    }
-
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 9999;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal.active {
-      display: flex;
-    }
-
-    .modal-content {
-      background: white;
-      border-radius: 12px;
-      padding: 28px;
-      max-width: 500px;
-      width: 90%;
-      max-height: 90vh;
-      overflow-y: auto;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-
-    .modal-header h2 {
-      margin: 0;
-      color: var(--text);
-    }
-
-    .modal-close {
-      background: none;
-      border: none;
-      font-size: 1.5rem;
-      cursor: pointer;
-      color: var(--text-muted);
-    }
-
-    .form-group {
-      margin-bottom: 16px;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 6px;
-      font-weight: 500;
-      color: var(--text);
-      font-size: 0.9rem;
-    }
-
-    .form-group input,
-    .form-group textarea {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-family: inherit;
-      font-size: 0.9rem;
-      transition: all 200ms ease;
-    }
-
-    .form-group input:focus,
-    .form-group textarea:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-soft);
-    }
-
-    @media (max-width: 768px) {
-      .account-main {
-        grid-template-columns: 1fr;
-      }
-
-      .account-header {
-        padding: 24px;
-      }
-
-      .account-header-content {
-        flex-direction: column;
-        text-align: center;
-      }
-
-      .account-actions-header {
-        justify-content: center;
-      }
-
-      .order-item {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .order-total {
-        margin-left: 0;
-        margin-top: 8px;
-      }
-    }
-  </style>
 </head>
 <body data-page="account">
   <div id="global-error" class="global-error" style="display: none;"></div>
@@ -504,7 +33,13 @@
     <!-- Account Header -->
     <div class="account-header">
       <div class="account-header-content">
-        <div class="account-avatar-large" id="account-avatar-large">P</div>
+        <div class="account-avatar-wrapper">
+          <div class="account-avatar-large" id="account-avatar-large">P</div>
+          <label class="avatar-upload-btn" title="Change avatar">
+            <i class="fas fa-camera"></i>
+            <input type="file" id="avatar-upload" accept="image/*" style="display:none;" />
+          </label>
+        </div>
         <div class="account-intro">
           <h1 id="account-name-header">Welcome to Your Account</h1>
           <p id="account-email-header">Sign in to access your profile</p>
@@ -512,6 +47,20 @@
             <button class="btn-primary" id="edit-profile-btn"><i class="fas fa-edit"></i> Edit Profile</button>
             <button class="btn-secondary" id="account-signout-btn"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
           </div>
+        </div>
+      </div>
+      <div class="account-stats-row" id="account-stats-row">
+        <div class="account-stat">
+          <span class="account-stat-value" id="stat-total-orders">0</span>
+          <span class="account-stat-label">Orders</span>
+        </div>
+        <div class="account-stat">
+          <span class="account-stat-value" id="stat-total-spent">—</span>
+          <span class="account-stat-label">Total Spent</span>
+        </div>
+        <div class="account-stat">
+          <span class="account-stat-value" id="stat-member-since">—</span>
+          <span class="account-stat-label">Member Since</span>
         </div>
       </div>
       <div class="loyalty-summary-card" id="loyalty-summary-card">
@@ -570,6 +119,73 @@
           </div>
         </div>
 
+        <!-- Preferences Section -->
+        <div class="account-section">
+          <h3><i class="fas fa-cog"></i> Preferences</h3>
+          <div class="preferences-grid" id="preferences-container">
+            <div class="pref-item">
+              <div class="pref-info">
+                <strong>Order Notifications</strong>
+                <p>Receive email updates about your orders</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="pref-notifications" checked />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="pref-item">
+              <div class="pref-info">
+                <strong>Marketing Emails</strong>
+                <p>Receive deals, new arrivals, and promotions</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="pref-marketing" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="pref-item">
+              <div class="pref-info">
+                <strong>Currency</strong>
+                <p>Display prices in your preferred currency</p>
+              </div>
+              <select id="pref-currency" class="pref-select">
+                <option value="INR">INR (₹)</option>
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="GBP">GBP (£)</option>
+              </select>
+            </div>
+            <div class="pref-item">
+              <div class="pref-info">
+                <strong>Language</strong>
+                <p>Choose your preferred language</p>
+              </div>
+              <select id="pref-language" class="pref-select">
+                <option value="en">English</option>
+                <option value="hi">Hindi</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+              </select>
+            </div>
+            <div class="pref-item">
+              <button class="checkout-button" id="save-prefs-btn" style="width: 100%; margin-top: 8px;">Save Preferences</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security Section -->
+        <div class="account-section">
+          <h3><i class="fas fa-shield-alt"></i> Security</h3>
+          <div class="security-actions">
+            <button class="btn-secondary account-action-btn" id="change-password-btn">
+              <i class="fas fa-key"></i> Change Password
+            </button>
+            <button class="btn-danger-outline account-action-btn" id="delete-account-btn">
+              <i class="fas fa-trash-alt"></i> Delete Account
+            </button>
+          </div>
+        </div>
+
         <!-- Addresses Section -->
         <div class="account-section">
           <h3><i class="fas fa-map-marker-alt"></i> Shipping Addresses</h3>
@@ -614,7 +230,14 @@
         <div class="sidebar-card">
           <h4><i class="fas fa-question-circle"></i> Need Help?</h4>
           <p>Contact our support team for assistance</p>
-          <button><i class="fas fa-envelope"></i> Contact Support</button>
+          <button onclick="window.location.href='mailto:hello@papjoy.com?subject=Support%20Request'"><i class="fas fa-envelope"></i> Contact Support</button>
+        </div>
+
+        <!-- Admin Card (hidden by default, shown for admin users) -->
+        <div class="sidebar-card" id="admin-sidebar-card" style="display:none;">
+          <h4><i class="fas fa-shield-halved"></i> Admin</h4>
+          <p>Manage products, orders, and users.</p>
+          <button onclick="window.location.href='admin.html'" style="width:100%; background: var(--primary); color: #fff; border: none; padding: 10px; border-radius: 8px; cursor: pointer;"><i class="fas fa-gauge-high"></i> Open Admin Dashboard</button>
         </div>
       </div>
     </div>
@@ -649,10 +272,11 @@
   <div id="add-address-modal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Add New Address</h2>
+        <h2 id="address-modal-title">Add New Address</h2>
         <button class="modal-close" onclick="closeAddressModal()">&times;</button>
       </div>
       <form id="add-address-form">
+        <input type="hidden" id="addr-edit-id" value="" />
         <div class="form-group">
           <label for="addr-name">Full Name</label>
           <input type="text" id="addr-name" required>
@@ -665,7 +289,7 @@
           <label for="addr-line2">Apartment, Suite (Optional)</label>
           <input type="text" id="addr-line2">
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-row">
           <div class="form-group">
             <label for="addr-city">City</label>
             <input type="text" id="addr-city" required>
@@ -675,7 +299,7 @@
             <input type="text" id="addr-state" required>
           </div>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-row">
           <div class="form-group">
             <label for="addr-postal">Postal Code</label>
             <input type="text" id="addr-postal" required>
@@ -700,36 +324,126 @@
           <label for="addr-phone">Phone Number</label>
           <input type="tel" id="addr-phone">
         </div>
-        <button type="submit" class="checkout-button" style="width: 100%;">Add Address</button>
+        <button type="submit" class="checkout-button" id="address-submit-btn" style="width: 100%;">Add Address</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div id="change-password-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Change Password</h2>
+        <button class="modal-close" onclick="document.getElementById('change-password-modal').classList.remove('active')">&times;</button>
+      </div>
+      <form id="change-password-form">
+        <div class="form-group">
+          <label for="current-password">Current Password</label>
+          <div class="password-field">
+            <input type="password" id="current-password" required />
+            <button type="button" class="toggle-password" onclick="togglePasswordField(this)"><i class="fas fa-eye"></i></button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="new-password">New Password</label>
+          <div class="password-field">
+            <input type="password" id="new-password" required minlength="8" />
+            <button type="button" class="toggle-password" onclick="togglePasswordField(this)"><i class="fas fa-eye"></i></button>
+          </div>
+          <div class="password-strength" id="new-password-strength"></div>
+        </div>
+        <div class="form-group">
+          <label for="confirm-new-password">Confirm New Password</label>
+          <div class="password-field">
+            <input type="password" id="confirm-new-password" required minlength="8" />
+            <button type="button" class="toggle-password" onclick="togglePasswordField(this)"><i class="fas fa-eye"></i></button>
+          </div>
+        </div>
+        <button type="submit" class="checkout-button" style="width: 100%;">Update Password</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Account Modal -->
+  <div id="delete-account-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Delete Account</h2>
+        <button class="modal-close" onclick="document.getElementById('delete-account-modal').classList.remove('active')">&times;</button>
+      </div>
+      <div class="delete-account-warning">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p><strong>This action is permanent and cannot be undone.</strong></p>
+        <p>All your data including orders, addresses, and preferences will be permanently deleted.</p>
+      </div>
+      <form id="delete-account-form">
+        <div class="form-group">
+          <label for="delete-confirm-password">Enter your password to confirm</label>
+          <div class="password-field">
+            <input type="password" id="delete-confirm-password" required />
+            <button type="button" class="toggle-password" onclick="togglePasswordField(this)"><i class="fas fa-eye"></i></button>
+          </div>
+        </div>
+        <div class="form-group checkbox">
+          <input type="checkbox" id="delete-confirm-check" required />
+          <label for="delete-confirm-check">I understand this action is irreversible</label>
+        </div>
+        <button type="submit" class="btn-danger" style="width: 100%; padding: 12px; border-radius: 8px; font-size: 1rem; cursor: pointer;">
+          <i class="fas fa-trash-alt"></i> Permanently Delete My Account
+        </button>
       </form>
     </div>
   </div>
 
   <footer class="site-footer">
+    <div class="connect-with-us">
+      <h3>Connect With Us</h3>
+    </div>
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="brand"><a href="index.html">PAP-JOY</a></div>
+        <p>Premium footwear for every journey.</p>
+      </div>
+      <div class="social-section">
+        <h4>Follow Us</h4>
+        <div class="social-links">
+          <a href="https://instagram.com/papjoy" class="social-link" title="Instagram" aria-label="Follow us on Instagram" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
+          <a href="https://facebook.com/papjoy" class="social-link" title="Facebook" aria-label="Follow us on Facebook" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook-f"></i></a>
+          <a href="https://youtube.com/@papjoy" class="social-link" title="YouTube" aria-label="Subscribe on YouTube" target="_blank" rel="noopener noreferrer"><i class="fab fa-youtube"></i></a>
+        </div>
+      </div>
+      <div class="contact-info">
+        <h4>Contact Us</h4>
+        <div class="contact-item"><i class="fas fa-envelope"></i> <a href="mailto:hello@papjoy.com">hello@papjoy.com</a></div>
+        <div class="contact-item"><i class="fas fa-phone"></i> <a href="tel:+1234567890">+1 (234) 567-8900</a></div>
+      </div>
+    </div>
     <div class="copyright">
-      <p>&copy; 2026 PAP-JOY. All rights reserved.</p>
+      <p>&copy; 2026 PAP-JOY. Crafted for every journey. All rights reserved.</p>
     </div>
   </footer>
   <script>
     function openAddressModal() {
-      const user = getCurrentUser?.() || {};
-      const address = user.shippingAddress || {};
-      document.getElementById('addr-name').value = address.fullName || user.name || '';
-      document.getElementById('addr-type').value = address.type || 'shipping';
-      document.getElementById('addr-line1').value = address.line1 || '';
-      document.getElementById('addr-line2').value = address.line2 || '';
-      document.getElementById('addr-city').value = address.city || '';
-      document.getElementById('addr-state').value = address.state || '';
-      document.getElementById('addr-postal').value = address.postalCode || '';
-      document.getElementById('addr-country').value = address.country || '';
-      document.getElementById('addr-phone').value = address.phone || '';
-      document.getElementById('addr-default').checked = address.isDefault || false;
+      document.getElementById('addr-edit-id').value = '';
+      document.getElementById('add-address-form').reset();
+      document.getElementById('address-modal-title').textContent = 'Add New Address';
+      document.getElementById('address-submit-btn').textContent = 'Add Address';
       document.getElementById('add-address-modal').classList.add('active');
     }
 
+    function togglePasswordField(btn) {
+      const input = btn.parentElement.querySelector('input');
+      const icon = btn.querySelector('i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+      } else {
+        input.type = 'password';
+        icon.className = 'fas fa-eye';
+      }
+    }
+    window.togglePasswordField = togglePasswordField;
 
-
-    // Close modals when clicking outside
     document.querySelectorAll('.modal').forEach(modal => {
       modal.addEventListener('click', e => {
         if (e.target === modal) modal.classList.remove('active');

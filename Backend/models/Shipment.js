@@ -7,6 +7,14 @@ const shipmentEventSchema = new mongoose.Schema({
   status: String
 }, { _id: false });
 
+const deliveryPartnerSchema = new mongoose.Schema({
+  name: String,
+  phone: String,
+  vehicleType: String,
+  vehicleNumber: String,
+  photo: String
+}, { _id: false });
+
 const shipmentSchema = new mongoose.Schema({
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
   orderNumber: { type: String, required: true },
@@ -15,6 +23,17 @@ const shipmentSchema = new mongoose.Schema({
   trackingNumber: String,
   trackingUrl: String,
   estimatedDelivery: Date,
+  deliveryPartner: deliveryPartnerSchema,
+  currentLocation: {
+    latitude: Number,
+    longitude: Number,
+    address: String,
+    updatedAt: Date
+  },
+  deliveryAddress: {
+    latitude: Number,
+    longitude: Number
+  },
   status: { type: String, enum: ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'returned', 'refunded', 'cancelled'], default: 'pending' },
   events: [shipmentEventSchema],
   createdAt: { type: Date, default: Date.now },

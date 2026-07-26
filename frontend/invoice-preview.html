@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <title>PAP-JOY | Invoice Preview</title>
   <script>
     // Configure API base URL for production
@@ -27,7 +28,10 @@
       </div>
     </div>
 
-    <div class="invoice-preview-card">
+    <div class="invoice-preview-card invoice-print">
+      <div class="no-print" style="display:flex; justify-content:flex-end; margin-bottom:16px; gap:10px;">
+        <button class="btn btn-primary" onclick="window.print()"><i class="fas fa-print"></i> Print Invoice</button>
+      </div>
       <h3 id="invoice-preview-title">Loading invoice...</h3>
       <div id="invoice-preview-message" class="auth-message"></div>
       <div id="invoice-preview-container"></div>

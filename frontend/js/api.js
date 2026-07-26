@@ -64,31 +64,41 @@ async function loadRatingSummary(productId) {
   }
 }
 
+let refreshPromise = null;
+
 async function refreshAccessToken() {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) return null;
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = (async () => {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) return null;
 
-  try {
-    const { response, data } = await apiFetch('/api/v1/auth/refresh', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken })
-    });
+    try {
+      const { response, data } = await apiFetch('/api/v1/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken })
+      });
 
-    if (!response.ok || !data?.token) {
+      if (!response.ok || !data?.token) {
+        signOut();
+        return null;
+      }
+
+      const currentUser = getCurrentUser() || {};
+      const remember = !!localStorage.getItem(AUTH_TOKEN_KEY) || !!localStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
+      const updatedUser = { ...currentUser, token: data.token, refreshToken: data.refreshToken || refreshToken };
+      setCurrentUser(updatedUser, remember);
+      return data.token;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
       signOut();
       return null;
     }
-
-    const currentUser = getCurrentUser() || {};
-    const remember = !!localStorage.getItem(AUTH_TOKEN_KEY) || !!localStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
-    const updatedUser = { ...currentUser, token: data.token, refreshToken: data.refreshToken || refreshToken };
-    setCurrentUser(updatedUser, remember);
-    return data.token;
-  } catch (error) {
-    console.error('Token refresh failed:', error);
-    signOut();
-    return null;
+  })();
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
   }
 }
 
@@ -122,20 +132,22 @@ async function syncUserProfile() {
 
     if (!response.ok) return null;
     const data = await safeParseJson(response);
-    if (!data || !data.email) return null;
+    if (!data) return null;
+    const profile = data.user || data;
+    if (!profile || !profile.email) return null;
 
     const remember = !!localStorage.getItem('papjoy-token');
     const updatedUser = {
       token,
-      id: data.id || data._id,
-      _id: data._id || data.id,
-      email: data.email,
-      name: data.name || '',
-      role: data.role || 'customer',
-      shippingAddress: data.shippingAddress || {},
-      addresses: data.addresses || [],
-      createdAt: data.createdAt || '',
-      phone: data.phone || ''
+      id: profile.id || profile._id,
+      _id: profile._id || profile.id,
+      email: profile.email,
+      name: profile.name || '',
+      role: profile.role || 'customer',
+      shippingAddress: profile.shippingAddress || {},
+      addresses: profile.addresses || [],
+      createdAt: profile.createdAt || '',
+      phone: profile.phone || ''
     };
     setCurrentUser(updatedUser, remember);
     return updatedUser;

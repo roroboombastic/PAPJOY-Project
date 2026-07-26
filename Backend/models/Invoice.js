@@ -65,7 +65,7 @@ const invoiceSchema = new mongoose.Schema({
   total: { type: Number, required: true, min: 0 },
 
   // Payment Details
-  paymentMethod: { type: String, enum: ['card', 'paypal', 'bank_transfer', 'cod', 'upi', 'bnpl', 'wallet', 'web'] },
+  paymentMethod: { type: String, enum: ['card', 'cod', 'upi'] },
   paymentStatus: { type: String, enum: ['pending', 'paid', 'failed', 'refunded'], default: 'pending' },
   paymentDate: Date,
   transactionId: String,

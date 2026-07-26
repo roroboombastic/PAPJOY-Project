@@ -1,16 +1,9 @@
 // Global variables
 let products = [];
-let currentProduct = null;
-let productsCache = null;
 let productsLoadPromise = null;
-let productRenderCount = 0;
 let searchInProgress = false;
 let productsLoading = false;
-let selectedCategory = '';
-let searchQuery = '';
-let selectedSort = 'featured';
 let selectedFeaturedFilter = 'all';
-let filtersInitialized = false;
 let featuredControlsInitialized = false;
 let searchAbortController = null;
 
@@ -23,13 +16,13 @@ function createProductCardElement(product) {
   card.onclick = () => { window.location.href = getProductLink(product); };
 
   const imageUrls = getProductImageUrls(product);
-  const primaryImage = imageUrls[0] || product.image || PRODUCT_FALLBACK_IMAGE;
+  const primaryImage = imageUrls[0] || product.image || getNextFallbackImage();
   const invStatus = getInventoryStatus(product);
   const productId = product.id || product._id;
 
   card.innerHTML = `
     <div class="product-image">
-      <img src="${primaryImage}" alt="${product.name || 'Product'}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'">
+      <img src="${primaryImage}" alt="${product.name || 'Product'}" loading="lazy" onerror="if(!this.dataset.fb){this.dataset.fb='1';this.src=getNextFallbackImage();}else{this.style.display='none';}">
       <button class="wishlist-heart" data-product-id="${productId}" title="Add to wishlist"><i class="${isInWishlist(productId) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
       ${product.isFeatured ? '<div class="badge featured">Featured</div>' : ''}
       <div class="badge ${invStatus.class}" style="background-color: ${invStatus.color}">${invStatus.status}</div>
@@ -77,6 +70,18 @@ window.initProductGridDelegation = initProductGridDelegation;
 
 // ================== PRODUCT LOADING ==================
 
+function showProductSkeleton(container, count = 8) {
+  if (!container) return;
+  container.innerHTML = Array.from({ length: count }, () => `
+    <div class="product-card skeleton">
+      <div class="skeleton-image"></div>
+      <div class="skeleton-text skeleton-title"></div>
+      <div class="skeleton-text skeleton-subtitle"></div>
+      <div class="skeleton-text skeleton-price"></div>
+    </div>
+  `).join('');
+}
+
 async function loadProducts() {
   if (productsLoadPromise) {
     return productsLoadPromise;
@@ -84,7 +89,7 @@ async function loadProducts() {
 
   productsLoading = true;
   const grid = document.querySelector('.product-grid');
-  if (grid) grid.innerHTML = `<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><p>Loading products...</p></div>`;
+  showProductSkeleton(grid);
 
   productsLoadPromise = (async () => {
     const now = Date.now();
@@ -242,6 +247,8 @@ async function renderProductDetailPage() {
     return;
   }
 
+  renderBreadcrumbs(product);
+
   const activeImage = product.images && product.images.length ? product.images[0] : (product.image || PRODUCT_FALLBACK_IMAGE);
   const variantButtons = (product.variants || []).map((variant, index) => `
         <button class="variant-option${index === 0 ? ' active' : ''}" data-price-delta="${variant.priceDelta || 0}" data-variant="${variant.name || 'Standard'}">
@@ -371,36 +378,31 @@ async function performSearch() {
   const searchInput = document.getElementById('search-products');
   const sortFilter = document.getElementById('sort-filter');
   const inStockFilter = document.getElementById('in-stock-filter');
-  const priceMinRange = document.getElementById('price-min');
-  const priceMaxRange = document.getElementById('price-max');
+  const categoryFilter = document.getElementById('category-filter');
   const productGrid = document.getElementById('product-grid') || document.querySelector('.product-grid');
-  const categoryInput = document.getElementById('filter-category');
 
   const q = searchInput?.value || '';
   const sort = sortFilter?.value || 'newest';
   const inStock = inStockFilter?.checked || false;
-  const priceMin = priceMinRange?.value || 0;
-  const priceMax = priceMaxRange?.value || 500000;
-  const category = categoryInput?.value || '';
+  const category = categoryFilter?.value || '';
 
-  const selectedBrands = Array.from(document.querySelectorAll('[data-filter-brand]:checked'))
-    .map(cb => cb.dataset.filterBrand);
-  const selectedSizes = Array.from(document.querySelectorAll('[data-filter-size]:checked'))
-    .map(cb => cb.dataset.filterSize);
-  const selectedColors = Array.from(document.querySelectorAll('[data-filter-color]:checked'))
-    .map(cb => cb.dataset.filterColor);
-
-  const brand = selectedBrands.join('|');
-  const size = selectedSizes.join('|');
-  const color = selectedColors.join('|');
+  const activePrice = document.querySelector('.price-chip.active');
+  const priceRange = activePrice?.dataset.price || 'all';
+  let priceMin = 0;
+  let priceMax = 999999;
+  if (priceRange !== 'all') {
+    const parts = priceRange.split('-');
+    priceMin = parseInt(parts[0], 10) || 0;
+    priceMax = parseInt(parts[1], 10) || 999999;
+  }
 
   if (productGrid) {
-    productGrid.innerHTML = `<div class="loading-state">Loading products...</div>`;
+    showProductSkeleton(productGrid);
   }
 
   try {
     const result = await searchProducts({
-      q, category, sort, inStock, priceMin, priceMax, brand, size, color,
+      q, category, sort, inStock, priceMin, priceMax,
       signal: searchAbortController.signal
     });
 
@@ -414,6 +416,7 @@ async function performSearch() {
         productGrid.innerHTML = `<div class="empty-state">No products found matching your criteria.</div>`;
         const statusEl = document.getElementById('product-status');
         if (statusEl) statusEl.textContent = '0 products found';
+        renderActiveFilters();
         return;
       }
 
@@ -432,6 +435,8 @@ async function performSearch() {
     if (statusEl) {
       statusEl.textContent = `${products.length} ${products.length === 1 ? 'product' : 'products'} found`;
     }
+
+    renderActiveFilters();
   } catch (error) {
     if (error.name === 'AbortError') return;
     console.error('Search error:', error);
@@ -581,6 +586,171 @@ async function renderRecommendations(productId) {
 }
 window.renderRecommendations = renderRecommendations;
 
+// ================== BREADCRUMBS ==================
+
+function renderBreadcrumbs(product) {
+  const container = document.getElementById('breadcrumbs');
+  if (!container) return;
+
+  const crumbs = [
+    { label: 'Home', href: 'index.html' },
+    { label: 'Shop', href: 'product.html' }
+  ];
+
+  const page = document.body.dataset.page;
+  if (page === 'product-detail' && product) {
+    if (product.category && product.category !== 'Uncategorized') {
+      crumbs.push({ label: product.category, href: `product.html?category=${encodeURIComponent(product.category)}` });
+    }
+    crumbs.push({ label: product.name, href: null });
+  } else if (page === 'shop') {
+    const params = new URLSearchParams(window.location.search);
+    const cat = params.get('category');
+    const q = params.get('q');
+    if (cat) {
+      crumbs.push({ label: cat, href: null });
+    } else if (q) {
+      crumbs.push({ label: `Search: "${q}"`, href: null });
+    } else {
+      crumbs.push({ label: 'All Products', href: null });
+    }
+  }
+
+  container.innerHTML = crumbs.map((crumb, i) => {
+    const isLast = i === crumbs.length - 1;
+    if (isLast || !crumb.href) {
+      return `<span class="breadcrumb-item current" aria-current="page">${crumb.label}</span>`;
+    }
+    return `<a class="breadcrumb-item" href="${crumb.href}">${crumb.label}</a><span class="breadcrumb-separator">/</span>`;
+  }).join('');
+}
+window.renderBreadcrumbs = renderBreadcrumbs;
+
+// ================== RECENTLY VIEWED ==================
+
+function renderRecentlyViewed() {
+  const section = document.getElementById('recently-viewed-section');
+  const grid = document.getElementById('recently-viewed-grid');
+  if (!section || !grid) return;
+
+  let history = [];
+  try {
+    history = JSON.parse(localStorage.getItem('papjoy-history')) || [];
+  } catch (e) { return; }
+
+  if (!history.length) {
+    section.style.display = 'none';
+    return;
+  }
+
+  const recentIds = history.slice(0, 4);
+  const matched = recentIds
+    .map(id => products.find(p => String(p.id) === String(id) || String(p._id) === String(id) || String(p.slug) === String(id)))
+    .filter(Boolean);
+
+  if (!matched.length) {
+    section.style.display = 'none';
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  matched.forEach(product => {
+    const card = createProductCardElement(product);
+    if (card) fragment.appendChild(card);
+  });
+
+  grid.innerHTML = '';
+  grid.appendChild(fragment);
+  section.style.display = '';
+  initProductGridDelegation();
+}
+window.renderRecentlyViewed = renderRecentlyViewed;
+
+// ================== SEARCH AUTOCOMPLETE ==================
+
+let autocompleteAbortController = null;
+let autocompleteDebounceTimer = null;
+
+function initSearchAutocomplete() {
+  const wrapper = document.querySelector('.search-autocomplete-wrapper');
+  const input = document.getElementById('search-products');
+  const dropdown = document.getElementById('search-autocomplete');
+  if (!input || !dropdown) return;
+
+  input.addEventListener('input', () => {
+    clearTimeout(autocompleteDebounceTimer);
+    const query = input.value.trim();
+    if (query.length < 2) {
+      dropdown.style.display = 'none';
+      dropdown.innerHTML = '';
+      return;
+    }
+    autocompleteDebounceTimer = setTimeout(() => fetchAutocomplete(query, dropdown), 250);
+  });
+
+  input.addEventListener('focus', () => {
+    if (dropdown.innerHTML.trim()) dropdown.style.display = '';
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!wrapper || !wrapper.contains(e.target)) {
+      dropdown.style.display = 'none';
+    }
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      dropdown.style.display = 'none';
+    } else if (e.key === 'Enter') {
+      dropdown.style.display = 'none';
+    }
+  });
+}
+window.initSearchAutocomplete = initSearchAutocomplete;
+
+async function fetchAutocomplete(query, dropdown) {
+  if (autocompleteAbortController) autocompleteAbortController.abort();
+  autocompleteAbortController = new AbortController();
+
+  try {
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}/api/v1/products/search?q=${encodeURIComponent(query)}&limit=6`,
+      { timeout: 3000, signal: autocompleteAbortController.signal }
+    );
+    if (!response.ok) {
+      dropdown.style.display = 'none';
+      return;
+    }
+    const data = await response.json();
+    const items = Array.isArray(data.products) ? data.products : [];
+    if (!items.length) {
+      dropdown.style.display = 'none';
+      dropdown.innerHTML = '';
+      return;
+    }
+
+    dropdown.innerHTML = items.slice(0, 6).map(product => {
+      const image = (product.images && product.images[0]) || product.image || PRODUCT_FALLBACK_IMAGE;
+      const link = getProductLink(normalizeProduct(product));
+      const price = formatCurrency(product.price || 0);
+      return `
+        <a class="autocomplete-item" href="${link}">
+          <img src="${image}" alt="${product.name || 'Product'}" class="autocomplete-thumb" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
+          <div class="autocomplete-info">
+            <span class="autocomplete-name">${product.name || 'Product'}</span>
+            <span class="autocomplete-price">${price}</span>
+          </div>
+        </a>
+      `;
+    }).join('');
+    dropdown.style.display = '';
+  } catch (error) {
+    if (error.name === 'AbortError') return;
+    dropdown.style.display = 'none';
+  }
+}
+window.fetchAutocomplete = fetchAutocomplete;
+
 // ================== PRODUCT HISTORY ==================
 
 async function saveViewedProduct(productId) {
@@ -608,12 +778,10 @@ async function initProductFilters() {
   const searchInput = document.getElementById('search-products');
   const sortFilter = document.getElementById('sort-filter');
   const inStockFilter = document.getElementById('in-stock-filter');
-  const priceMinRange = document.getElementById('price-min');
-  const priceMaxRange = document.getElementById('price-max');
-  const priceMinDisplay = document.getElementById('price-min-display');
-  const priceMaxDisplay = document.getElementById('price-max-display');
+  const categoryFilter = document.getElementById('category-filter');
+  const priceQuickSelect = document.getElementById('price-quick-select');
 
-  if (!searchInput && !priceMinRange) return;
+  if (!searchInput) return;
 
   const params = new URLSearchParams(window.location.search);
   const urlCategory = params.get('category');
@@ -624,76 +792,113 @@ async function initProductFilters() {
   if (urlQuery && searchInput) {
     searchInput.value = urlQuery;
   }
-  if (urlCategory) {
-    let categoryInput = document.getElementById('filter-category');
-    if (!categoryInput) {
-      categoryInput = document.createElement('input');
-      categoryInput.type = 'hidden';
-      categoryInput.id = 'filter-category';
-      document.getElementById('product-filters')?.appendChild(categoryInput);
+
+  // Populate category dropdown from products
+  const categorySet = new Set();
+  products.forEach((p) => {
+    if (p.category && p.category !== 'Uncategorized') {
+      categorySet.add(p.category);
     }
-    categoryInput.value = urlCategory;
+  });
+  if (categoryFilter && categorySet.size > 0) {
+    const sorted = Array.from(categorySet).sort();
+    categoryFilter.innerHTML = `<option value="">All Categories</option>` +
+      sorted.map((cat) => `<option value="${cat}"${urlCategory === cat ? ' selected' : ''}>${cat}</option>`).join('');
   }
 
-  const filterOptions = await loadFilterOptions();
-
-  const brandContainer = document.getElementById('brand-filters');
-  if (brandContainer && filterOptions.brands.length > 0) {
-    brandContainer.innerHTML = filterOptions.brands.map(brand => `
-      <label class="filter-checkbox">
-        <input type="checkbox" data-filter-brand="${brand}" /> ${brand}
-      </label>
-    `).join('');
+  if (urlCategory && categoryFilter) {
+    categoryFilter.value = urlCategory;
   }
 
-  const sizeContainer = document.getElementById('size-filters');
-  if (sizeContainer && filterOptions.sizes.length > 0) {
-    sizeContainer.innerHTML = filterOptions.sizes.map(size => `
-      <label class="filter-checkbox">
-        <input type="checkbox" data-filter-size="${size}" /> ${size}
-      </label>
-    `).join('');
+  // Price quick-select
+  if (priceQuickSelect) {
+    priceQuickSelect.addEventListener('click', (e) => {
+      const chip = e.target.closest('.price-chip');
+      if (!chip) return;
+      priceQuickSelect.querySelectorAll('.price-chip').forEach((c) => c.classList.remove('active'));
+      chip.classList.add('active');
+      performSearch();
+    });
   }
 
-  const colorContainer = document.getElementById('color-filters');
-  if (colorContainer && filterOptions.colors.length > 0) {
-    colorContainer.innerHTML = filterOptions.colors.map(color => `
-      <label class="filter-checkbox">
-        <input type="checkbox" data-filter-color="${color}" /> ${color}
-      </label>
-    `).join('');
-  }
-
-  if (priceMinRange && priceMaxRange) {
-    priceMinRange.max = filterOptions.priceRange.max;
-    priceMaxRange.max = filterOptions.priceRange.max;
-    priceMaxRange.value = filterOptions.priceRange.max;
-    if (priceMaxDisplay) priceMaxDisplay.textContent = formatCurrency(filterOptions.priceRange.max);
-  }
-
-  const handleSearch = debounce(async () => {
-    await performSearch();
-  }, 300);
-
-  const handlePriceChange = debounce(async () => {
-    if (priceMinDisplay) priceMinDisplay.textContent = formatCurrency(priceMinRange.value);
-    if (priceMaxDisplay) priceMaxDisplay.textContent = formatCurrency(priceMaxRange.value);
-    await performSearch();
-  }, 300);
+  // Event listeners
+  const handleSearch = debounce(() => performSearch(), 300);
 
   if (searchInput) searchInput.addEventListener('input', handleSearch);
   if (sortFilter) sortFilter.addEventListener('change', () => performSearch());
   if (inStockFilter) inStockFilter.addEventListener('change', () => performSearch());
-  if (priceMinRange) priceMinRange.addEventListener('input', handlePriceChange);
-  if (priceMaxRange) priceMaxRange.addEventListener('input', handlePriceChange);
-
-  document.querySelectorAll('[data-filter-brand], [data-filter-size], [data-filter-color]').forEach(checkbox => {
-    checkbox.addEventListener('change', () => performSearch());
-  });
+  if (categoryFilter) categoryFilter.addEventListener('change', () => performSearch());
 
   await performSearch();
 }
 window.initProductFilters = initProductFilters;
+
+// ================== ACTIVE FILTER CHIPS ==================
+
+function renderActiveFilters() {
+  const container = document.getElementById('active-filters');
+  if (!container) return;
+
+  const chips = [];
+  const searchInput = document.getElementById('search-products');
+  const categoryFilter = document.getElementById('category-filter');
+  const sortFilter = document.getElementById('sort-filter');
+  const inStockFilter = document.getElementById('in-stock-filter');
+  const activePrice = document.querySelector('.price-chip.active');
+
+  const q = searchInput?.value?.trim();
+  const category = categoryFilter?.value;
+  const inStock = inStockFilter?.checked;
+  const priceRange = activePrice?.dataset.price;
+
+  if (q) {
+    chips.push({ label: `Search: "${q}"`, clear: () => { searchInput.value = ''; performSearch(); } });
+  }
+  if (category) {
+    chips.push({ label: `Category: ${category}`, clear: () => { categoryFilter.value = ''; performSearch(); } });
+  }
+  if (priceRange && priceRange !== 'all') {
+    const label = activePrice?.textContent || priceRange;
+    chips.push({ label: `Price: ${label}`, clear: () => {
+      document.querySelectorAll('.price-chip').forEach((c) => c.classList.remove('active'));
+      document.querySelector('.price-chip[data-price="all"]')?.classList.add('active');
+      performSearch();
+    }});
+  }
+  if (inStock) {
+    chips.push({ label: 'In Stock', clear: () => { inStockFilter.checked = false; performSearch(); } });
+  }
+
+  if (!chips.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = chips.map((chip, i) =>
+    `<span class="filter-chip">${chip.label}<button class="filter-chip-remove" data-chip-index="${i}" title="Remove">&times;</button></span>`
+  ).join('') + `<button class="clear-all-btn" id="clear-all-filters">Clear All</button>`;
+
+  container.querySelectorAll('.filter-chip-remove').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.chipIndex, 10);
+      if (chips[idx]) chips[idx].clear();
+    });
+  });
+
+  const clearAllBtn = document.getElementById('clear-all-filters');
+  if (clearAllBtn) {
+    clearAllBtn.addEventListener('click', () => {
+      if (searchInput) searchInput.value = '';
+      if (categoryFilter) categoryFilter.value = '';
+      if (inStockFilter) inStockFilter.checked = false;
+      if (sortFilter) sortFilter.value = 'newest';
+      document.querySelectorAll('.price-chip').forEach((c) => c.classList.remove('active'));
+      document.querySelector('.price-chip[data-price="all"]')?.classList.add('active');
+      performSearch();
+    });
+  }
+}
+window.renderActiveFilters = renderActiveFilters;
 
 // ================== PAGE RENDER ==================
 
@@ -720,7 +925,13 @@ async function renderPage() {
   }
 
   if (page === 'product' || page === 'shop') {
+    renderBreadcrumbs();
     await initProductFilters();
+    initSearchAutocomplete();
+  }
+
+  if (page === 'home') {
+    renderRecentlyViewed();
   }
 
   if (getCurrentUser() && needsCartSync) {
@@ -766,17 +977,10 @@ async function renderPage() {
   }
 }
 window.products = products;
-window.currentProduct = currentProduct;
-window.productsCache = productsCache;
 window.productsLoadPromise = productsLoadPromise;
-window.productRenderCount = productRenderCount;
 window.searchInProgress = searchInProgress;
 window.productsLoading = productsLoading;
-window.selectedCategory = selectedCategory;
-window.searchQuery = searchQuery;
-window.selectedSort = selectedSort;
 window.selectedFeaturedFilter = selectedFeaturedFilter;
-window.filtersInitialized = filtersInitialized;
 window.featuredControlsInitialized = featuredControlsInitialized;
 window.searchAbortController = searchAbortController;
 window.createProductCardElement = createProductCardElement;
@@ -793,4 +997,9 @@ window.renderRecommendations = renderRecommendations;
 window.saveViewedProduct = saveViewedProduct;
 window.initProductFilters = initProductFilters;
 window.performSearch = performSearch;
+window.renderActiveFilters = renderActiveFilters;
+window.renderBreadcrumbs = renderBreadcrumbs;
+window.renderRecentlyViewed = renderRecentlyViewed;
+window.initSearchAutocomplete = initSearchAutocomplete;
+window.fetchAutocomplete = fetchAutocomplete;
 window.renderPage = renderPage;

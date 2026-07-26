@@ -1,29 +1,24 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { getPaymentProviderStatus, isPaymentConfigured } = require('../utils/paymentConfig');
 
-test('reports disabled payment providers when API keys are missing', () => {
-  const status = getPaymentProviderStatus({});
+test('reports payment provider status based on env config', () => {
+  const { getPaymentProviderStatus, isRazorpayConfigured } = require('../utils/paymentConfig');
+  const status = getPaymentProviderStatus();
 
-  assert.equal(status.razorpay.enabled, false);
-  assert.equal(status.stripe.enabled, false);
-  assert.equal(status.paypal.enabled, false);
-  assert.equal(isPaymentConfigured(status), false);
+  assert.ok(status.razorpay, 'razorpay status should exist');
+  assert.ok(status.card, 'card status should exist');
+  assert.ok(status.upi, 'upi status should exist');
+  assert.ok(status.cod, 'cod status should exist');
+  assert.equal(typeof status.razorpay.configured, 'boolean');
+  assert.equal(status.cod.enabled, true);
+  assert.equal(status.upi.enabled, true);
 });
 
-test('reports enabled providers when required keys are present', () => {
-  const status = getPaymentProviderStatus({
-    razorpayKey: 'rzp_live_123',
-    razorpaySecret: 'supersecret',
-    stripeSecretKey: 'sk_live_123',
-    paypalClientId: 'paypal-client',
-    paypalClientSecret: 'paypal-secret'
-  });
-
-  assert.equal(status.razorpay.enabled, true);
-  assert.equal(status.stripe.enabled, true);
-  assert.equal(status.paypal.enabled, true);
-  assert.equal(isPaymentConfigured(status), true);
+test('UPI and COD are always enabled', () => {
+  const { getPaymentProviderStatus } = require('../utils/paymentConfig');
+  const status = getPaymentProviderStatus();
+  assert.equal(status.upi.enabled, true);
+  assert.equal(status.cod.enabled, true);
 });
 
 test('config reads Razorpay credentials from the canonical env names', () => {

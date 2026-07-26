@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="PAP-JOY - Browse our premium shoe collection. Filter by category, price, and more." />
   <meta name="theme-color" content="#0a0a0a" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <title>PAP-JOY | Shop Collection</title>
   <script>
     // Configure API base URL for production
@@ -27,6 +28,7 @@
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
   <main class="product-section">
+    <nav class="breadcrumbs" id="breadcrumbs" aria-label="Breadcrumb"></nav>
     <div class="section-header product-filter-header">
       <div>
         <p class="eyebrow" data-i18n="product.eyebrow">Full collection</p>
@@ -34,50 +36,40 @@
         <h2 data-i18n="product.heading">Shop all styles</h2>
       </div>
       <div class="product-status" id="product-status"></div>
+
     </div>
     <div class="product-intro-wrap">
       <p class="product-intro" data-i18n="product.intro">Browse every shoe, compare features, and add your favorites to the cart.</p>
-      <div class="product-filters" id="product-filters">
-        <input id="search-products" type="search" placeholder="Search style, category or material" />
+
+      <div class="shop-filter-bar" id="shop-filter-bar">
+        <div class="search-autocomplete-wrapper">
+          <input id="search-products" type="search" placeholder="Search shoes, categories..." autocomplete="off" />
+          <div class="search-autocomplete" id="search-autocomplete"></div>
+        </div>
+        <select id="category-filter">
+          <option value="">All Categories</option>
+        </select>
         <select id="sort-filter">
-          <option value="newest">Newest First</option>
+          <option value="newest">Newest</option>
           <option value="price-asc">Price: Low to High</option>
           <option value="price-desc">Price: High to Low</option>
           <option value="rating">Best Rated</option>
         </select>
-        <label class="filter-checkbox">
-          <input type="checkbox" id="in-stock-filter" /> In Stock Only
+        <div class="price-quick-select" id="price-quick-select">
+          <button class="price-chip active" data-price="all">All Prices</button>
+          <button class="price-chip" data-price="0-1000">Under 1K</button>
+          <button class="price-chip" data-price="1000-5000">1K &ndash; 5K</button>
+          <button class="price-chip" data-price="5000-10000">5K &ndash; 10K</button>
+          <button class="price-chip" data-price="10000-999999">10K+</button>
+        </div>
+        <label class="toggle-filter">
+          <input type="checkbox" id="in-stock-filter" />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          <span>In Stock</span>
         </label>
       </div>
-      
-      <!-- Advanced Filter Sidebar -->
-      <div class="filter-sidebar" id="filter-sidebar">
-        <div class="filter-section">
-          <h4>Price Range</h4>
-          <div class="price-range-container">
-            <input type="range" id="price-min" min="0" max="500000" value="0" step="1000" />
-            <input type="range" id="price-max" min="0" max="500000" value="500000" step="1000" />
-            <div class="price-display">
-              <span id="price-min-display">₹0</span> - <span id="price-max-display">₹500000</span>
-            </div>
-          </div>
-        </div>
-        
-        <div class="filter-section">
-          <h4>Brand</h4>
-          <div id="brand-filters"></div>
-        </div>
-        
-        <div class="filter-section">
-          <h4>Size</h4>
-          <div id="size-filters"></div>
-        </div>
-        
-        <div class="filter-section">
-          <h4>Color</h4>
-          <div id="color-filters"></div>
-        </div>
-      </div>
+
+      <div class="active-filters" id="active-filters"></div>
     </div>
     <div class="product-grid" id="product-grid"></div>
   </main>
@@ -96,13 +88,13 @@
       <div class="social-section">
         <h4>Follow Us</h4>
         <div class="social-links">
-          <a href="#" class="social-link" title="Instagram" aria-label="Follow us on Instagram">
+          <a href="https://instagram.com/papjoy" class="social-link" title="Instagram" aria-label="Follow us on Instagram" target="_blank" rel="noopener noreferrer">
             <i class="fab fa-instagram"></i>
           </a>
-          <a href="#" class="social-link" title="Facebook" aria-label="Follow us on Facebook">
+          <a href="https://facebook.com/papjoy" class="social-link" title="Facebook" aria-label="Follow us on Facebook" target="_blank" rel="noopener noreferrer">
             <i class="fab fa-facebook-f"></i>
           </a>
-          <a href="#" class="social-link" title="YouTube" aria-label="Subscribe on YouTube">
+          <a href="https://youtube.com/@papjoy" class="social-link" title="YouTube" aria-label="Subscribe on YouTube" target="_blank" rel="noopener noreferrer">
             <i class="fab fa-youtube"></i>
           </a>
         </div>

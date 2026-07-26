@@ -5,10 +5,20 @@ var AUTH_USER_KEY = window.AUTH_USER_KEY;
 var AUTH_TOKEN_KEY = window.AUTH_TOKEN_KEY;
 var AUTH_REFRESH_TOKEN_KEY = window.AUTH_REFRESH_TOKEN_KEY;
 
+function safeParse(storageKey) {
+  try {
+    const sessionVal = sessionStorage.getItem(storageKey);
+    if (sessionVal) return JSON.parse(sessionVal);
+  } catch (e) { /* ignore */ }
+  try {
+    const localVal = localStorage.getItem(storageKey);
+    if (localVal) return JSON.parse(localVal);
+  } catch (e) { /* ignore */ }
+  return null;
+}
+
 function getCurrentUser() {
-  const sessionUser = JSON.parse(sessionStorage.getItem(AUTH_USER_KEY) || 'null');
-  if (sessionUser) return sessionUser;
-  return JSON.parse(localStorage.getItem(AUTH_USER_KEY) || 'null');
+  return safeParse(AUTH_USER_KEY);
 }
 
 function getAuthToken() {
@@ -43,7 +53,7 @@ function setCurrentUser(user, remember = true) {
   localStorage.removeItem(AUTH_USER_KEY);
   localStorage.removeItem(AUTH_TOKEN_KEY);
   localStorage.removeItem(AUTH_REFRESH_TOKEN_KEY);
-  remoteCartLoaded = false;
+  if (typeof remoteCartLoaded !== 'undefined') remoteCartLoaded = false;
 
   if (!user) return;
 
@@ -60,22 +70,16 @@ function setCurrentUser(user, remember = true) {
 }
 
 function getLocalOrders() {
-  return JSON.parse(localStorage.getItem('papjoy-orders') || '[]');
-}
-
-function saveLocalOrders(orders) {
-  localStorage.setItem('papjoy-orders', JSON.stringify(orders));
+  try {
+    return JSON.parse(localStorage.getItem('papjoy-orders') || '[]');
+  } catch (e) {
+    return [];
+  }
 }
 
 function getLocalOrder(orderId, email) {
   const orders = getLocalOrders();
   return orders.find((order) => order.id === orderId && (!email || order.email === email));
-}
-
-function storeLocalOrder(order) {
-  const orders = getLocalOrders();
-  orders.push(order);
-  saveLocalOrders(orders);
 }
 
 window.getCurrentUser = getCurrentUser;
@@ -84,6 +88,4 @@ window.getRefreshToken = getRefreshToken;
 window.getAuthHeaders = getAuthHeaders;
 window.setCurrentUser = setCurrentUser;
 window.getLocalOrders = getLocalOrders;
-window.saveLocalOrders = saveLocalOrders;
 window.getLocalOrder = getLocalOrder;
-window.storeLocalOrder = storeLocalOrder;
