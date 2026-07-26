@@ -111,11 +111,7 @@ function createSecurityMiddleware(app) {
   });
   app.use('/api/v1/payments/webhook', webhookLimiter);
   
-  app.use(mongoSanitize({
-    onSanitize: ({ req, key }) => {
-      logger.warn('NoSQL injection attempt blocked', { key, ip: req.ip, path: req.originalUrl });
-    }
-  }));
+  app.use(mongoSanitize());
   app.use(hpp());
 
   if (config.https.force) {
