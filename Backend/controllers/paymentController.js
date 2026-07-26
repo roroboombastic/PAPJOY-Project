@@ -315,12 +315,31 @@ async function initiateRefund(req, res) {
   }
 }
 
+function verifyWebhookSignature(body, signature) {
+  if (!RAZORPAY_KEY_SECRET || !signature) return false;
+  const expectedSignature = crypto
+    .createHmac('sha256', RAZORPAY_KEY_SECRET)
+    .update(JSON.stringify(body))
+    .digest('hex');
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expectedSignature), Buffer.from(signature));
+  } catch {
+    return false;
+  }
+}
+
 async function razorpayWebhook(req, res) {
   try {
+    const webhookSignature = req.headers['x-razorpay-signature'];
+    if (!verifyWebhookSignature(req.body, webhookSignature)) {
+      logger.warn('Razorpay webhook signature verification failed', { ip: req.ip });
+      return res.status(401).json({ error: 'Invalid webhook signature' });
+    }
+
     const event = req.body?.event;
     const payload = req.body?.payload?.payment?.entity || {};
 
-    logger.info('Razorpay webhook received', { event, paymentId: payload.id });
+    logger.info('Razorpay webhook received (verified)', { event, paymentId: payload.id });
 
     if (event === 'payment.captured') {
       const orderId = payload.order_id;

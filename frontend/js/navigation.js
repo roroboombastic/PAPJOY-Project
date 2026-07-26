@@ -84,7 +84,7 @@ function createSidebar() {
 
   sidebar.innerHTML = `
     <div class="sidebar-top">
-      <div class="sidebar-brand"><a href="index.html">PAP-JOY</a></div>
+      <div class="sidebar-brand"><a href="index.html"><img src="https://cdn.phototourl.com/free/2026-07-26-69fc6ff4-f369-46df-91d3-e8ca8e11dda2.jpg" alt="PAP-JOY" class="logo-img" /><span class="logo-text">PAP-JOY</span></a></div>
       <nav class="sidebar-nav">
         <a href="index.html" class="nav-link${isActiveNavPage('index.html') ? ' active' : ''}"${isActiveNavPage('index.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-home"></i><span>Home</span></a>
         <a href="product.html" class="nav-link${isActiveNavPage('product.html') ? ' active' : ''}"${isActiveNavPage('product.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-store"></i><span>Shop</span></a>

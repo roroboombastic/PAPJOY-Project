@@ -3,8 +3,10 @@ const helmet = require('helmet');
 const cors = require('cors');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
+const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const config = require('../config');
+const logger = require('../utils/logger');
 
 function createSecurityMiddleware(app) {
   if (config.trustProxy) {
@@ -15,13 +17,16 @@ function createSecurityMiddleware(app) {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", 'https:'],
-        styleSrc: ["'self'", "'unsafe-inline'", 'https:'],
-        imgSrc: ["'self'", 'data:', 'https:'],
-        connectSrc: ["'self'", 'https:'],
-        fontSrc: ["'self'", 'data:', 'https:'],
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://checkout.razorpay.com", "https://js.stripe.com", "https://accounts.google.com", "https://apis.google.com", "https://cdnjs.cloudflare.com", "https://unpkg.com"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com", "https://unpkg.com"],
+        imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
+        connectSrc: ["'self'", "https://papjoy-project.onrender.com", "https://api.razorpay.com", "https://checkout.razorpay.com"],
+        fontSrc: ["'self'", "data:", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
         objectSrc: ["'none'"],
-        frameAncestors: ["'none'"]
+        frameSrc: ["'self'", "https://checkout.razorpay.com"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"]
       }
     },
     hsts: { maxAge: 63072000, includeSubDomains: true, preload: true },
@@ -32,7 +37,9 @@ function createSecurityMiddleware(app) {
       microphone: [],
       geolocation: [],
       payment: ['self']
-    }
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: 'same-site' }
   }));
 
   const corsOrigins = config.cors.origin;
@@ -94,23 +101,21 @@ function createSecurityMiddleware(app) {
     message: { error: 'Too many admin requests, please try again later' }
   });
   app.use('/api/v1/admin', adminLimiter);
-  
-  app.use((req, res, next) => {
-    const sanitize = (obj) => {
-      if (!obj || typeof obj !== 'object') return;
-      for (const key of Object.keys(obj)) {
-        if (key.startsWith('$')) {
-          delete obj[key];
-        } else if (typeof obj[key] === 'object') {
-          sanitize(obj[key]);
-        }
-      }
-    };
-    if (req.body) sanitize(req.body);
-    if (req.query) sanitize(req.query);
-    if (req.params) sanitize(req.params);
-    next();
+
+  const webhookLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many webhook requests' }
   });
+  app.use('/api/v1/payments/webhook', webhookLimiter);
+  
+  app.use(mongoSanitize({
+    onSanitize: ({ req, key }) => {
+      logger.warn('NoSQL injection attempt blocked', { key, ip: req.ip, path: req.originalUrl });
+    }
+  }));
   app.use(hpp());
 
   if (config.https.force) {
@@ -122,6 +127,17 @@ function createSecurityMiddleware(app) {
       next();
     });
   }
+
+  app.use((req, res, next) => {
+    const timeoutMs = 30000;
+    const timer = setTimeout(() => {
+      if (!res.headersSent) {
+        res.status(408).json({ error: 'Request timeout' });
+      }
+    }, timeoutMs);
+    res.on('finish', () => clearTimeout(timer));
+    next();
+  });
 }
 
 module.exports = { createSecurityMiddleware };
