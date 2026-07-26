@@ -38,8 +38,7 @@ function createSecurityMiddleware(app) {
       geolocation: [],
       payment: ['self']
     },
-    crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: { policy: 'same-site' }
+    crossOriginEmbedderPolicy: false
   }));
 
   const corsOrigins = config.cors.origin;
