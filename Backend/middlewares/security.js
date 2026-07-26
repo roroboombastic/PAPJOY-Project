@@ -3,10 +3,8 @@ const helmet = require('helmet');
 const cors = require('cors');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
-const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const config = require('../config');
-const logger = require('../utils/logger');
 
 function createSecurityMiddleware(app) {
   if (config.trustProxy) {
@@ -23,7 +21,6 @@ function createSecurityMiddleware(app) {
         connectSrc: ["'self'", "https://papjoy-project.onrender.com", "https://api.razorpay.com", "https://checkout.razorpay.com"],
         fontSrc: ["'self'", "data:", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
         objectSrc: ["'none'"],
-        frameSrc: ["'self'", "https://checkout.razorpay.com"],
         frameAncestors: ["'none'"],
         baseUri: ["'self'"],
         formAction: ["'self'"]
@@ -37,8 +34,7 @@ function createSecurityMiddleware(app) {
       microphone: [],
       geolocation: [],
       payment: ['self']
-    },
-    crossOriginEmbedderPolicy: false
+    }
   }));
 
   const corsOrigins = config.cors.origin;
@@ -110,7 +106,22 @@ function createSecurityMiddleware(app) {
   });
   app.use('/api/v1/payments/webhook', webhookLimiter);
   
-  app.use(mongoSanitize());
+  app.use((req, res, next) => {
+    const sanitize = (obj) => {
+      if (!obj || typeof obj !== 'object') return;
+      for (const key of Object.keys(obj)) {
+        if (key.startsWith('$')) {
+          delete obj[key];
+        } else if (typeof obj[key] === 'object') {
+          sanitize(obj[key]);
+        }
+      }
+    };
+    if (req.body) sanitize(req.body);
+    if (req.query) sanitize(req.query);
+    if (req.params) sanitize(req.params);
+    next();
+  });
   app.use(hpp());
 
   if (config.https.force) {
