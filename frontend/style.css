@@ -7557,6 +7557,13 @@ a.breadcrumb-item:hover {
   }
 }
 
+/* --- Hide UI when keyboard is open on mobile --- */
+body.keyboard-open .announcement-bar,
+body.keyboard-open .mobile-menu-toggle {
+  transform: translateY(-100%);
+  transition: transform 0.2s ease;
+}
+
 /* --- Mobile horizontal scroll prevention --- */
 @media (max-width: 1024px) {
   .hero-stats {

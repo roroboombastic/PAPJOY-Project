@@ -88,6 +88,58 @@ function addScrollClasses() {
   });
 }
 
+function initMobileEnhancements() {
+  if (window.innerWidth > 1024) return;
+
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let sidebarOpen = false;
+
+  document.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    sidebarOpen = document.body.classList.contains('mobile-nav-open');
+  }, { passive: true });
+
+  document.addEventListener('touchend', (e) => {
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 60) {
+      if (deltaX > 0 && !sidebarOpen && touchStartX < 30) {
+        if (typeof toggleMobileSidebar === 'function') toggleMobileSidebar();
+      } else if (deltaX < 0 && sidebarOpen) {
+        if (typeof closeMobileSidebar === 'function') closeMobileSidebar();
+      }
+    }
+  }, { passive: true });
+
+  document.querySelectorAll('.btn, .nav-link, .utility-btn, .control-btn, .social-link').forEach((el) => {
+    el.addEventListener('touchstart', () => {}, { passive: true });
+  });
+
+  if ('visualViewport' in window) {
+    window.visualViewport.addEventListener('resize', () => {
+      const viewport = window.visualViewport;
+      if (viewport.height < window.innerHeight * 0.75) {
+        document.body.classList.add('keyboard-open');
+      } else {
+        document.body.classList.remove('keyboard-open');
+      }
+    });
+  }
+
+  document.querySelectorAll('input, textarea, select').forEach((el) => {
+    el.addEventListener('focus', () => {
+      setTimeout(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }, { passive: true });
+  });
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   if (typeof restoreSessionFromStorage === 'function') await restoreSessionFromStorage();
   initAnnouncementBar();
@@ -100,6 +152,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (typeof initPageTransitions === 'function') initPageTransitions();
   addScrollClasses();
   requestAnimationFrame(() => initScrollAnimations());
+  initMobileEnhancements();
 
   const newsletterBtn = document.getElementById('newsletter-subscribe-btn');
   if (newsletterBtn) {
