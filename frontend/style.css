@@ -3808,7 +3808,7 @@ textarea {
   }
 
   main {
-    padding: 22px 20px 50px;
+    padding: 64px 20px 50px;
   }
 
   .shop-filter-bar {
@@ -3863,7 +3863,7 @@ textarea {
 @media (max-width: 768px) {
   main {
     width: 100%;
-    padding: 18px 16px 40px;
+    padding: 64px 16px 40px;
   }
 
   .checkout-layout,
@@ -7312,7 +7312,7 @@ a.breadcrumb-item:hover {
 /* --- Small Phones (max-width: 480px) --- */
 @media (max-width: 480px) {
   main {
-    padding: 12px 12px 32px;
+    padding: 64px 12px 32px;
   }
 
   .hero {
@@ -7582,6 +7582,684 @@ body.keyboard-open .mobile-menu-toggle {
   }
   .section-controls::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* ================== SMOOTHNESS & DYNAMISM ================== */
+
+/* --- Smooth global focus outlines --- */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* --- Page enter animation --- */
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+main {
+  animation: pageEnter 0.35s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+/* --- Auth panel enter animation --- */
+@keyframes authPanelEnter {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.auth-panel {
+  animation: authPanelEnter 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+/* --- Auth tab body transition --- */
+.auth-tab-body {
+  animation: authPanelEnter 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+/* --- Auth form input focus glow --- */
+.auth-form .form-group input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(92, 124, 99, 0.15);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* --- Auth button press effect --- */
+.auth-form .checkout-button {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+
+.auth-form .checkout-button:active {
+  transform: scale(0.97);
+}
+
+.auth-form .checkout-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), rgba(255,255,255,0.3) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.auth-form .checkout-button:active::after {
+  opacity: 1;
+}
+
+/* --- Sidebar slide animation (smoother) --- */
+.site-sidebar {
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+
+.site-sidebar.active {
+  transform: translateX(0);
+}
+
+/* --- Hamburger to X animation --- */
+.mobile-menu-toggle {
+  transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.15s ease;
+}
+
+.mobile-menu-toggle:active {
+  transform: scale(0.9);
+}
+
+.mobile-menu-toggle i {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.mobile-nav-open .mobile-menu-toggle i {
+  transform: rotate(90deg);
+}
+
+/* --- Overlay backdrop blur --- */
+.sidebar-overlay.active,
+body.mobile-nav-open .mobile-nav-overlay {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* --- Nav link ripple on tap --- */
+.sidebar-nav .nav-link {
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-nav .nav-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, var(--nav-hover-bg) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.sidebar-nav .nav-link:active::after {
+  opacity: 1;
+}
+
+/* --- Smooth scroll for sidebar --- */
+.site-sidebar {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* --- Button hover lift (all buttons) --- */
+.btn, .checkout-button, .secondary-button {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, background 0.25s ease;
+}
+
+.btn:hover, .checkout-button:hover, .secondary-button:hover {
+  transform: translateY(-2px);
+}
+
+.btn:active, .checkout-button:active, .secondary-button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* --- Product card image zoom on hover --- */
+.product-card .product-image img,
+.product-gallery img {
+  transition: transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* --- Category card image zoom --- */
+.category-card:hover .category-image img {
+  transform: scale(1.07);
+}
+
+/* --- Social link bounce on hover --- */
+@keyframes socialBounce {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-4px); }
+  60% { transform: translateY(-2px); }
+}
+
+.social-link:hover {
+  animation: socialBounce 0.4s ease;
+}
+
+/* --- Announcement bar smooth hide --- */
+.announcement-bar {
+  will-change: transform, opacity;
+}
+
+/* --- Footer brand logo hover --- */
+.footer-brand .brand a:hover .logo-text,
+.sidebar-brand a:hover .logo-text {
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* --- Form input focus slide label effect --- */
+.form-group {
+  position: relative;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(92, 124, 99, 0.12);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* --- Cart toast slide-in --- */
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateX(20px) translateY(8px); }
+  to { opacity: 1; transform: translateX(0) translateY(0); }
+}
+
+.cart-toast.visible {
+  animation: toastSlideIn 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+/* --- Smooth dropdown open --- */
+.notification-dropdown,
+.cart-dropdown {
+  transform-origin: top right;
+}
+
+/* --- Badge pulse on update --- */
+@keyframes badgePop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+.cart-badge.pop {
+  animation: badgePop 0.3s ease;
+}
+
+/* --- Loading spinner smooth --- */
+@keyframes smoothSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ================== AUTH PAGE RESPONSIVE ================== */
+
+/* --- Auth page: ensure proper centering on all screens --- */
+.auth-page {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 16px;
+}
+
+.auth-panel {
+  width: 100%;
+  max-width: 520px;
+  border-radius: 32px;
+}
+
+/* --- Auth tabs smooth switching --- */
+.auth-tabs {
+  transition: background 0.25s ease;
+}
+
+.auth-tab {
+  transition: all 0.25s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.auth-tab.active {
+  transform: scale(1);
+}
+
+.auth-tab:not(.active):hover {
+  transform: none;
+  background: transparent;
+}
+
+/* --- Auth form responsive --- */
+.auth-form {
+  transition: box-shadow 0.25s ease;
+}
+
+.auth-form:focus-within {
+  box-shadow: 0 22px 60px rgba(66, 83, 72, 0.1);
+}
+
+/* --- Password strength bar smooth --- */
+.password-strength-fill {
+  transition: width 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), background-color 0.3s ease;
+}
+
+/* --- Auth message slide-in --- */
+.auth-message {
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .auth-page {
+    padding-top: 8px;
+    padding-inline: 8px;
+    align-items: flex-start;
+  }
+
+  .auth-panel {
+    max-width: 100%;
+    border-radius: 24px;
+    padding: clamp(16px, 4vw, 28px);
+  }
+
+  .auth-tabs {
+    border-radius: 14px;
+    padding: 4px;
+  }
+
+  .auth-tab {
+    padding: 12px 14px;
+    font-size: 14px;
+    border-radius: 12px;
+  }
+
+  .auth-form {
+    padding: clamp(16px, 3vw, 22px) !important;
+    border-radius: 20px;
+    gap: 14px !important;
+  }
+
+  .auth-form .form-group label {
+    font-size: 0.85rem;
+  }
+
+  .auth-form .checkout-button {
+    min-height: 50px;
+    font-size: 1rem;
+    border-radius: 14px;
+  }
+
+  .auth-form input[type="email"],
+  .auth-form input[type="password"],
+  .auth-form input[type="text"],
+  .auth-form input[type="tel"] {
+    font-size: 16px !important;
+    min-height: 50px;
+    padding: 14px 16px;
+    border-radius: 14px;
+  }
+
+  .password-field {
+    min-height: 50px;
+  }
+
+  .toggle-password {
+    right: 14px;
+    padding: 8px;
+  }
+
+  .checkbox-group {
+    font-size: 0.85rem;
+    gap: 10px;
+  }
+
+  .checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+  }
+
+  .auth-panel-intro h2 {
+    font-size: 1.3rem;
+  }
+
+  .auth-panel-intro p {
+    font-size: 0.88rem;
+  }
+
+  .auth-footnote {
+    font-size: 0.85rem;
+    text-align: center;
+  }
+
+  .oauth-button {
+    min-height: 48px;
+    border-radius: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-page {
+    padding-top: 4px;
+  }
+
+  .auth-panel {
+    border-radius: 20px;
+    padding: 14px;
+  }
+
+  .auth-form {
+    padding: 14px !important;
+    border-radius: 16px;
+    gap: 12px !important;
+  }
+
+  .auth-form .checkout-button {
+    min-height: 48px;
+    border-radius: 12px;
+  }
+
+  .auth-form input {
+    border-radius: 12px;
+  }
+}
+
+/* ================== MOBILE NAVIGATION FIXES ================== */
+
+/* --- Sidebar mobile: full-height smooth slide --- */
+@media (max-width: 1024px) {
+  .site-sidebar {
+    width: min(85vw, 320px);
+    left: 0;
+    transform: translateX(-100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    z-index: 120;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-border);
+    box-shadow: none;
+    overflow-y: hidden;
+  }
+
+  .site-sidebar.active {
+    transform: translateX(0);
+    box-shadow: 8px 0 40px rgba(0, 0, 0, 0.15);
+  }
+
+  .sidebar-top {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .sidebar-top::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* --- Mobile nav overlay smooth --- */
+  .mobile-nav-overlay {
+    transition: opacity 0.35s cubic-bezier(0.32, 0.72, 0, 1), backdrop-filter 0.35s ease;
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  body.mobile-nav-open .mobile-nav-overlay {
+    opacity: 1;
+    pointer-events: auto;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  /* --- Hamburger button mobile --- */
+  .mobile-menu-toggle {
+    display: flex;
+    top: 16px;
+    left: 16px;
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 16px rgba(66, 83, 72, 0.12);
+    z-index: 130;
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  }
+
+  .mobile-menu-toggle:active {
+    transform: scale(0.9);
+  }
+
+  body.mobile-nav-open .mobile-menu-toggle {
+    z-index: 130;
+  }
+
+  /* --- Sidebar brand spacing on mobile --- */
+  .sidebar-brand {
+    padding-bottom: 8px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-brand a {
+    font-size: 1.5rem;
+    gap: 8px;
+  }
+
+  .sidebar-brand .logo-img {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* --- Sidebar nav spacing on mobile --- */
+  .sidebar-nav {
+    gap: 4px;
+  }
+
+  .sidebar-nav .nav-link {
+    padding: 14px 16px;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .sidebar-nav .nav-link:active {
+    background: var(--nav-hover-bg);
+    transform: scale(0.98);
+  }
+
+  .sidebar-nav .nav-link.active {
+    background: var(--accent-soft);
+  }
+
+  .sidebar-nav .nav-link i {
+    width: 22px;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+  }
+
+  /* --- Sidebar utility section on mobile --- */
+  .sidebar-utility {
+    padding-top: 12px;
+    margin-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .utility-btn {
+    padding: 12px 16px;
+    border-radius: 12px;
+    min-height: 44px;
+    font-size: 0.88rem;
+  }
+
+  .theme-picker {
+    gap: 4px;
+  }
+
+  .theme-option {
+    padding: 10px 12px;
+    border-radius: 10px;
+    min-height: 40px;
+    flex: 1;
+    font-size: 0.82rem;
+  }
+
+  /* --- Body scroll lock when sidebar open --- */
+  body.mobile-nav-open {
+    overflow: hidden;
+  }
+
+  /* --- Safe area for sidebar on notched phones --- */
+  @supports (padding-top: env(safe-area-inset-top)) {
+    .site-sidebar {
+      padding-top: calc(16px + env(safe-area-inset-top));
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+
+  /* --- Main content offset for mobile menu toggle --- */
+  main {
+    padding-top: 64px;
+  }
+}
+
+@media (max-width: 480px) {
+  .site-sidebar {
+    width: 88vw;
+  }
+
+  .sidebar-nav .nav-link {
+    padding: 12px 14px;
+    font-size: 0.9rem;
+    gap: 12px;
+  }
+
+  .sidebar-brand a {
+    font-size: 1.3rem;
+  }
+
+  .sidebar-brand .logo-img {
+    width: 30px;
+    height: 30px;
+  }
+
+  .mobile-menu-toggle {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+}
+
+/* --- Notification dropdown: fixed on mobile to escape sidebar overflow --- */
+@media (max-width: 1024px) {
+  .sidebar-notifications {
+    overflow: visible;
+  }
+
+  .notification-dropdown {
+    position: fixed;
+    bottom: auto;
+    top: auto;
+    left: 16px !important;
+    right: 16px !important;
+    width: auto !important;
+    max-width: 360px;
+    margin: 0;
+    z-index: 200;
+    border-radius: 16px;
+    max-height: 50vh;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  }
+
+  .notification-dropdown.active {
+    display: block;
+    animation: notifDropdownIn 0.2s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+}
+
+@keyframes notifDropdownIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ================== GLOBAL SMOOTH SCROLL & INTERACTIONS ================== */
+
+/* --- Smooth anchor scrolling --- */
+html {
+  scroll-behavior: smooth;
+}
+
+/* --- Selection color --- */
+::selection {
+  background: rgba(92, 124, 99, 0.2);
+  color: var(--text);
+}
+
+/* --- Scrollbar styling (webkit) --- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(108, 129, 114, 0.3);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(108, 129, 114, 0.5);
+}
+
+/* --- Link hover underline animation --- */
+.auth-footnote a,
+.track-link a,
+.footer-brand a {
+  position: relative;
+  text-decoration: none;
+}
+
+.auth-footnote a::after,
+.track-link a::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1.5px;
+  background: var(--accent);
+  transition: width 0.25s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.auth-footnote a:hover::after,
+.track-link a:hover::after {
+  width: 100%;
+}
+
+/* --- Reduced motion preference --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto;
   }
 }
 

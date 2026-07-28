@@ -684,6 +684,11 @@ function handleAvatarUpload() {
   });
 }
 
+function openAddressModal() {
+  const modal = document.getElementById('add-address-modal');
+  if (modal) modal.classList.add('active');
+}
+
 function closeAddressModal() {
   const modal = document.getElementById('add-address-modal');
   if (modal) modal.classList.remove('active');

@@ -3,6 +3,8 @@ let trackingMap = null;
 let deliveryMarker = null;
 let destinationMarker = null;
 let routeLine = null;
+let trackingSSE = null;
+let trackingGPSsse = null;
 
 async function loadOrderTracking(orderId, email) {
   if (!orderId) return null;
@@ -59,7 +61,7 @@ function renderTrackingTimeline(tracking) {
           <div class="timeline-step active">
             <div class="timeline-marker"></div>
             <div class="timeline-content">
-              <div class="timeline-label">${tracking.status ? tracking.status.replace(/_/g, ' ') : 'Processing'}</div>
+              <div class="timeline-label">${tracking.status ? escapeHTML(tracking.status.replace(/_/g, ' ')) : 'Processing'}</div>
               <div class="timeline-date">${tracking.estimatedDelivery ? new Date(tracking.estimatedDelivery).toLocaleDateString() : ''}</div>
             </div>
           </div>
@@ -198,7 +200,7 @@ function displayTrackingResults(order) {
       updatesList.innerHTML = backendEvents.map(ev => `
         <div class="update-item">
           <div class="update-time">${ev.timestamp ? new Date(ev.timestamp).toLocaleString() : ''}</div>
-          <div class="update-content"><p>${ev.message || ev.status || ''}</p></div>
+          <div class="update-content"><p>${escapeHTML(ev.message || ev.status || '')}</p></div>
         </div>
       `).join('');
     }
@@ -364,52 +366,160 @@ function renderTrackingMap(shipmentData) {
 
 function startAutoRefresh(order) {
   if (trackingInterval) clearInterval(trackingInterval);
+  if (trackingSSE) { trackingSSE.close(); trackingSSE = null; }
+  if (trackingGPSsse) { trackingGPSsse.close(); trackingGPSsse = null; }
 
   if (!order.orderNumber) return;
 
-  trackingInterval = setInterval(async () => {
-    try {
-      const shipmentData = await loadShipmentTracking(order.orderNumber);
-      if (shipmentData) {
-        if (shipmentData.status !== order.status) {
-          order.status = shipmentData.status;
-          renderOrderTimelineSteps(shipmentData.status);
-        }
+  let lastEventCount = 0;
 
-        if (shipmentData.currentLocation?.latitude) {
-          updateMapPosition(shipmentData.currentLocation.latitude, shipmentData.currentLocation.longitude, shipmentData.currentLocation.address);
-        }
+  function connectTrackingSSE() {
+    const baseUrl = (window.API_BASE_URL || '').replace(/\/$/, '');
+    const token = (typeof getAuthToken === 'function' ? getAuthToken() : '') || '';
+    let url = `${baseUrl}/api/v1/stream/orders/${encodeURIComponent(order.orderNumber)}`;
+    if (token) url += `?token=${encodeURIComponent(token)}`;
 
-        if (shipmentData.events?.length) {
+    trackingSSE = new EventSource(url);
+
+    trackingSSE.addEventListener('tracking', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.status && data.status !== order.status) {
+          order.status = data.status;
+          renderOrderTimelineSteps(data.status);
+        }
+        if (data.events && data.events.length !== lastEventCount) {
+          lastEventCount = data.events.length;
           const updatesList = document.getElementById('updates-list');
           if (updatesList) {
-            updatesList.innerHTML = shipmentData.events.map(ev => `
+            updatesList.innerHTML = data.events.map(ev => `
               <div class="update-item">
                 <div class="update-time">${ev.timestamp ? new Date(ev.timestamp).toLocaleString() : ''}</div>
-                <div class="update-content"><p>${ev.message || ev.status || ''}</p></div>
+                <div class="update-content"><p>${escapeHTML(ev.message || ev.status || '')}</p></div>
               </div>
             `).join('');
           }
         }
-
-        renderDeliveryPartner(shipmentData);
-        renderETACard(shipmentData);
+        if (data.carrier) order.carrier = data.carrier;
+        if (data.trackingNumber) order.trackingNumber = data.trackingNumber;
+        if (data.estimatedDelivery) order.estimatedDelivery = new Date(data.estimatedDelivery);
+      } catch (err) {
+        console.warn('SSE tracking parse error:', err);
       }
-    } catch (err) {
-      console.warn('Auto-refresh failed:', err);
-    }
-  }, 30000);
+    });
+
+    trackingSSE.addEventListener('initial', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.status && data.status !== order.status) {
+          order.status = data.status;
+          renderOrderTimelineSteps(data.status);
+        }
+        if (data.events) {
+          lastEventCount = data.events.length;
+        }
+      } catch (_) {}
+    });
+
+    trackingSSE.onerror = () => {
+      trackingSSE.close();
+      setTimeout(connectTrackingSSE, 5000);
+    };
+  }
+
+  function connectGPSSSE() {
+    const baseUrl = (window.API_BASE_URL || '').replace(/\/$/, '');
+    const token = (typeof getAuthToken === 'function' ? getAuthToken() : '') || '';
+    let url = `${baseUrl}/api/v1/stream/gps/${encodeURIComponent(order.orderNumber)}`;
+    if (token) url += `?token=${encodeURIComponent(token)}`;
+
+    trackingGPSsse = new EventSource(url);
+
+    trackingGPSsse.addEventListener('gps', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.currentLocation) {
+          updateMapPosition(data.currentLocation.lat, data.currentLocation.lng, data.currentLocation.address);
+        }
+        if (data.eta) {
+          updateETAFromSSE(data.eta);
+        }
+        if (data.status && data.status !== order.status) {
+          order.status = data.status;
+          renderOrderTimelineSteps(data.status);
+        }
+      } catch (err) {
+        console.warn('SSE GPS parse error:', err);
+      }
+    });
+
+    trackingGPSsse.addEventListener('gps_initial', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.currentLocation && data.destination) {
+          renderTrackingMap({
+            currentLocation: { latitude: data.currentLocation.lat, longitude: data.currentLocation.lng, address: data.currentLocation.address },
+            deliveryAddress: { latitude: data.destination.lat, longitude: data.destination.lng, address: data.destination.address },
+          });
+        }
+        if (data.eta) {
+          updateETAFromSSE(data.eta);
+        }
+      } catch (_) {}
+    });
+
+    trackingGPSsse.onerror = () => {
+      trackingGPSsse.close();
+      setTimeout(connectGPSSSE, 5000);
+    };
+  }
+
+  connectTrackingSSE();
+  connectGPSSSE();
+}
+
+function updateETAFromSSE(eta) {
+  if (!eta) return;
+  const etaEl = document.getElementById('tracking-eta');
+  const distanceEl = document.getElementById('tracking-distance');
+  if (etaEl && eta.etaLabel) {
+    etaEl.textContent = eta.etaLabel;
+  }
+  if (distanceEl && eta.distanceKm != null) {
+    distanceEl.textContent = `${eta.distanceKm} km`;
+  }
 }
 
 function updateMapPosition(lat, lng, address) {
-  if (!trackingMap || !deliveryMarker) return;
-  deliveryMarker.setLatLng([lat, lng]);
+  if (!trackingMap) return;
+
+  if (!deliveryMarker) {
+    const deliveryIcon = L.divIcon({
+      html: '<div style="background:#5c7c63;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>',
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
+      className: ''
+    });
+    deliveryMarker = L.marker([lat, lng], { icon: deliveryIcon }).addTo(trackingMap);
+  }
+
+  const currentLatLng = deliveryMarker.getLatLng();
+  const newLatLng = L.latLng(lat, lng);
+  const distance = currentLatLng.distanceTo(newLatLng);
+  if (distance > 10) {
+    deliveryMarker.setLatLng(newLatLng);
+  }
+
   if (address) {
     deliveryMarker.setPopupContent(`<b>Delivery Partner</b><br>${address}`);
   }
   if (routeLine && destinationMarker) {
     const destLatLng = destinationMarker.getLatLng();
     routeLine.setLatLngs([[lat, lng], [destLatLng.lat, destLatLng.lng]]);
+  }
+
+  if (distance > 50) {
+    trackingMap.panTo(newLatLng, { animate: true, duration: 0.5 });
   }
 }
 

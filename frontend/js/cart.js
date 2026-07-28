@@ -1,4 +1,5 @@
-let cart = JSON.parse(localStorage.getItem('papjoy-cart')) || [];
+let cart = [];
+try { cart = JSON.parse(localStorage.getItem('papjoy-cart')) || []; } catch (e) { cart = []; }
 let cartUpdateInProgress = false;
 let remoteCartLoaded = false;
 let syncCartTimer = null;
@@ -385,11 +386,11 @@ function renderCart() {
     li.innerHTML = `
       <div class="cart-item-meta">
         <div class="cart-item-avatar">
-          <img src="${item.image || item.product?.image || PRODUCT_FALLBACK_IMAGE}" alt="${item.name}" loading="lazy" onerror="if(!this.dataset.fb){this.dataset.fb='1';this.src=getNextFallbackImage();}else{this.style.display='none';}" />
+          <img src="${item.image || item.product?.image || PRODUCT_FALLBACK_IMAGE}" alt="${escapeHTML(item.name)}" loading="lazy" onerror="if(!this.dataset.fb){this.dataset.fb='1';this.src=getNextFallbackImage();}else{this.style.display='none';}" />
         </div>
         <div class="cart-item-content">
-          <h3>${item.name}</h3>
-          ${item.variant ? `<p class="cart-variant">${item.variant}</p>` : ''}
+          <h3>${escapeHTML(item.name)}</h3>
+          ${item.variant ? `<p class="cart-variant">${escapeHTML(item.variant)}</p>` : ''}
           <p class="cart-item-price">${formatCurrency(item.price * item.quantity)}</p>
           <p class="cart-item-subtext">${translate('cart.subtotal')}: ${formatCurrency(item.price * item.quantity)}</p>
         </div>
@@ -517,11 +518,11 @@ function renderSavedItems() {
     <li class="saved-item" data-saved-id="${safeId}" data-saved-variant="${safeVariant}">
       <div class="saved-item-meta">
         <div class="saved-item-avatar">
-          <img src="${item.image || item.product?.image || PRODUCT_FALLBACK_IMAGE}" alt="${item.name}" loading="lazy" onerror="if(!this.dataset.fb){this.dataset.fb='1';this.src=getNextFallbackImage();}else{this.style.display='none';}" />
+          <img src="${item.image || item.product?.image || PRODUCT_FALLBACK_IMAGE}" alt="${escapeHTML(item.name)}" loading="lazy" onerror="if(!this.dataset.fb){this.dataset.fb='1';this.src=getNextFallbackImage();}else{this.style.display='none';}" />
         </div>
         <div class="saved-item-content">
-          <h4>${item.name}</h4>
-          ${item.variant ? `<p class="saved-variant">${item.variant}</p>` : ''}
+          <h4>${escapeHTML(item.name)}</h4>
+          ${item.variant ? `<p class="saved-variant">${escapeHTML(item.variant)}</p>` : ''}
           <p class="saved-price">${formatCurrency(item.price)}</p>
         </div>
       </div>

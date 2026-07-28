@@ -91,7 +91,13 @@ window.updateNavLinkText = updateNavLinkText;
 function updateCartCount() {
   const count = cart.reduce((sum, item) => sum + item.quantity, 0);
   document.querySelectorAll('#cart-count, #utility-cart-count').forEach((el) => {
+    const prev = parseInt(el.textContent, 10) || 0;
     el.textContent = count;
+    if (count !== prev && count > 0) {
+      el.classList.remove('pop');
+      void el.offsetWidth;
+      el.classList.add('pop');
+    }
   });
 }
 window.updateCartCount = updateCartCount;

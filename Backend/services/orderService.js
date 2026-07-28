@@ -1,6 +1,8 @@
 const { Order, Product, Notification, Cart, Shipment } = require('../models');
 const logger = require('../utils/logger');
 const { calculateOrderTotals, GST_STATE } = require('../utils/gst');
+let sseManager;
+try { sseManager = require('../utils/sse').sseManager; } catch (_) { /* SSE optional */ }
 
 function createOrderNumber() {
   return `PJ-${Date.now()}-${Math.floor(Math.random() * 900 + 100)}`;
@@ -256,7 +258,7 @@ async function createOrderFromData({
     await order.save();
 
     if (userId) {
-      await Notification.create({
+      const notification = await Notification.create({
         userId,
         orderId: order._id,
         type: 'order',
@@ -264,8 +266,23 @@ async function createOrderFromData({
         title: 'Order created',
         message: `Your order ${order.orderNumber} has been received.`,
         data: { orderId: order._id }
-      });
+      }).catch(() => null);
       await Cart.findOneAndDelete({ userId });
+
+      if (notification && sseManager) {
+        sseManager.sendToUser(userId, {
+          type: 'notification',
+          notification: {
+            _id: notification._id,
+            title: notification.title,
+            message: notification.message,
+            type: notification.type,
+            orderId: notification.orderId,
+            isRead: false,
+            createdAt: notification.createdAt,
+          }
+        }, 'notification');
+      }
     }
 
     return order;

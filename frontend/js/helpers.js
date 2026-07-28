@@ -6,6 +6,16 @@ function debounce(func, wait) {
   };
 }
 
+function escapeHTML(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 async function fetchWithTimeout(resource, options = {}) {
   const { timeout = 5000 } = options;
   const controller = new AbortController();
@@ -103,6 +113,7 @@ function getProductLink(product) {
 }
 
 function getProductById(productId) {
+  if (typeof products === 'undefined') return undefined;
   return products.find((product) =>
     String(product._id) === String(productId) ||
     String(product.id) === String(productId) ||
@@ -120,7 +131,6 @@ async function loadScript(src) {
     const script = document.createElement('script');
     script.src = src;
     script.async = true;
-    script.defer = true;
     script.onload = resolve;
     script.onerror = () => reject(new Error(`Failed to load ${src}`));
     document.head.appendChild(script);
@@ -128,6 +138,7 @@ async function loadScript(src) {
 }
 
 window.debounce = debounce;
+window.escapeHTML = escapeHTML;
 window.fetchWithTimeout = fetchWithTimeout;
 window.getProductImageUrls = getProductImageUrls;
 window.normalizeVariantName = normalizeVariantName;

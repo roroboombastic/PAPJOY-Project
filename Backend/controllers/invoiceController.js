@@ -4,9 +4,34 @@ const User = require('../models/User');
 const InvoiceSequence = require('../models/InvoiceSequence');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
+const https = require('https');
+const http = require('http');
 const logger = require('../utils/logger');
 const { calculateOrderTotals, roundMoney, BUSINESS_GSTIN, BUSINESS_NAME, GST_PERCENT, GST_STATE, GST_RETURN_POLICY, CUSTOMER_SUPPORT } = require('../utils/gst');
 const { ADMIN_EMAILS } = require('../config');
+
+const PAPJOY_LOGO_URL = 'https://cdn.phototourl.com/free/2026-07-26-69fc6ff4-f369-46df-91d3-e8ca8e11dda2.jpg';
+
+function fetchImageBuffer(url, timeoutMs = 5000) {
+  return new Promise((resolve, reject) => {
+    const client = url.startsWith('https') ? https : http;
+    const req = client.get(url, { timeout: timeoutMs }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        return fetchImageBuffer(res.headers.location, timeoutMs).then(resolve, reject);
+      }
+      if (res.statusCode !== 200) {
+        res.resume();
+        return reject(new Error(`HTTP ${res.statusCode}`));
+      }
+      const chunks = [];
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+      res.on('error', reject);
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('Image fetch timeout')); });
+  });
+}
 
 function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
@@ -219,8 +244,24 @@ async function downloadInvoicePDF(req, res) {
     const logoY = 32;
     const pageWidth = 520;
 
-    pdf.roundedRect(logoX, logoY, 44, 44, 10).fillAndStroke('#1f4b3f', '#1f4b3f');
-    pdf.fillColor('#ffffff').fontSize(18).font('Helvetica-Bold').text('PJ', logoX + 8, logoY + 10);
+    let logoBuffer = null;
+    try {
+      logoBuffer = await fetchImageBuffer(PAPJOY_LOGO_URL, 4000);
+    } catch (logoErr) {
+      logger.debug('Logo fetch failed, using fallback', { error: logoErr.message });
+    }
+
+    if (logoBuffer && logoBuffer.length > 500) {
+      try {
+        pdf.image(logoBuffer, logoX, logoY, { width: 44, height: 44, fit: 'contain' });
+      } catch (_) {
+        pdf.roundedRect(logoX, logoY, 44, 44, 10).fillAndStroke('#1f4b3f', '#1f4b3f');
+        pdf.fillColor('#ffffff').fontSize(18).font('Helvetica-Bold').text('PJ', logoX + 8, logoY + 10);
+      }
+    } else {
+      pdf.roundedRect(logoX, logoY, 44, 44, 10).fillAndStroke('#1f4b3f', '#1f4b3f');
+      pdf.fillColor('#ffffff').fontSize(18).font('Helvetica-Bold').text('PJ', logoX + 8, logoY + 10);
+    }
     pdf.fillColor('#111111');
     pdf.fontSize(20).font('Helvetica-Bold').text(BUSINESS_NAME, 92, 36);
     pdf.fontSize(9).font('Helvetica').fillColor('#555555').text('Premium footwear and accessories', 92, 58);

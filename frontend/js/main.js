@@ -13,6 +13,9 @@ window.addEventListener('pagehide', () => {
   if (typeof syncCartTimer !== 'undefined' && syncCartTimer) clearTimeout(syncCartTimer);
   if (typeof syncCartImmediate === 'function') syncCartImmediate();
   if (typeof trackingInterval !== 'undefined' && trackingInterval) clearInterval(trackingInterval);
+  if (typeof trackingSSE !== 'undefined' && trackingSSE) trackingSSE.close();
+  if (typeof trackingGPSsse !== 'undefined' && trackingGPSsse) trackingGPSsse.close();
+  if (typeof notificationSSE !== 'undefined' && notificationSSE) notificationSSE.close();
   if (typeof productsLoadPromise !== 'undefined') productsLoadPromise = null;
   if (typeof wishlistUpdated !== 'undefined') wishlistUpdated = false;
 });
@@ -148,6 +151,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (typeof updateUserLinks === 'function') updateUserLinks();
   if (typeof initThemeToggle === 'function') initThemeToggle();
   if (typeof loadNotifications === 'function') loadNotifications();
+  if (typeof requestNotificationPermission === 'function') requestNotificationPermission();
   initCookieConsent();
   if (typeof initPageTransitions === 'function') initPageTransitions();
   addScrollClasses();

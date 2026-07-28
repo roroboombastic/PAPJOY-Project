@@ -346,8 +346,8 @@ function updateUPIQRStatus(message, success) {
   const statusEl = document.getElementById('upi-qr-status');
   if (statusEl) {
     statusEl.innerHTML = success
-      ? `<i class="fas fa-check-circle" style="color: #4caf50;"></i> <span>${message}</span>`
-      : `<div class="upi-qr-spinner"></div> <span>${message}</span>`;
+      ? `<i class="fas fa-check-circle" style="color: #4caf50;"></i> <span>${escapeHTML(message)}</span>`
+      : `<div class="upi-qr-spinner"></div> <span>${escapeHTML(message)}</span>`;
   }
 }
 
@@ -395,7 +395,7 @@ function renderCheckoutItems() {
     const itemRow = document.createElement('div');
     itemRow.className = 'checkout-item';
     itemRow.innerHTML = `
-      <span>${item.name} x ${item.quantity}</span>
+      <span>${escapeHTML(item.name)} x ${item.quantity}</span>
       <span>${formatCurrency(item.price * item.quantity)}</span>
     `;
     container.appendChild(itemRow);
@@ -457,7 +457,7 @@ async function loadCheckoutAddresses() {
     const addresses = await loadUserAddresses();
     if (!addresses || !addresses.length) { container.innerHTML = ''; return; }
     container.innerHTML = '<p style="margin-bottom:0.5rem;font-size:0.85rem;opacity:0.7;">Saved addresses:</p>' +
-      addresses.map((addr, i) => `<button type="button" class="checkout-button secondary" style="margin:0.25rem;padding:0.4rem 0.75rem;font-size:0.8rem;" onclick="fillAddressFromSaved(${i})">${addr.name || 'Address ' + (i+1)}${addr.isDefault ? ' *' : ''}</button>`).join('');
+      addresses.map((addr, i) => `<button type="button" class="checkout-button secondary" style="margin:0.25rem;padding:0.4rem 0.75rem;font-size:0.8rem;" onclick="fillAddressFromSaved(${i})">${escapeHTML(addr.name || 'Address ' + (i+1))}${addr.isDefault ? ' *' : ''}</button>`).join('');
     window.__checkoutAddresses = addresses;
   } catch (error) {
     console.warn('Failed to load saved addresses:', error);
@@ -541,7 +541,7 @@ function renderSuccessDetails(order) {
     order.items.forEach((item) => {
       const row = document.createElement('div');
       row.className = 'receipt-row';
-      row.innerHTML = `<span>${item.name} x ${item.quantity}</span><strong>${formatCurrency(item.price * item.quantity)}</strong>`;
+      row.innerHTML = `<span>${escapeHTML(item.name)} x ${item.quantity}</span><strong>${formatCurrency(item.price * item.quantity)}</strong>`;
       container.appendChild(row);
     });
   }
@@ -643,7 +643,7 @@ async function renderInvoicePreviewPage() {
     const invoiceData = invoice.invoice || invoice;
     const rows = (invoiceData.items || []).map((item) => `
       <tr>
-        <td>${item.productName || item.name || 'Item'}</td>
+        <td>${escapeHTML(item.productName || item.name || 'Item')}</td>
         <td>${item.quantity || 1}</td>
         <td>${formatCurrency(item.unitPrice || item.price || 0)}</td>
         <td>${item.gstRate != null ? item.gstRate + '%' : '--'}</td>
@@ -652,15 +652,15 @@ async function renderInvoicePreviewPage() {
     `).join('');
     previewContainer.innerHTML = `
       <div class="invoice-summary">
-        <div><strong>Invoice #</strong> ${invoiceData.invoiceNumber || invoiceData.orderNumber || ''}</div>
-        <div><strong>Status</strong> ${invoiceData.status || 'issued'}</div>
-        <div><strong>Payment</strong> ${invoiceData.paymentStatus || 'pending'}</div>
+        <div><strong>Invoice #</strong> ${escapeHTML(invoiceData.invoiceNumber || invoiceData.orderNumber || '')}</div>
+        <div><strong>Status</strong> ${escapeHTML(invoiceData.status || 'issued')}</div>
+        <div><strong>Payment</strong> ${escapeHTML(invoiceData.paymentStatus || 'pending')}</div>
         <div><strong>Total</strong> ${formatCurrency(invoiceData.total || 0)}</div>
       </div>
       <section class="invoice-details">
-        <div class="invoice-block"><h3>Customer</h3><p>${invoiceData.customerName || ''}</p><p>${invoiceData.customerEmail || ''}</p><p>${invoiceData.customerPhone || ''}</p></div>
-        <div class="invoice-block"><h3>Billing</h3><p>${invoiceData.billingAddress?.street || ''}</p><p>${invoiceData.billingAddress?.city || ''} ${invoiceData.billingAddress?.state || ''}</p><p>${invoiceData.billingAddress?.zipCode || ''} ${invoiceData.billingAddress?.country || ''}</p></div>
-        <div class="invoice-block"><h3>Seller</h3><p>${invoiceData.companyName || 'PAP-JOY'}</p><p>${invoiceData.companyGSTIN || ''}</p></div>
+        <div class="invoice-block"><h3>Customer</h3><p>${escapeHTML(invoiceData.customerName || '')}</p><p>${escapeHTML(invoiceData.customerEmail || '')}</p><p>${escapeHTML(invoiceData.customerPhone || '')}</p></div>
+        <div class="invoice-block"><h3>Billing</h3><p>${escapeHTML(invoiceData.billingAddress?.street || '')}</p><p>${escapeHTML(invoiceData.billingAddress?.city || '')} ${escapeHTML(invoiceData.billingAddress?.state || '')}</p><p>${escapeHTML(invoiceData.billingAddress?.zipCode || '')} ${escapeHTML(invoiceData.billingAddress?.country || '')}</p></div>
+        <div class="invoice-block"><h3>Seller</h3><p>${escapeHTML(invoiceData.companyName || 'PAP-JOY')}</p><p>${escapeHTML(invoiceData.companyGSTIN || '')}</p></div>
       </section>
       <table class="invoice-table"><thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>GST</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table>
       <div class="invoice-total">

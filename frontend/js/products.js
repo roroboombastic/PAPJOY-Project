@@ -260,21 +260,21 @@ async function renderProductDetailPage() {
   container.innerHTML = `
     <div class="product-detail-card">
       <div class="product-gallery">
-        <img id="detail-main-image" src="${activeImage}" alt="${product.name || 'Product'}" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
+        <img id="detail-main-image" src="${activeImage}" alt="${escapeHTML(product.name || 'Product')}" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
         <button class="wishlist-heart detail-wishlist-heart" data-product-id="${product.id || product._id}" title="Add to wishlist"><i class="${isInWishlist(product.id || product._id) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
         <div class="gallery-thumbs">
           ${(product.images || [product.image || PRODUCT_FALLBACK_IMAGE]).map((src, index) => `
             <button class="gallery-thumb${index === 0 ? ' active' : ''}" type="button" data-image="${src}">
-              <img src="${src}" alt="${product.name || 'Product'} image ${index + 1}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
+              <img src="${src}" alt="${escapeHTML(product.name || 'Product')} image ${index + 1}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
             </button>
           `).join('')}
         </div>
       </div>
       <div class="detail-copy">
-        <p class="eyebrow">${product.category || 'Uncategorized'}</p>
-        <h2>${product.name || 'Product'}</h2>
-        <p class="detail-subtitle">${product.subtitle || ''}</p>
-        <p class="detail-description">${product.description || ''}</p>
+        <p class="eyebrow">${escapeHTML(product.category || 'Uncategorized')}</p>
+        <h2>${escapeHTML(product.name || 'Product')}</h2>
+        <p class="detail-subtitle">${escapeHTML(product.subtitle || '')}</p>
+        <p class="detail-description">${escapeHTML(product.description || '')}</p>
         <div class="product-variants">
           <p class="variant-label">Choose variant</p>
           <div class="variant-list">${variantButtons}</div>
@@ -531,13 +531,13 @@ function renderReviews(reviews = []) {
     <div class="review-item">
       <div class="review-header">
         <div class="review-author">
-          <strong>${review.userId?.name || 'Anonymous'}</strong>
+          <strong>${escapeHTML(review.userId?.name || 'Anonymous')}</strong>
           ${review.isVerified ? '<span class="verified-badge">✓ Verified Purchase</span>' : ''}
         </div>
         <div class="review-rating">${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}</div>
       </div>
-      ${review.title ? `<h4 class="review-title">${review.title}</h4>` : ''}
-      <p class="review-comment">${review.comment}</p>
+      ${review.title ? `<h4 class="review-title">${escapeHTML(review.title)}</h4>` : ''}
+      <p class="review-comment">${escapeHTML(review.comment)}</p>
       <small class="review-date">${new Date(review.createdAt).toLocaleDateString()}</small>
     </div>
   `).join('');
@@ -737,7 +737,7 @@ async function fetchAutocomplete(query, dropdown) {
         <a class="autocomplete-item" href="${link}">
           <img src="${image}" alt="${product.name || 'Product'}" class="autocomplete-thumb" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
           <div class="autocomplete-info">
-            <span class="autocomplete-name">${product.name || 'Product'}</span>
+            <span class="autocomplete-name">${escapeHTML(product.name || 'Product')}</span>
             <span class="autocomplete-price">${price}</span>
           </div>
         </a>
@@ -953,18 +953,6 @@ async function renderPage() {
   }
   if (page === 'success') {
     await renderSuccessPage();
-  }
-  if (page === 'signin') {
-    await renderSignInPage();
-  }
-  if (page === 'signup') {
-    await renderSignUpPage();
-  }
-  if (page === 'forgot-password') {
-    await renderForgotPasswordPage();
-  }
-  if (page === 'reset-password') {
-    await renderResetPasswordPage();
   }
   if (page === 'account') {
     await renderAccountPage();

@@ -1,5 +1,7 @@
 let sidebarCreated = false;
 let navResizeHandler = null;
+let notificationSSE = null;
+let notificationPermissionRequested = false;
 
 function updateUserLinks() {
   const user = getCurrentUser();
@@ -33,7 +35,14 @@ function toggleMobileSidebar(forceClose = false) {
   sidebar?.classList.toggle('active', shouldOpen);
   toggle?.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
   toggle?.setAttribute('aria-label', shouldOpen ? 'Close navigation menu' : 'Open navigation menu');
-  document.body.style.overflow = shouldOpen ? 'hidden' : '';
+
+  if (shouldOpen) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+  }
 
   if (shouldOpen && sidebar) {
     sidebar.querySelector('a')?.focus();
@@ -84,7 +93,7 @@ function createSidebar() {
 
   sidebar.innerHTML = `
     <div class="sidebar-top">
-      <div class="sidebar-brand"><a href="index.html"><img src="https://cdn.phototourl.com/free/2026-07-26-69fc6ff4-f369-46df-91d3-e8ca8e11dda2.jpg" alt="PAP-JOY" class="logo-img" /><span class="logo-text">PAP-JOY</span></a></div>
+      <div class="sidebar-brand"><a href="index.html"><img src="/favicon.svg" alt="PAP-JOY" class="logo-img" /><span class="logo-text">PAP-JOY</span></a></div>
       <nav class="sidebar-nav">
         <a href="index.html" class="nav-link${isActiveNavPage('index.html') ? ' active' : ''}"${isActiveNavPage('index.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-home"></i><span>Home</span></a>
         <a href="product.html" class="nav-link${isActiveNavPage('product.html') ? ' active' : ''}"${isActiveNavPage('product.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-store"></i><span>Shop</span></a>
@@ -306,7 +315,14 @@ async function loadNotifications() {
 
   bellBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    const isOpening = !dropdown.classList.contains('active');
     dropdown.classList.toggle('active');
+
+    if (isOpening && window.innerWidth <= 1024) {
+      const bellRect = bellBtn.getBoundingClientRect();
+      dropdown.style.bottom = 'auto';
+      dropdown.style.top = Math.max(8, bellRect.top - 8) + 'px';
+    }
   });
 
   document.addEventListener('click', (e) => {
@@ -343,7 +359,7 @@ async function loadNotifications() {
       return;
     }
 
-    const unreadCount = notifications.filter(n => !n.read).length;
+    const unreadCount = notifications.filter(n => !n.isRead).length;
     if (unreadCount > 0) {
       badge.textContent = unreadCount;
       badge.style.display = 'flex';
@@ -352,18 +368,103 @@ async function loadNotifications() {
     }
 
     list.innerHTML = notifications.map(n => {
-      const iconMap = { order: 'fa-box', promo: 'fa-tag', info: 'fa-info-circle', success: 'fa-check-circle' };
+      const iconMap = { order: 'fa-box', promo: 'fa-tag', info: 'fa-info-circle', success: 'fa-check-circle', payment: 'fa-credit-card', delivery: 'fa-truck', system: 'fa-cog' };
       const icon = iconMap[n.type] || 'fa-bell';
       const timeAgo = n.createdAt ? getTimeAgo(n.createdAt) : '';
-      return `<div class="notification-item ${n.read ? '' : 'unread'}" data-id="${n._id || ''}">
+      return `<div class="notification-item ${n.isRead ? '' : 'unread'}" data-id="${n._id || ''}">
         <i class="fas ${icon}"></i>
-        <div class="notification-text">${n.message || n.text || ''}</div>
+        <div class="notification-text">${escapeHTML(n.message || n.text || '')}</div>
         <div class="notification-time">${timeAgo}</div>
       </div>`;
     }).join('');
   } catch (err) {
     console.error('Failed to load notifications:', err);
   }
+
+  connectNotificationSSE(user);
+}
+
+function connectNotificationSSE(user) {
+  if (notificationSSE) { notificationSSE.close(); notificationSSE = null; }
+  if (!user || !user.token) return;
+
+  const baseUrl = (window.API_BASE_URL || '').replace(/\/$/, '');
+  const url = `${baseUrl}/api/v1/stream/notifications?token=${encodeURIComponent(user.token)}`;
+
+  notificationSSE = new EventSource(url);
+
+  notificationSSE.addEventListener('notification', (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      const notification = data.notification;
+      if (!notification) return;
+
+      const badge = document.getElementById('notification-badge');
+      const list = document.getElementById('notification-list');
+
+      if (badge) {
+        const currentCount = parseInt(badge.textContent || '0', 10);
+        const newCount = currentCount + 1;
+        badge.textContent = newCount;
+        badge.style.display = 'flex';
+      }
+
+      if (list) {
+        const emptyMsg = list.querySelector('p.text-center');
+        if (emptyMsg) emptyMsg.remove();
+
+        const iconMap = { order: 'fa-box', promo: 'fa-tag', info: 'fa-info-circle', success: 'fa-check-circle', payment: 'fa-credit-card', delivery: 'fa-truck', system: 'fa-cog' };
+        const icon = iconMap[notification.type] || 'fa-bell';
+
+        const itemEl = document.createElement('div');
+        itemEl.className = 'notification-item unread';
+        itemEl.dataset.id = notification._id || '';
+        itemEl.innerHTML = `
+          <i class="fas ${icon}"></i>
+          <div class="notification-text">${escapeHTML(notification.message || '')}</div>
+          <div class="notification-time">Just now</div>
+        `;
+        list.prepend(itemEl);
+      }
+
+      showBrowserNotification(notification);
+    } catch (err) {
+      console.warn('SSE notification parse error:', err);
+    }
+  });
+
+  notificationSSE.onerror = () => {
+    notificationSSE.close();
+    notificationSSE = null;
+    setTimeout(() => connectNotificationSSE(user), 5000);
+  };
+}
+
+function requestNotificationPermission() {
+  if (notificationPermissionRequested) return;
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'default') return;
+
+  notificationPermissionRequested = true;
+  setTimeout(() => {
+    Notification.requestPermission();
+  }, 3000);
+}
+
+function showBrowserNotification(notification) {
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+  if (document.hasFocus()) return;
+
+  try {
+    const iconMap = { order: 'fa-box', payment: 'fa-credit-card', delivery: 'fa-truck' };
+    new Notification(notification.title || 'PAP-JOY', {
+      body: notification.message || '',
+      icon: '/favicon.svg',
+      tag: notification._id || `papjoy-${Date.now()}`,
+      renotify: true,
+    });
+  } catch (_) {}
 }
 
 function getTimeAgo(dateString) {
@@ -388,3 +489,4 @@ window.createLocaleSwitcher = createLocaleSwitcher;
 window.initPageTransitions = initPageTransitions;
 window.initThemeToggle = initThemeToggle;
 window.loadNotifications = loadNotifications;
+window.requestNotificationPermission = requestNotificationPermission;

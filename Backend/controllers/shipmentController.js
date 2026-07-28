@@ -1,5 +1,7 @@
 const { Order, Shipment, User, Notification } = require('../models');
 const { restoreInventoryForOrder } = require('../services/orderService');
+const { sseManager } = require('../utils/sse');
+const { estimateETA } = require('../utils/geo');
 const logger = require('../utils/logger');
 
 async function getShipments(req, res) {
@@ -61,7 +63,7 @@ async function updateShipmentStatus(req, res) {
     };
 
     if (shipment.userId && statusMessages[shipment.status]) {
-      await Notification.create({
+      const notification = await Notification.create({
         userId: shipment.userId,
         orderId: shipment.orderId,
         type: 'order',
@@ -72,7 +74,32 @@ async function updateShipmentStatus(req, res) {
       }).catch(err => {
         logger.error('Failed to create tracking notification', { error: err.message });
       });
+
+      if (notification) {
+        sseManager.sendToUser(shipment.userId, {
+          type: 'notification',
+          notification: {
+            _id: notification._id,
+            title: notification.title,
+            message: notification.message,
+            type: notification.type,
+            orderId: notification.orderId,
+            isRead: false,
+            createdAt: notification.createdAt,
+          }
+        }, 'notification');
+      }
     }
+
+    sseManager.sendToOrder(orderNumber, {
+      type: 'status',
+      orderNumber,
+      status: shipment.status,
+      carrier: shipment.carrier,
+      trackingNumber: shipment.trackingNumber,
+      estimatedDelivery: shipment.estimatedDelivery,
+      events: shipment.events.slice(-10),
+    }, 'tracking');
 
     const order = await Order.findOneAndUpdate(
       { orderNumber },
@@ -146,7 +173,26 @@ async function updateShipmentLocation(req, res) {
       { shipmentId: shipment._id }
     ).catch(() => {});
 
-    res.json({ success: true, shipment });
+    const hasDest = shipment.deliveryAddress && shipment.deliveryAddress.latitude && shipment.deliveryAddress.longitude;
+    let etaInfo = null;
+    if (hasDest) {
+      etaInfo = estimateETA(
+        { lat: Number(latitude), lng: Number(longitude) },
+        { lat: shipment.deliveryAddress.latitude, lng: shipment.deliveryAddress.longitude }
+      );
+    }
+
+    const gpsPayload = {
+      type: 'gps',
+      orderNumber,
+      currentLocation: { lat: Number(latitude), lng: Number(longitude), address: address || '' },
+      eta: etaInfo,
+      status: shipment.status,
+    };
+    sseManager.sendToOrder(orderNumber, gpsPayload, 'gps');
+    sseManager.sendToOrder(`gps:${orderNumber}`, gpsPayload, 'gps');
+
+    res.json({ success: true, shipment, eta: etaInfo });
   } catch (err) {
     logger.error('Update shipment location failed', { error: err.message });
     res.status(500).json({ error: 'Failed to update location' });

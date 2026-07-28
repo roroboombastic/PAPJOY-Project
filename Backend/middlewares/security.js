@@ -18,7 +18,7 @@ function createSecurityMiddleware(app) {
         scriptSrc: ["'self'", "'unsafe-inline'", "https://checkout.razorpay.com", "https://js.stripe.com", "https://accounts.google.com", "https://apis.google.com", "https://cdnjs.cloudflare.com", "https://unpkg.com"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com", "https://unpkg.com"],
         imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
-        connectSrc: ["'self'", "https://papjoy-project.onrender.com", "https://api.razorpay.com", "https://checkout.razorpay.com"],
+        connectSrc: ["'self'", "https://papjoy-project.onrender.com", "https://papjoy.com", "https://www.papjoy.com", "https://api.razorpay.com", "https://checkout.razorpay.com"],
         fontSrc: ["'self'", "data:", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
         objectSrc: ["'none'"],
         frameAncestors: ["'none'"],
@@ -62,7 +62,12 @@ function createSecurityMiddleware(app) {
   };
   console.log('[INFO] CORS origins configured', JSON.stringify({ origins: corsOrigins }));
   app.use(cors(corsOptions));
-  app.use(compression());
+  app.use(compression({
+    filter: (req, res) => {
+      if (req.originalUrl.includes('/stream/')) return false;
+      return compression.filter(req, res);
+    }
+  }));
   
   const express = require('express');
   app.use(express.json({ limit: '10mb' }));
@@ -135,6 +140,7 @@ function createSecurityMiddleware(app) {
   }
 
   app.use((req, res, next) => {
+    if (req.originalUrl.includes('/stream/')) return next();
     const timeoutMs = 30000;
     const timer = setTimeout(() => {
       if (!res.headersSent) {

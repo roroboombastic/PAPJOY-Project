@@ -3,9 +3,11 @@ const QRCode = require('qrcode');
 const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_CURRENCY, APP_URL, BUSINESS_NAME } = require('../config');
 const { isRazorpayConfigured, getRazorpayInstance } = require('../utils/paymentConfig');
 const { createOrderFromData } = require('../services/orderService');
-const { Order, Invoice } = require('../models');
+const { Order, Invoice, Notification } = require('../models');
 const invoiceController = require('./invoiceController');
 const logger = require('../utils/logger');
+let sseManager;
+try { sseManager = require('../utils/sse').sseManager; } catch (_) { /* SSE optional */ }
 
 const Razorpay = isRazorpayConfigured() ? require('razorpay') : null;
 
@@ -352,6 +354,33 @@ async function razorpayWebhook(req, res) {
         order.paymentDetails.capturedAt = new Date();
         await order.save();
         logger.info('Order payment confirmed via webhook', { orderId: order._id, paymentId });
+
+        if (order.userId && sseManager) {
+          const notification = await Notification.create({
+            userId: order.userId,
+            orderId: order._id,
+            type: 'payment',
+            channel: 'app',
+            title: 'Payment confirmed',
+            message: `Payment for order ${order.orderNumber} has been confirmed.`,
+            data: { orderId: order._id, orderNumber: order.orderNumber }
+          }).catch(() => null);
+
+          if (notification) {
+            sseManager.sendToUser(order.userId, {
+              type: 'notification',
+              notification: {
+                _id: notification._id,
+                title: notification.title,
+                message: notification.message,
+                type: notification.type,
+                orderId: notification.orderId,
+                isRead: false,
+                createdAt: notification.createdAt,
+              }
+            }, 'notification');
+          }
+        }
       }
     }
 
@@ -362,6 +391,33 @@ async function razorpayWebhook(req, res) {
         order.paymentStatus = 'failed';
         await order.save();
         logger.info('Order payment failed via webhook', { orderId: order._id });
+
+        if (order.userId && sseManager) {
+          const notification = await Notification.create({
+            userId: order.userId,
+            orderId: order._id,
+            type: 'payment',
+            channel: 'app',
+            title: 'Payment failed',
+            message: `Payment for order ${order.orderNumber} has failed. Please try again.`,
+            data: { orderId: order._id, orderNumber: order.orderNumber }
+          }).catch(() => null);
+
+          if (notification) {
+            sseManager.sendToUser(order.userId, {
+              type: 'notification',
+              notification: {
+                _id: notification._id,
+                title: notification.title,
+                message: notification.message,
+                type: notification.type,
+                orderId: notification.orderId,
+                isRead: false,
+                createdAt: notification.createdAt,
+              }
+            }, 'notification');
+          }
+        }
       }
     }
 

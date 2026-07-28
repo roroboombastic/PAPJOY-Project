@@ -1,6 +1,8 @@
-let savedItems = JSON.parse(localStorage.getItem('papjoy-saved')) || [];
+let savedItems = [];
+try { savedItems = JSON.parse(localStorage.getItem('papjoy-saved')) || []; } catch (e) { savedItems = []; }
 let wishlistUpdated = false;
-let browsingHistory = JSON.parse(localStorage.getItem('papjoy-history')) || [];
+let browsingHistory = [];
+try { browsingHistory = JSON.parse(localStorage.getItem('papjoy-history')) || []; } catch (e) { browsingHistory = []; }
 
 function isInWishlist(productId) {
   return savedItems.some((item) =>
