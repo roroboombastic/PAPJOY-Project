@@ -150,6 +150,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (typeof createLocaleSwitcher === 'function') createLocaleSwitcher();
   if (typeof updateUserLinks === 'function') updateUserLinks();
   if (typeof initThemeToggle === 'function') initThemeToggle();
+  if (typeof createMobileThemeToggle === 'function') createMobileThemeToggle();
   if (typeof loadNotifications === 'function') loadNotifications();
   if (typeof requestNotificationPermission === 'function') requestNotificationPermission();
   initCookieConsent();

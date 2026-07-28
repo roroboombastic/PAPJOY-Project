@@ -269,37 +269,98 @@ function initPageTransitions() {
   });
 }
 
+function applyTheme(value) {
+  document.body.removeAttribute('data-theme');
+
+  if (value === 'dark') {
+    document.body.setAttribute('data-theme', 'dark');
+  } else if (value === 'light') {
+    document.body.setAttribute('data-theme', 'light');
+  }
+  // 'auto' = no attribute, follows prefers-color-scheme via CSS
+
+  localStorage.setItem('papjoy-theme', value);
+
+  document.querySelectorAll('.theme-option').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.themeValue === value);
+  });
+
+  const mobileBtn = document.getElementById('mobile-theme-btn');
+  if (mobileBtn) {
+    const icon = value === 'dark' ? 'fa-moon' : value === 'light' ? 'fa-sun' : 'fa-circle-half-stroke';
+    mobileBtn.innerHTML = `<i class="fas ${icon}"></i>`;
+  }
+}
+
+function getSavedTheme() {
+  return localStorage.getItem('papjoy-theme') || 'auto';
+}
+
 function initThemeToggle() {
   const picker = document.getElementById('theme-picker');
   if (!picker) return;
 
-  const options = picker.querySelectorAll('.theme-option');
+  applyTheme(getSavedTheme());
 
-  function applyTheme(value) {
-    document.body.removeAttribute('data-theme');
-
-    if (value === 'dark') {
-      document.body.setAttribute('data-theme', 'dark');
-    } else if (value === 'light') {
-      document.body.setAttribute('data-theme', 'light');
-    }
-    // 'auto' = no attribute, follows prefers-color-scheme via CSS
-
-    localStorage.setItem('papjoy-theme', value);
-
-    options.forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.themeValue === value);
-    });
-  }
-
-  const saved = localStorage.getItem('papjoy-theme') || 'auto';
-  applyTheme(saved);
-
-  options.forEach((btn) => {
+  picker.querySelectorAll('.theme-option').forEach((btn) => {
     btn.addEventListener('click', () => {
       applyTheme(btn.dataset.themeValue);
     });
   });
+}
+
+function createMobileThemeToggle() {
+  const existing = document.getElementById('mobile-theme-toggle-wrapper');
+  if (existing) existing.remove();
+
+  const wrapper = document.createElement('div');
+  wrapper.id = 'mobile-theme-toggle-wrapper';
+
+  const currentTheme = getSavedTheme();
+
+  wrapper.innerHTML = `
+    <button class="mobile-theme-toggle" id="mobile-theme-btn" aria-label="Switch theme">
+      <i class="fas ${currentTheme === 'dark' ? 'fa-moon' : currentTheme === 'light' ? 'fa-sun' : 'fa-circle-half-stroke'}"></i>
+    </button>
+    <div class="mobile-theme-popover" id="mobile-theme-popover">
+      <button class="theme-option" data-theme-value="light" title="Light Mode">
+        <i class="fas fa-sun"></i><span>Light</span>
+      </button>
+      <button class="theme-option" data-theme-value="dark" title="Dark Mode">
+        <i class="fas fa-moon"></i><span>Dark</span>
+      </button>
+      <button class="theme-option" data-theme-value="auto" title="System preference">
+        <i class="fas fa-circle-half-stroke"></i><span>Auto</span>
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(wrapper);
+
+  const btn = document.getElementById('mobile-theme-btn');
+  const popover = document.getElementById('mobile-theme-popover');
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    popover.classList.toggle('active');
+    btn.classList.toggle('active');
+  });
+
+  popover.querySelectorAll('.theme-option').forEach((opt) => {
+    opt.addEventListener('click', (e) => {
+      e.stopPropagation();
+      applyTheme(opt.dataset.themeValue);
+      popover.classList.remove('active');
+      btn.classList.remove('active');
+    });
+  });
+
+  document.addEventListener('click', () => {
+    popover.classList.remove('active');
+    btn.classList.remove('active');
+  });
+
+  popover.addEventListener('click', (e) => e.stopPropagation());
 }
 
 async function loadNotifications() {
@@ -488,5 +549,6 @@ window.createSidebar = createSidebar;
 window.createLocaleSwitcher = createLocaleSwitcher;
 window.initPageTransitions = initPageTransitions;
 window.initThemeToggle = initThemeToggle;
+window.createMobileThemeToggle = createMobileThemeToggle;
 window.loadNotifications = loadNotifications;
 window.requestNotificationPermission = requestNotificationPermission;
