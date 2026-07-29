@@ -7,6 +7,7 @@ const QRCode = require('qrcode');
 const https = require('https');
 const http = require('http');
 const logger = require('../utils/logger');
+const emailService = require('../services/emailService');
 const { calculateOrderTotals, roundMoney, BUSINESS_GSTIN, BUSINESS_NAME, GST_PERCENT, GST_STATE, GST_RETURN_POLICY, CUSTOMER_SUPPORT } = require('../utils/gst');
 const { ADMIN_EMAILS } = require('../config');
 
@@ -168,6 +169,15 @@ async function generateInvoice(orderId) {
     await order.save();
 
     logger.info('Invoice generated', { invoiceNumber, orderId, userId: order.userId?._id || order.userId || null });
+
+    if (customerEmail) {
+      emailService.sendMail({
+        to: customerEmail,
+        subject: `Invoice #${invoiceNumber} for your PAP-JOY order`,
+        html: emailService.invoiceEmailTemplate(invoiceData)
+      });
+    }
+
     return invoiceData;
   } catch (err) {
     logger.error('Generate invoice failed', { error: err.message });

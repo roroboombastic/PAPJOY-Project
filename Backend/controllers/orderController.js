@@ -2,6 +2,7 @@ const { Order, User } = require('../models');
 const logger = require('../utils/logger');
 const { createOrderFromData, restoreInventoryForOrder } = require('../services/orderService');
 const invoiceController = require('./invoiceController');
+const emailService = require('../services/emailService');
 
 async function createOrder(req, res) {
   try {
@@ -19,10 +20,25 @@ async function createOrder(req, res) {
       paymentStatus: req.body.paymentStatus
     });
 
-    // Auto-generate an invoice for every created order,
-    // including COD orders and pre-paid orders.
+    // Auto-generate an invoice for every created order
     invoiceController.generateInvoice(order._id).catch((invoiceErr) => {
       logger.error('Auto invoice generation failed', { error: invoiceErr.message, orderId: order._id });
+    });
+
+    const customerEmail = order.deliveryInfo?.email || req.body?.deliveryInfo?.email || '';
+    if (customerEmail) {
+      emailService.sendMail({
+        to: customerEmail,
+        subject: `Order Confirmed - #${order.orderNumber || order._id}`,
+        html: emailService.orderConfirmationTemplate(order)
+      });
+    }
+
+    // Notify admin of new order
+    emailService.sendMail({
+      to: 'papp.joyy@gmail.com',
+      subject: `New Order #${order.orderNumber || order._id} — ₹${(order.total || order.amount || 0).toFixed(2)}`,
+      html: `<p>A new order has been placed.</p><p>Order: #${order.orderNumber || order._id}</p><p>Amount: ₹${(order.total || order.amount || 0).toFixed(2)}</p>`
     });
 
     res.status(201).json({ success: true, order });

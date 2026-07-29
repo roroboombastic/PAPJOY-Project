@@ -442,6 +442,16 @@ async function updateOrderStatus(req, res) {
 
     await order.save();
 
+    const customerEmail = order.deliveryInfo?.email || order.billingAddress?.email || order.shippingAddress?.email || '';
+    if (customerEmail && status) {
+      const emailService = require('../services/emailService');
+      emailService.sendMail({
+        to: customerEmail,
+        subject: `Order #${order.orderNumber || order._id} is now ${status}`,
+        html: emailService.orderUpdateTemplate(order)
+      });
+    }
+
     const shipmentOrder = await Shipment.findOne({ orderId: id });
     if (shipmentOrder) {
       if (status) shipmentOrder.status = status;

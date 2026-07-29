@@ -143,6 +143,12 @@ function initMobileEnhancements() {
   });
 }
 
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   if (typeof restoreSessionFromStorage === 'function') await restoreSessionFromStorage();
   initAnnouncementBar();
@@ -158,6 +164,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   addScrollClasses();
   requestAnimationFrame(() => initScrollAnimations());
   initMobileEnhancements();
+  initBackToTop();
+  initSizeGuide();
+  initQuickView();
+  enhanceAllEmptyStates();
 
   const newsletterBtn = document.getElementById('newsletter-subscribe-btn');
   if (newsletterBtn) {
@@ -185,3 +195,135 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   }
 });
+
+// ================== BACK TO TOP ==================
+
+function initBackToTop() {
+  var btn = document.getElementById('back-to-top');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'back-to-top';
+    btn.className = 'back-to-top';
+    btn.setAttribute('aria-label', 'Back to top');
+    btn.innerHTML = '<i class="fas fa-chevron-up"></i>';
+    document.body.appendChild(btn);
+    btn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+  var ticking = false;
+  window.addEventListener('scroll', function () {
+    if (!ticking) {
+      requestAnimationFrame(function () {
+        btn.classList.toggle('visible', window.scrollY > 400);
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
+}
+
+// ================== SIZE GUIDE ==================
+
+function initSizeGuide() {
+  document.addEventListener('click', function (e) {
+    var trigger = e.target.closest('[data-size-guide]');
+    if (!trigger) return;
+    e.preventDefault();
+    var existing = document.querySelector('.size-guide-overlay');
+    if (existing) { existing.classList.add('active'); return; }
+    var overlay = document.createElement('div');
+    overlay.className = 'size-guide-overlay active';
+    overlay.innerHTML =
+      '<div class="size-guide-modal">' +
+        '<button class="size-guide-close" id="sg-close" aria-label="Close size guide"><i class="fas fa-times"></i></button>' +
+        '<h3>Size Guide</h3>' +
+        '<p class="guide-sub">Men\'s footwear — measurements in centimetres</p>' +
+        '<table class="size-guide-table">' +
+          '<tr><th>India</th><th>UK</th><th>US</th><th>EU</th><th>Foot Length (cm)</th></tr>' +
+          '<tr><td>6</td><td>5.5</td><td>6.5</td><td>39</td><td>24.5</td></tr>' +
+          '<tr><td>7</td><td>6.5</td><td>7.5</td><td>40</td><td>25.5</td></tr>' +
+          '<tr><td>8</td><td>7.5</td><td>8.5</td><td>41</td><td>26.5</td></tr>' +
+          '<tr><td>9</td><td>8.5</td><td>9.5</td><td>42</td><td>27.5</td></tr>' +
+          '<tr><td>10</td><td>9.5</td><td>10.5</td><td>43</td><td>28.5</td></tr>' +
+          '<tr><td>11</td><td>10.5</td><td>11.5</td><td>44</td><td>29.5</td></tr>' +
+          '<tr><td>12</td><td>11.5</td><td>12.5</td><td>45</td><td>30.5</td></tr>' +
+        '</table>' +
+        '<p style="margin:16px 0 0;font-size:0.78rem;color:var(--text-muted);">Measure from heel to longest toe. If between sizes, choose the next size up.</p>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    overlay.querySelector('#sg-close').addEventListener('click', function () { overlay.remove(); });
+    overlay.addEventListener('click', function (e2) {
+      if (e2.target === overlay) overlay.remove();
+    });
+  });
+}
+
+// ================== QUICK VIEW MODAL ==================
+
+function initQuickView() {
+  document.addEventListener('click', function (e) {
+    var trigger = e.target.closest('[data-quick-view]');
+    if (!trigger) return;
+    e.preventDefault();
+    var pid = trigger.dataset.quickView;
+    var product = typeof getProductById === 'function' ? getProductById(pid) : null;
+    if (!product) return;
+    var img = (product.images && product.images[0]) || product.image || '';
+    var name = product.name || 'Product';
+    var priceFmt = typeof formatCurrency === 'function' ? formatCurrency(product.price || 0) : '\u20b9' + (product.price || 0);
+    var desc = typeof escapeHTML === 'function' ? escapeHTML(product.description || '') : product.description || '';
+    var cat = typeof escapeHTML === 'function' ? escapeHTML(product.category || '') : product.category || '';
+    var overlay = document.createElement('div');
+    overlay.className = 'quick-view-overlay active';
+    overlay.innerHTML =
+      '<div class="quick-view-modal">' +
+        '<button class="quick-view-close" id="qv-close" aria-label="Close"><i class="fas fa-times"></i></button>' +
+        '<div class="quick-view-image"><img src="' + img + '" alt="' + name + '" loading="lazy" /></div>' +
+        '<div class="quick-view-info">' +
+          '<span class="qv-category">' + cat + '</span>' +
+          '<h3>' + name + '</h3>' +
+          '<div class="qv-price">' + priceFmt + '</div>' +
+          '<p class="qv-desc">' + desc + '</p>' +
+          '<div class="qv-actions">' +
+            '<button class="btn btn-primary qv-add-cart" data-product-id="' + (product.id || product._id) + '"><i class="fas fa-shopping-cart"></i> Add to Cart</button>' +
+            '<a href="' + (typeof getProductLink === 'function' ? getProductLink(product) : 'product-detail.html?id=' + (product.id || product._id)) + '" class="btn btn-secondary"><i class="fas fa-eye"></i> View Details</a>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    overlay.querySelector('#qv-close').addEventListener('click', function () { overlay.remove(); });
+    overlay.querySelector('.qv-add-cart').addEventListener('click', function () {
+      if (typeof addToCartFlow === 'function') addToCartFlow(product.id || product._id);
+      overlay.remove();
+    });
+    overlay.addEventListener('click', function (e2) {
+      if (e2.target === overlay) overlay.remove();
+    });
+  });
+}
+
+// ================== ENHANCED EMPTY STATES ==================
+
+function enhanceAllEmptyStates() {
+  var page = document.body.dataset.page;
+  if (page === 'cart') {
+    enhanceEmptyState('cart-items', '\ud83d\uded2', 'Your cart is empty', 'Looks like you haven\'t added anything yet. Browse our collection and find your perfect pair.', 'Start Shopping', 'product.html');
+  } else if (page === 'product' || page === 'shop') {
+    enhanceEmptyState('product-grid', '\ud83d\udc5e', 'No products found', 'Try adjusting your filters or search terms.', 'Clear Filters', 'product.html');
+  }
+}
+
+function enhanceEmptyState(containerId, icon, title, message, ctaText, ctaLink) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  var existingEmpty = container.querySelector('.empty-state');
+  if (!existingEmpty) return;
+  container.innerHTML =
+    '<div class="empty-state-enhanced">' +
+      '<div class="empty-icon">' + icon + '</div>' +
+      '<h3>' + title + '</h3>' +
+      '<p>' + message + '</p>' +
+      (ctaText && ctaLink ? '<a href="' + ctaLink + '" class="btn btn-primary"><i class="fas fa-store"></i> ' + ctaText + '</a>' : '') +
+    '</div>';
+}

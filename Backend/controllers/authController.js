@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const https = require('https');
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
+const emailService = require('../services/emailService');
 const {
   APP_URL,
   JWT_SECRET,
@@ -218,6 +219,13 @@ async function forgotPassword(req, res) {
 
     const resetUrl = `${APP_URL}/reset-password.html?token=${resetToken}`;
     logger.info('Password reset token generated', { userId: user._id, email: normalizedEmail });
+
+    emailService.sendMail({
+      to: normalizedEmail,
+      subject: 'Reset your PAP-JOY password',
+      html: emailService.passwordResetTemplate(user.name, resetUrl)
+    });
+
     res.json({ success: true, message: 'If that email is registered, password reset instructions will be sent.' });
   } catch (err) {
     logger.error('Password reset request failed', { error: err.message });

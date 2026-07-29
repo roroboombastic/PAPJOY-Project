@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <script>
+  (function(){
+    try{
+      var t=localStorage.getItem("papjoy-theme");
+      if(t==="dark"){document.documentElement.setAttribute("data-theme","dark");}
+      else if(t==="light"){document.documentElement.setAttribute("data-theme","light");}
+      else if(window.matchMedia("(prefers-color-scheme: dark)").matches){
+        document.documentElement.setAttribute("data-theme","dark");
+      }
+    }catch(e){}
+  })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <title>PAP-JOY | You're Offline</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-page="offline">
+  <main style="display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;width:100%;text-align:center;">
+    <div>
+      <div style="font-size:4rem;margin-bottom:16px;">📡</div>
+      <h1 style="margin:0 0 8px;">No internet connection</h1>
+      <p style="color:var(--text-muted);max-width:400px;margin:0 auto 24px;">It looks like you're offline. Check your connection and try again.</p>
+      <a href="index.html" class="btn btn-primary" data-no-transition>Go to Homepage</a>
+    </div>
+  </main>
+</body>
+</html>

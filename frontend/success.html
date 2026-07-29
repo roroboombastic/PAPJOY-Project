@@ -2,11 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <script>
+  (function(){
+    try{
+      var t=localStorage.getItem("papjoy-theme");
+      if(t==="dark"){document.documentElement.setAttribute("data-theme","dark");}
+      else if(t==="light"){document.documentElement.setAttribute("data-theme","light");}
+      else if(window.matchMedia("(prefers-color-scheme: dark)").matches){
+        document.documentElement.setAttribute("data-theme","dark");
+      }
+    }catch(e){}
+  })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="PAP-JOY - Order placed successfully. View your order details and invoice." />
+  <meta name="description" content="Your order has been placed successfully. View your order summary and invoice." />
   <meta name="theme-color" content="#0a0a0a" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <title>PAP-JOY | Order Complete</title>
+  <title>PAP-JOY | Order Placed</title>
   <script>
     // Configure API base URL for production
     if (window.location.hostname === 'papjoy-project.vercel.app' || window.location.hostname === 'papjoy.com' || window.location.hostname === 'www.papjoy.com') {
@@ -19,8 +31,32 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
-</head>
+  <link rel="manifest" href="/manifest.json" />
+  
+  <meta property="og:title" content="PAP-JOY | Order Placed" />
+  <meta property="og:description" content="Your order has been placed successfully. View your order summary and invoice." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="PAP-JOY" />
+  <meta property="og:image" content="https://papjoy.com/favicon.svg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  </head>
 <body data-page="success">
+  <div id="global-error" class="global-error" style="display: none;"></div>
+
+  <div id="announcement-bar" class="announcement-bar">
+    <div class="announcement-bar-inner">
+      <span class="announcement-icon"><i class="fas fa-shipping-fast"></i></span>
+      <span class="announcement-text">Free shipping on orders above &#8377;999</span>
+      <span class="announcement-separator">|</span>
+      <span class="announcement-icon"><i class="fas fa-undo-alt"></i></span>
+      <span class="announcement-text">Easy 7-day returns</span>
+      <span class="announcement-separator">|</span>
+      <span class="announcement-icon"><i class="fas fa-shield-alt"></i></span>
+      <span class="announcement-text">Secure payments with Razorpay</span>
+      <button class="announcement-close" id="announcement-close" aria-label="Close announcement"><i class="fas fa-times"></i></button>
+    </div>
+  </div>
+
   <aside id="site-sidebar" class="site-sidebar"></aside>
   <button class="mobile-menu-toggle" id="mobile-menu-toggle"><i class="fas fa-bars"></i></button>
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
@@ -44,24 +80,55 @@
     </div>
   </main>
 
-  <footer class="site-footer">
-    <p>© 2026 PAP-JOY. Crafted for every journey.</p>
+    <footer class="site-footer">
+    <div class="connect-with-us">
+      <h3>Connect With Us</h3>
+    </div>
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="brand"><a href="index.html"><img src="/favicon.svg" alt="PAP-JOY" class="logo-img-footer" /><span class="logo-text">PAP-JOY</span></a></div>
+        <p>Premium footwear for every journey.</p>
+      </div>
+      <div class="social-section">
+        <h4>Connect With Us</h4>
+        <div class="follow-us">
+          <h5>Follow Us</h5>
+          <div class="social-links">
+          <a href="https://www.instagram.com/papjoy_?igsh=cWtuMDJ5dWM0dg==0" class="social-link" title="Instagram" aria-label="Follow us on Instagram" target="_blank" rel="noopener noreferrer">
+            <i class="fab fa-instagram"></i>
+          </a>
+          <a href="https://www.facebook.com/profile.php?id=61592415609500" class="social-link" title="Facebook" aria-label="Follow us on Facebook" target="_blank" rel="noopener noreferrer">
+            <i class="fab fa-facebook-f"></i>
+          </a>
+          <a href="https://youtube.com/@papjoy_shoes?si=Pl5P9cMTKRX5JV71" class="social-link" title="YouTube" aria-label="Subscribe on YouTube" target="_blank" rel="noopener noreferrer">
+            <i class="fab fa-youtube"></i>
+          </a>
+        </div>
+        </div>
+        </div>
+      </div>
+      <div class="contact-info">
+        <h4>Contact Us</h4>
+        <div class="contact-item">
+          <i class="fas fa-envelope"></i>
+          <a href="mailto:papp.joyy@gmail.com">papp.joyy@gmail.com</a>
+        </div>
+        <div class="contact-item">
+          <i class="fas fa-phone"></i>
+          <a href="tel:+917206993413">+91 7206993413</a>
+        </div>
+      </div>
+    </div>
+    <div class="copyright">
+      <p>&copy; 2026 PAP-JOY. Crafted for every journey. All rights reserved.</p>
+    </div>
   </footer>
     <script src="js/config.js" defer></script>
     <script src="js/helpers.js" defer></script>
     <script src="js/storage.js" defer></script>
-    <script src="js/i18n.js" defer></script>
-    <script src="js/api.js" defer></script>
     <script src="js/auth.js" defer></script>
     <script src="js/navigation.js" defer></script>
-    <script src="js/cart.js" defer></script>
-    <script src="js/wishlist.js" defer></script>
     <script src="js/ui.js" defer></script>
-    <script src="js/products.js" defer></script>
-    <script src="js/tracking.js" defer></script>
-    <script src="js/checkout.js" defer></script>
-    <script src="js/admin.js" defer></script>
-    <script src="js/account.js" defer></script>
     <script src="js/main.js" defer></script>
 </body>
 </html>

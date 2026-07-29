@@ -43,10 +43,12 @@ function triggerPageTransition(href) {
     window.location.href = href;
     return;
   }
-  overlay.classList.add('visible');
-  window.setTimeout(() => {
-    window.location.href = href;
-  }, 180);
+  requestAnimationFrame(function() {
+    overlay.classList.add('visible');
+    window.setTimeout(function() {
+      window.location.href = href;
+    }, 240);
+  });
 }
 window.triggerPageTransition = triggerPageTransition;
 

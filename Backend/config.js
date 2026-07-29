@@ -53,6 +53,12 @@ const RAZORPAY_SECRET = RAZORPAY_KEY_SECRET;
 const RAZORPAY_CURRENCY = process.env.RAZORPAY_CURRENCY || 'INR';
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const SMTP_HOST = process.env.SMTP_HOST || '';
+const SMTP_PORT = Number(process.env.SMTP_PORT) || 587;
+const SMTP_USER = process.env.SMTP_USER || '';
+const SMTP_PASS = process.env.SMTP_PASS || '';
+const SMTP_FROM_NAME = process.env.SMTP_FROM_NAME || 'PAP-JOY';
+const SMTP_FROM_ADDRESS = process.env.SMTP_FROM_ADDRESS || CUSTOMER_SUPPORT;
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(email => email.trim().toLowerCase()).filter(Boolean);
 
 /**
@@ -214,6 +220,15 @@ const config = {
         message: 'Invalid email format'
       })
     }),
+    smtp: {
+      host: getEnv('SMTP_HOST', ''),
+      port: getPositiveNumber('SMTP_PORT', 587),
+      secure: getEnv('SMTP_PORT', '587') === '465',
+      user: getEnv('SMTP_USER', ''),
+      pass: getEnv('SMTP_PASS', ''),
+      fromName: getEnv('SMTP_FROM_NAME', 'PAP-JOY'),
+      fromAddress: getEnv('SMTP_FROM_ADDRESS', CUSTOMER_SUPPORT)
+    },
     adminEmails: (getEnv('ADMIN_EMAILS', '') || '')
       .split(',')
       .map(e => e.trim())
@@ -325,6 +340,12 @@ module.exports = {
   STRIPE_SECRET_KEY,
   GOOGLE_CLIENT_ID,
   ADMIN_EMAILS,
+  SMTP_HOST,
+  SMTP_PORT,
+  SMTP_USER,
+  SMTP_PASS,
+  SMTP_FROM_NAME,
+  SMTP_FROM_ADDRESS,
   DEFAULT_DEV_ORIGINS,
   BUSINESS_NAME,
   BUSINESS_GSTIN,

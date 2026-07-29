@@ -2,6 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <script>
+  (function(){
+    try{
+      var t=localStorage.getItem("papjoy-theme");
+      if(t==="dark"){document.documentElement.setAttribute("data-theme","dark");}
+      else if(t==="light"){document.documentElement.setAttribute("data-theme","light");}
+      else if(window.matchMedia("(prefers-color-scheme: dark)").matches){
+        document.documentElement.setAttribute("data-theme","dark");
+      }
+    }catch(e){}
+  })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <title>PAP-JOY | Terms of Service</title>
@@ -16,7 +28,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
-</head>
+  <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#0a0a0a" />
+  
+  <meta name="description" content="Read the terms and conditions for using PAP-JOY." />
+  <meta property="og:title" content="PAP-JOY | Terms of Service" />
+  <meta property="og:description" content="Read the terms and conditions for using PAP-JOY." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="PAP-JOY" />
+  <meta property="og:image" content="https://papjoy.com/favicon.svg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  </head>
 <body data-page="terms">
   <div id="global-error" class="global-error" style="display: none;"></div>
   <!-- Announcement / Status Bar -->

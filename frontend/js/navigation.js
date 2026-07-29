@@ -270,14 +270,16 @@ function initPageTransitions() {
 }
 
 function applyTheme(value) {
-  document.body.removeAttribute('data-theme');
+  var current = document.documentElement.getAttribute('data-theme');
+  var target = value === 'auto' ? null : value;
 
-  if (value === 'dark') {
-    document.body.setAttribute('data-theme', 'dark');
-  } else if (value === 'light') {
-    document.body.setAttribute('data-theme', 'light');
+  if (current === target) return;
+
+  if (target) {
+    document.documentElement.setAttribute('data-theme', target);
+  } else {
+    document.documentElement.removeAttribute('data-theme');
   }
-  // 'auto' = no attribute, follows prefers-color-scheme via CSS
 
   localStorage.setItem('papjoy-theme', value);
 

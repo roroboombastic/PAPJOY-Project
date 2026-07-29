@@ -31,6 +31,12 @@ process.on('unhandledRejection', (reason) => {
 app.use((req, res, next) => {
   req.id = req.headers['x-request-id'] || crypto.randomBytes(16).toString('hex');
   res.setHeader('X-Request-ID', req.id);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://*.razorpay.com https://*.paypal.com https://js.stripe.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; connect-src 'self' https:; frame-src https://*.razorpay.com https://*.paypal.com https://js.stripe.com;");
   next();
 });
 

@@ -2,11 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <script>
+  (function(){
+    try{
+      var t=localStorage.getItem("papjoy-theme");
+      if(t==="dark"){document.documentElement.setAttribute("data-theme","dark");}
+      else if(t==="light"){document.documentElement.setAttribute("data-theme","light");}
+      else if(window.matchMedia("(prefers-color-scheme: dark)").matches){
+        document.documentElement.setAttribute("data-theme","dark");
+      }
+    }catch(e){}
+  })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="PAP-JOY - Admin dashboard. Manage products, orders, users, and analytics." />
+  <meta name="description" content="Admin dashboard for managing products, orders, users, and analytics." />
   <meta name="theme-color" content="#0a0a0a" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <title>Admin Dashboard - PAP-JOY</title>
+  <title>PAP-JOY | Admin Dashboard</title>
   <script>
     // Configure API base URL for production
     if (window.location.hostname === 'papjoy-project.vercel.app' || window.location.hostname === 'papjoy.com' || window.location.hostname === 'www.papjoy.com') {
@@ -19,7 +31,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="preconnect" href="https://papjoy-project.onrender.com" />
-</head>
+  <link rel="manifest" href="/manifest.json" />
+  
+  <meta property="og:title" content="PAP-JOY | Admin Dashboard" />
+  <meta property="og:description" content="Admin dashboard for managing products, orders, users, and analytics." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="PAP-JOY" />
+  <meta property="og:image" content="https://papjoy.com/favicon.svg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  </head>
 <body>
   <div class="admin-mobile-header" id="admin-mobile-header">
     <button class="admin-hamburger" id="admin-hamburger" onclick="toggleAdminSidebar()">
@@ -369,6 +389,70 @@
     </div>
   </div>
 
+  <!-- Sidebar Overlay (mobile) -->
+  <div id="admin-sidebar-overlay" class="admin-sidebar-overlay" onclick="closeAdminSidebar()"></div>
+
+  <!-- Product Modal -->
+  <div id="product-modal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeProductModal()">&times;</span>
+      <h2>Product Form</h2>
+      <form id="product-form" onsubmit="saveProduct(event)">
+        <input type="hidden" id="product-id" />
+        <div class="form-group">
+          <label>Product Name *</label>
+          <input type="text" id="product-name" required />
+        </div>
+        <div class="form-group">
+          <label>Slug</label>
+          <input type="text" id="product-slug" />
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="product-description"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Price *</label>
+            <input type="number" id="product-price" min="0" step="0.01" required />
+          </div>
+          <div class="form-group">
+            <label>Stock</label>
+            <input type="number" id="product-stock" min="0" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>SKU</label>
+            <input type="text" id="product-sku" />
+          </div>
+          <div class="form-group">
+            <label>Brand</label>
+            <input type="text" id="product-brand" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="product-category"></select>
+        </div>
+        <div class="form-group">
+          <label>Image URL</label>
+          <input type="url" id="product-image-url" placeholder="https://..." />
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="product-active" checked />
+            Active
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save Product</button>
+          <button type="button" class="btn btn-secondary" onclick="closeProductModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Category Modal -->
   <div id="category-modal" class="modal">
     <div class="modal-content">
@@ -434,7 +518,9 @@
           document.getElementById(`${page}-page`).classList.add('active');
 
           const sidebar = document.querySelector('.admin-sidebar');
+          const overlay = document.getElementById('admin-sidebar-overlay');
           if (sidebar) sidebar.classList.remove('mobile-open');
+          if (overlay) overlay.classList.remove('active');
 
           if (page === 'dashboard') loadAdminDashboard();
           else if (page === 'products') loadAdminProducts();

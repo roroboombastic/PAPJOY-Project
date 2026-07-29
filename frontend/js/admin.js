@@ -69,12 +69,12 @@ async function loadAdminDashboard() {
       } else {
         recentOrdersList.innerHTML = data.recentOrders.map(order => `
           <tr>
-            <td>${escapeHTML(order.orderNumber || order._id?.slice(-8) || 'N/A')}</td>
-            <td>${escapeHTML(order.userId?.name || order.shippingAddress?.name || 'Guest')}</td>
-            <td>${formatCurrency(order.total || 0)}</td>
-            <td><span class="status-badge">${escapeHTML(order.status)}</span></td>
-            <td>${new Date(order.createdAt).toLocaleDateString()}</td>
-            <td><button class="btn-small" onclick="showOrderModal('${order._id}', '${escapeHTML(order.status)}')">Update</button></td>
+            <td data-label="Order ID">${escapeHTML(order.orderNumber || order._id?.slice(-8) || 'N/A')}</td>
+            <td data-label="Customer">${escapeHTML(order.userId?.name || order.shippingAddress?.name || 'Guest')}</td>
+            <td data-label="Total">${formatCurrency(order.total || 0)}</td>
+            <td data-label="Status"><span class="status-badge">${escapeHTML(order.status)}</span></td>
+            <td data-label="Date">${new Date(order.createdAt).toLocaleDateString()}</td>
+            <td data-label="Action"><button class="btn-small" onclick="showOrderModal('${order._id}', '${escapeHTML(order.status)}')">Update</button></td>
           </tr>
         `).join('');
       }
@@ -125,12 +125,12 @@ async function loadAdminProducts(page = 1) {
     if (productsList && Array.isArray(data.products)) {
       productsList.innerHTML = data.products.map(product => `
         <tr>
-          <td>${escapeHTML(product.name)}</td>
-          <td>${escapeHTML(product.sku || 'N/A')}</td>
-          <td>${formatCurrency(product.price)}</td>
-          <td>${product.inventory?.quantity || 0}</td>
-          <td><span class="badge ${product.isActive ? 'active' : 'inactive'}">${product.isActive ? 'Active' : 'Inactive'}</span></td>
-          <td>
+          <td data-label="Product Name">${escapeHTML(product.name)}</td>
+          <td data-label="SKU">${escapeHTML(product.sku || 'N/A')}</td>
+          <td data-label="Price">${formatCurrency(product.price)}</td>
+          <td data-label="Stock">${product.inventory?.quantity || 0}</td>
+          <td data-label="Status"><span class="badge ${product.isActive ? 'active' : 'inactive'}">${product.isActive ? 'Active' : 'Inactive'}</span></td>
+          <td data-label="Actions">
             <button class="btn-small" onclick="window.location.href='product-edit.html?id=${product._id}'">Edit</button>
             <button class="btn-small danger" onclick="deleteProduct('${product._id}')">Delete</button>
           </td>
@@ -302,13 +302,13 @@ async function loadAdminOrders(page = 1) {
       } else {
         ordersList.innerHTML = orders.map(order => `
           <tr>
-            <td>${escapeHTML(order.orderNumber || order._id?.slice(-8) || 'N/A')}</td>
-            <td>${escapeHTML(order.userId?.name || order.shippingAddress?.name || 'Guest')}</td>
-            <td>${formatCurrency(order.total || 0)}</td>
-            <td><span class="status-badge">${escapeHTML(order.status)}</span></td>
-            <td>${escapeHTML(order.paymentStatus || order.paymentMethod || 'N/A')}</td>
-            <td>${new Date(order.createdAt).toLocaleDateString()}</td>
-            <td><button class="btn-small" onclick="showOrderModal('${order._id}', '${escapeHTML(order.status)}')">Update</button></td>
+            <td data-label="Order #">${escapeHTML(order.orderNumber || order._id?.slice(-8) || 'N/A')}</td>
+            <td data-label="Customer">${escapeHTML(order.userId?.name || order.shippingAddress?.name || 'Guest')}</td>
+            <td data-label="Total">${formatCurrency(order.total || 0)}</td>
+            <td data-label="Status"><span class="status-badge">${escapeHTML(order.status)}</span></td>
+            <td data-label="Payment">${escapeHTML(order.paymentStatus || order.paymentMethod || 'N/A')}</td>
+            <td data-label="Date">${new Date(order.createdAt).toLocaleDateString()}</td>
+            <td data-label="Actions"><button class="btn-small" onclick="showOrderModal('${order._id}', '${escapeHTML(order.status)}')">Update</button></td>
           </tr>
         `).join('');
       }
@@ -357,17 +357,17 @@ async function loadAdminUsers(page = 1) {
       } else {
         usersList.innerHTML = users.map(u => `
           <tr>
-            <td>${escapeHTML(u.name)}</td>
-            <td>${escapeHTML(u.email)}</td>
-            <td>
+            <td data-label="Name">${escapeHTML(u.name)}</td>
+            <td data-label="Email">${escapeHTML(u.email)}</td>
+            <td data-label="Role">
               <select class="admin-role-select" onchange="changeUserRole('${u._id}', this.value)" ${u.email === 'papp.joyy@gmail.com' ? 'disabled' : ''}>
                 <option value="customer" ${u.role === 'customer' || u.role === 'user' ? 'selected' : ''}>Customer</option>
                 <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
               </select>
             </td>
-            <td>${new Date(u.createdAt).toLocaleDateString()}</td>
-            <td><span class="badge ${u.isActive !== false ? 'active' : 'inactive'}">${u.isActive !== false ? 'Active' : 'Inactive'}</span></td>
-            <td>
+            <td data-label="Created">${new Date(u.createdAt).toLocaleDateString()}</td>
+            <td data-label="Status"><span class="badge ${u.isActive !== false ? 'active' : 'inactive'}">${u.isActive !== false ? 'Active' : 'Inactive'}</span></td>
+            <td data-label="Actions">
               <button class="btn-small" onclick="toggleUserStatus('${u._id}', ${u.isActive === false})">${u.isActive !== false ? 'Deactivate' : 'Activate'}</button>
             </td>
           </tr>
@@ -476,9 +476,9 @@ async function loadAnalytics() {
       } else {
         topProductsEl.innerHTML = data.topProducts.map((p, i) => `
           <tr>
-            <td>${i + 1}. ${escapeHTML(p.product?.name || p._id || 'Unknown')}</td>
-            <td>${p.quantity || p.totalSold || p.sold || 0}</td>
-            <td>${formatCurrency(p.revenue || p.totalRevenue || 0)}</td>
+            <td data-label="Product">${i + 1}. ${escapeHTML(p.product?.name || p._id || 'Unknown')}</td>
+            <td data-label="Units Sold">${p.quantity || p.totalSold || p.sold || 0}</td>
+            <td data-label="Revenue">${formatCurrency(p.revenue || p.totalRevenue || 0)}</td>
           </tr>
         `).join('');
       }
@@ -507,9 +507,9 @@ async function loadAnalytics() {
               <thead><tr><th>Category</th><th>Orders</th><th>Revenue</th></tr></thead>
               <tbody>${catData.map(c => `
                 <tr>
-                  <td>${escapeHTML(c._id || c.name || 'Unknown')}</td>
-                  <td>${c.count || c.orders || 0}</td>
-                  <td>${formatCurrency(c.revenue || c.totalRevenue || 0)}</td>
+                  <td data-label="Category">${escapeHTML(c._id || c.name || 'Unknown')}</td>
+                  <td data-label="Orders">${c.count || c.orders || 0}</td>
+                  <td data-label="Revenue">${formatCurrency(c.revenue || c.totalRevenue || 0)}</td>
                 </tr>
               `).join('')}</tbody>
             </table>
@@ -548,11 +548,11 @@ async function loadAdminCategories() {
       } else {
         categoriesList.innerHTML = categories.map(cat => `
           <tr>
-            <td>${escapeHTML(cat.name)}</td>
-            <td>${escapeHTML(cat.slug)}</td>
-            <td><span class="badge ${cat.isActive !== false ? 'active' : 'inactive'}">${cat.isActive !== false ? 'Active' : 'Inactive'}</span></td>
-            <td>${cat.sortOrder || 0}</td>
-            <td>
+            <td data-label="Name">${escapeHTML(cat.name)}</td>
+            <td data-label="Slug">${escapeHTML(cat.slug)}</td>
+            <td data-label="Status"><span class="badge ${cat.isActive !== false ? 'active' : 'inactive'}">${cat.isActive !== false ? 'Active' : 'Inactive'}</span></td>
+            <td data-label="Sort Order">${cat.sortOrder || 0}</td>
+            <td data-label="Actions">
               <button class="btn-small" onclick="showCategoryForm('${cat._id}')">Edit</button>
               <button class="btn-small danger" onclick="deleteCategory('${cat._id}')">Delete</button>
             </td>
@@ -760,7 +760,17 @@ async function populateCategoryDropdown() {
 
 function toggleAdminSidebar() {
   const sidebar = document.querySelector('.admin-sidebar');
-  if (sidebar) sidebar.classList.toggle('mobile-open');
+  const overlay = document.getElementById('admin-sidebar-overlay');
+  if (!sidebar) return;
+  sidebar.classList.toggle('mobile-open');
+  if (overlay) overlay.classList.toggle('active');
+}
+
+function closeAdminSidebar() {
+  const sidebar = document.querySelector('.admin-sidebar');
+  const overlay = document.getElementById('admin-sidebar-overlay');
+  if (sidebar) sidebar.classList.remove('mobile-open');
+  if (overlay) overlay.classList.remove('active');
 }
 
 // Global Window Exports
@@ -789,3 +799,4 @@ window.saveCategory = saveCategory;
 window.deleteCategory = deleteCategory;
 window.populateCategoryDropdown = populateCategoryDropdown;
 window.toggleAdminSidebar = toggleAdminSidebar;
+window.closeAdminSidebar = closeAdminSidebar;

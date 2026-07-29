@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <script>
+  (function(){
+    try{
+      var t=localStorage.getItem("papjoy-theme");
+      if(t==="dark"){document.documentElement.setAttribute("data-theme","dark");}
+      else if(t==="light"){document.documentElement.setAttribute("data-theme","light");}
+      else if(window.matchMedia("(prefers-color-scheme: dark)").matches){
+        document.documentElement.setAttribute("data-theme","dark");
+      }
+    }catch(e){}
+  })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Page not found - PAP-JOY" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <title>PAP-JOY | Page Not Found</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <main style="display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;width:100%;">
+    <div style="text-align:center;max-width:500px;">
+      <div style="font-size:6rem;line-height:1;font-weight:700;color:var(--accent);margin-bottom:8px;font-family:'Playfair Display',serif;">404</div>
+      <h1 style="margin:0 0 8px;font-size:1.6rem;">Page not found</h1>
+      <p style="color:var(--text-muted);margin:0 0 24px;">The page you're looking for doesn't exist or has been moved.</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a href="index.html" class="btn btn-primary" data-no-transition><i class="fas fa-home"></i> Homepage</a>
+        <a href="product.html" class="btn btn-secondary" data-no-transition><i class="fas fa-store"></i> Shop</a>
+      </div>
+      <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border);">
+        <p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 12px;">Try searching for what you need:</p>
+        <form action="product.html" method="GET" style="display:flex;gap:8px;max-width:360px;margin:0 auto;">
+          <input type="text" name="search" placeholder="Search products..." style="flex:1;min-height:44px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text);padding:0 14px;font:inherit;" />
+          <button type="submit" class="btn btn-primary" style="padding:12px 20px;"><i class="fas fa-search"></i></button>
+        </form>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

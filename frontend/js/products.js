@@ -20,23 +20,32 @@ function createProductCardElement(product) {
   const invStatus = getInventoryStatus(product);
   const productId = product.id || product._id;
 
+  const stockLevel = product.inventory?.quantity;
+  const lowStock = stockLevel > 0 && stockLevel <= 5;
+  const outOfStock = stockLevel === 0;
+  const stockStatus = outOfStock ? 'out-of-stock' : (lowStock ? 'low-stock' : 'in-stock');
+  const stockLabel = outOfStock ? 'Out of Stock' : (lowStock ? 'Only ' + stockLevel + ' left' : '');
+
   card.innerHTML = `
-    <div class="product-image">
+    <div class="product-image" data-quick-view="${productId}" role="button" tabindex="0" aria-label="Quick view ${product.name}">
       <img src="${primaryImage}" alt="${product.name || 'Product'}" loading="lazy" onerror="if(!this.dataset.fb){this.dataset.fb='1';this.src=getNextFallbackImage();}else{this.style.display='none';}">
       <button class="wishlist-heart" data-product-id="${productId}" title="Add to wishlist"><i class="${isInWishlist(productId) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
       ${product.isFeatured ? '<div class="badge featured">Featured</div>' : ''}
-      <div class="badge ${invStatus.class}" style="background-color: ${invStatus.color}">${invStatus.status}</div>
+      ${lowStock ? '<div class="badge low-stock-badge">Low Stock</div>' : ''}
+      ${outOfStock ? '<div class="badge out-of-stock-badge">Out of Stock</div>' : ''}
+      <button class="quick-view-btn" data-quick-view="${productId}" title="Quick view"><i class="fas fa-eye"></i></button>
     </div>
     <div class="product-info">
       <div class="category">${product.category || 'Uncategorized'}</div>
       <h3 class="product-name">${product.name}</h3>
       <p class="product-subtitle">${product.subtitle || (product.description || '').slice(0, 80) + '...'}</p>
+      ${stockLabel ? '<div class="stock-indicator ' + stockStatus + '"><span class="dot"></span>' + stockLabel + '</div>' : ''}
       <div class="price">${formatCurrency(product.price || 0)}</div>
       <div class="product-actions">
-        <button class="btn btn-primary add-to-cart-btn" type="button" data-product-id="${productId}" ${product.inventory?.quantity === 0 ? 'disabled' : ''}>
-          <i class="fas fa-cart-plus"></i> ${product.inventory?.quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
+        <button class="btn btn-primary add-to-cart-btn" type="button" data-product-id="${productId}" ${outOfStock ? 'disabled' : ''}>
+          <i class="fas fa-cart-plus"></i> ${outOfStock ? 'Out of Stock' : 'Add to Cart'}
         </button>
-        <button class="btn btn-secondary buy-now-btn" type="button" data-product-id="${productId}" ${product.inventory?.quantity === 0 ? 'disabled' : ''}>
+        <button class="btn btn-secondary buy-now-btn" type="button" data-product-id="${productId}" ${outOfStock ? 'disabled' : ''}>
           <i class="fas fa-bolt"></i> Buy Now
         </button>
       </div>
@@ -276,10 +285,14 @@ async function renderProductDetailPage() {
         <p class="detail-subtitle">${escapeHTML(product.subtitle || '')}</p>
         <p class="detail-description">${escapeHTML(product.description || '')}</p>
         <div class="product-variants">
-          <p class="variant-label">Choose variant</p>
+          <p class="variant-label">Choose variant <button type="button" class="size-guide-btn" data-size-guide><i class="fas fa-ruler"></i> Size Guide</button></p>
           <div class="variant-list">${variantButtons}</div>
         </div>
         <ul class="detail-features">${detailsList}</ul>
+        <div class="stock-indicator in-stock" id="detail-stock-indicator">
+          <span class="dot"></span>
+          <span class="stock-text">In Stock</span>
+        </div>
         <div class="detail-meta">
           <span id="detail-price">${formatCurrency(product.price || 0)}</span>
           <button id="detail-add-button" type="button">${translate('product.addToCart')}</button>
@@ -307,6 +320,51 @@ async function renderProductDetailPage() {
   };
 
   updateDetailActions(product.variants?.[0]?.name || 'Standard', product.price + (product.variants?.[0]?.priceDelta || 0));
+
+  // Stock indicator
+  var stockEl = container.querySelector('#detail-stock-indicator');
+  if (stockEl) {
+    var qty = product.inventory?.quantity;
+    if (qty === undefined) qty = 10;
+    if (qty === 0) {
+      stockEl.className = 'stock-indicator out-of-stock';
+      stockEl.querySelector('.stock-text').textContent = 'Out of Stock';
+    } else if (qty <= 5) {
+      stockEl.className = 'stock-indicator low-stock';
+      stockEl.querySelector('.stock-text').textContent = 'Only ' + qty + ' left in stock';
+    } else {
+      stockEl.className = 'stock-indicator in-stock';
+      stockEl.querySelector('.stock-text').textContent = 'In Stock';
+    }
+  }
+
+  // Structured data JSON-LD for SEO
+  var existingLd = document.getElementById('product-ld-json');
+  if (existingLd) existingLd.remove();
+  var ldScript = document.createElement('script');
+  ldScript.id = 'product-ld-json';
+  ldScript.type = 'application/ld+json';
+  ldScript.textContent = JSON.stringify({
+    '@context': 'https://schema.org/',
+    '@type': 'Product',
+    name: product.name,
+    description: product.description || product.subtitle || '',
+    image: (product.images && product.images.length) ? product.images : [product.image || ''],
+    sku: product.sku || (product.id || product._id),
+    brand: { '@type': 'Brand', name: product.brand || 'PAP-JOY' },
+    offers: {
+      '@type': 'Offer',
+      url: window.location.href,
+      priceCurrency: 'INR',
+      price: product.price || 0,
+      availability: qty === 0 ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+      itemCondition: 'https://schema.org/NewCondition'
+    }
+  });
+  document.head.appendChild(ldScript);
+
+  // Recommendations
+  renderRecommendations(product);
 
   thumbButtons.forEach((button) => {
     button.addEventListener('click', () => {

@@ -1,0 +1,22 @@
+{
+  "name": "PAP-JOY Premium Footwear",
+  "short_name": "PAP-JOY",
+  "description": "Premium footwear for every journey. Shop the latest collection of shoes, sneakers, and more.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0f1a13",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+  ],
+  "categories": ["shopping", "lifestyle", "fashion"],
+  "lang": "en-IN",
+  "dir": "ltr",
+  "scope": "/"
+}
