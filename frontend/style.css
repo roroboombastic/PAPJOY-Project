@@ -63,6 +63,7 @@ body {
     radial-gradient(circle at bottom right, var(--body-glow-2), transparent 28%),
     var(--body-gradient);
   color: var(--text);
+  transition: color 0.2s ease;
   font-family: 'Poppins', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -8175,8 +8176,8 @@ body.mobile-nav-open .mobile-nav-overlay {
 .mobile-theme-toggle {
   display: none;
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  right: calc(24px + env(safe-area-inset-right, 0px));
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -8188,16 +8189,30 @@ body.mobile-nav-open .mobile-nav-overlay {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease;
+  will-change: transform;
 }
 
 .mobile-theme-toggle:active {
-  transform: scale(0.92);
+  transform: scale(0.9);
+}
+
+@media (hover: hover) {
+  .mobile-theme-toggle:hover {
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.25);
+    transform: scale(1.05);
+  }
+
+  .mobile-theme-toggle:active:hover {
+    transform: scale(0.9);
+  }
 }
 
 .mobile-theme-toggle i {
-  transition: transform 0.3s ease;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .mobile-theme-toggle.active i {
@@ -8207,8 +8222,8 @@ body.mobile-nav-open .mobile-nav-overlay {
 .mobile-theme-popover {
   display: none;
   position: fixed;
-  bottom: 88px;
-  right: 24px;
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  right: calc(24px + env(safe-area-inset-right, 0px));
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -8218,13 +8233,14 @@ body.mobile-nav-open .mobile-nav-overlay {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   overflow: hidden;
+  will-change: opacity, transform;
 }
 
 .mobile-theme-popover.active {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  animation: popoverIn 0.2s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation: popoverIn 0.18s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
 .mobile-theme-popover .theme-option {
@@ -8235,6 +8251,7 @@ body.mobile-nav-open .mobile-nav-overlay {
   gap: 10px;
   justify-content: flex-start;
   min-width: 140px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mobile-theme-popover .theme-option i {
@@ -8245,6 +8262,12 @@ body.mobile-nav-open .mobile-nav-overlay {
 @keyframes popoverIn {
   from { opacity: 0; transform: translateY(8px) scale(0.95); }
   to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+body.keyboard-open .mobile-theme-toggle {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
 }
 
 @media (min-width: 1025px) {
@@ -8262,21 +8285,35 @@ body.mobile-nav-open .mobile-nav-overlay {
 
 @media (max-width: 480px) {
   .mobile-theme-toggle {
-    bottom: 16px;
-    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    right: calc(16px + env(safe-area-inset-right, 0px));
     width: 48px;
     height: 48px;
     font-size: 1.1rem;
   }
 
   .mobile-theme-popover {
-    bottom: 76px;
-    right: 16px;
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    right: calc(16px + env(safe-area-inset-right, 0px));
   }
 
   .mobile-theme-popover .theme-option {
     padding: 10px 16px;
     min-width: 120px;
+  }
+}
+
+/* --- Reduced motion: instant popover --- */
+@media (prefers-reduced-motion: reduce) {
+  .mobile-theme-popover.active {
+    animation: none;
+  }
+
+  .mobile-theme-toggle,
+  .mobile-theme-toggle i,
+  .mobile-theme-toggle:active,
+  .mobile-theme-toggle.active i {
+    transition: none;
   }
 }
 

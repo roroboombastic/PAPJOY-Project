@@ -29,7 +29,7 @@ const invoiceSchema = new mongoose.Schema({
 
   // Company Details
   companyName: { type: String, default: BUSINESS_NAME },
-  companyEmail: { type: String, default: 'support@papjoy.com' },
+  companyEmail: { type: String, default: 'papp.joyy@gmail.com' },
   companyPhone: { type: String, default: '+91-XXXXX-XXXXX' },
   companyAddress: {
     street: { type: String, default: 'New Delhi, India' },

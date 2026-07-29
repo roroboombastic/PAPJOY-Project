@@ -36,7 +36,7 @@ const BUSINESS_GSTIN = process.env.BUSINESS_GSTIN || '09CZDPK9498Q1Z2';
 const GST_PERCENT = Number(process.env.GST_PERCENT || 18);
 const GST_STATE = process.env.GST_STATE || 'Delhi';
 const GST_RETURN_POLICY = process.env.GST_RETURN_POLICY || 'Returns accepted within 7 days for unused items in original packaging.';
-const CUSTOMER_SUPPORT = process.env.CUSTOMER_SUPPORT || 'support@papjoy.com';
+const CUSTOMER_SUPPORT = process.env.CUSTOMER_SUPPORT || 'papp.joyy@gmail.com';
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey_dev_only';
 const JWT_EXPIRE = process.env.JWT_EXPIRE || '7d';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'supersecretrefresh_dev_only';
@@ -208,7 +208,7 @@ const config = {
         'Returns accepted within 7 days for unused items in original packaging.'
       )
     },
-    supportEmail: getEnv('CUSTOMER_SUPPORT', 'support@papjoy.com', {
+    supportEmail: getEnv('CUSTOMER_SUPPORT', 'papp.joyy@gmail.com', {
       validate: (val) => ({
         valid: isValidEmail(val),
         message: 'Invalid email format'

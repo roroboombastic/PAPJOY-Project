@@ -287,8 +287,14 @@ function applyTheme(value) {
 
   const mobileBtn = document.getElementById('mobile-theme-btn');
   if (mobileBtn) {
-    const icon = value === 'dark' ? 'fa-moon' : value === 'light' ? 'fa-sun' : 'fa-circle-half-stroke';
-    mobileBtn.innerHTML = `<i class="fas ${icon}"></i>`;
+    const iconMap = { dark: 'fa-moon', light: 'fa-sun', auto: 'fa-circle-half-stroke' };
+    const icon = iconMap[value] || 'fa-circle-half-stroke';
+    const existingIcon = mobileBtn.querySelector('i');
+    if (existingIcon) {
+      existingIcon.className = 'fas ' + icon;
+    } else {
+      mobileBtn.innerHTML = '<i class="fas ' + icon + '"></i>';
+    }
   }
 }
 
@@ -307,60 +313,103 @@ function initThemeToggle() {
       applyTheme(btn.dataset.themeValue);
     });
   });
+
+  const sysPref = window.matchMedia('(prefers-color-scheme: dark)');
+  sysPref.addEventListener('change', () => {
+    if (getSavedTheme() === 'auto') {
+      document.querySelectorAll('.theme-option').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.themeValue === 'auto');
+      });
+      const mobileBtn = document.getElementById('mobile-theme-btn');
+      if (mobileBtn) {
+        mobileBtn.innerHTML = '<i class="fas fa-circle-half-stroke"></i>';
+      }
+    }
+  });
 }
 
 function createMobileThemeToggle() {
   const existing = document.getElementById('mobile-theme-toggle-wrapper');
   if (existing) existing.remove();
 
+  const currentTheme = getSavedTheme();
+  const iconMap = { dark: 'fa-moon', light: 'fa-sun', auto: 'fa-circle-half-stroke' };
+
   const wrapper = document.createElement('div');
   wrapper.id = 'mobile-theme-toggle-wrapper';
 
-  const currentTheme = getSavedTheme();
-
-  wrapper.innerHTML = `
-    <button class="mobile-theme-toggle" id="mobile-theme-btn" aria-label="Switch theme">
-      <i class="fas ${currentTheme === 'dark' ? 'fa-moon' : currentTheme === 'light' ? 'fa-sun' : 'fa-circle-half-stroke'}"></i>
-    </button>
-    <div class="mobile-theme-popover" id="mobile-theme-popover">
-      <button class="theme-option" data-theme-value="light" title="Light Mode">
-        <i class="fas fa-sun"></i><span>Light</span>
-      </button>
-      <button class="theme-option" data-theme-value="dark" title="Dark Mode">
-        <i class="fas fa-moon"></i><span>Dark</span>
-      </button>
-      <button class="theme-option" data-theme-value="auto" title="System preference">
-        <i class="fas fa-circle-half-stroke"></i><span>Auto</span>
-      </button>
-    </div>
-  `;
+  wrapper.innerHTML =
+    '<button class="mobile-theme-toggle" id="mobile-theme-btn" aria-label="Switch theme" aria-haspopup="true" aria-expanded="false">' +
+      '<i class="fas ' + (iconMap[currentTheme] || 'fa-circle-half-stroke') + '"></i>' +
+    '</button>' +
+    '<div class="mobile-theme-popover" id="mobile-theme-popover" role="menu">' +
+      '<button class="theme-option" data-theme-value="light" title="Light Mode" role="menuitem">' +
+        '<i class="fas fa-sun"></i><span>Light</span>' +
+      '</button>' +
+      '<button class="theme-option" data-theme-value="dark" title="Dark Mode" role="menuitem">' +
+        '<i class="fas fa-moon"></i><span>Dark</span>' +
+      '</button>' +
+      '<button class="theme-option" data-theme-value="auto" title="System preference" role="menuitem">' +
+        '<i class="fas fa-circle-half-stroke"></i><span>Auto</span>' +
+      '</button>' +
+    '</div>';
 
   document.body.appendChild(wrapper);
 
   const btn = document.getElementById('mobile-theme-btn');
   const popover = document.getElementById('mobile-theme-popover');
+  let popoverOpen = false;
 
-  btn.addEventListener('click', (e) => {
+  function openPopover() {
+    popoverOpen = true;
+    popover.classList.add('active');
+    btn.classList.add('active');
+    btn.setAttribute('aria-expanded', 'true');
+    const firstOption = popover.querySelector('.theme-option');
+    if (firstOption) firstOption.focus();
+  }
+
+  function closePopover() {
+    popoverOpen = false;
+    popover.classList.remove('active');
+    btn.classList.remove('active');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.focus();
+  }
+
+  function togglePopover(e) {
     e.stopPropagation();
-    popover.classList.toggle('active');
-    btn.classList.toggle('active');
-  });
+    if (popoverOpen) {
+      closePopover();
+    } else {
+      openPopover();
+    }
+  }
+
+  btn.addEventListener('click', togglePopover);
 
   popover.querySelectorAll('.theme-option').forEach((opt) => {
     opt.addEventListener('click', (e) => {
       e.stopPropagation();
       applyTheme(opt.dataset.themeValue);
-      popover.classList.remove('active');
-      btn.classList.remove('active');
+      closePopover();
     });
   });
 
-  document.addEventListener('click', () => {
-    popover.classList.remove('active');
-    btn.classList.remove('active');
+  document.addEventListener('click', closePopover);
+  popover.addEventListener('click', (e) => e.stopPropagation());
+
+  document.addEventListener('keydown', function onKey(e) {
+    if (e.key === 'Escape' && popoverOpen) {
+      closePopover();
+    }
   });
 
-  popover.addEventListener('click', (e) => e.stopPropagation());
+  window.addEventListener('resize', function onResize() {
+    if (popoverOpen && window.innerWidth > 1024) {
+      closePopover();
+    }
+  });
 }
 
 async function loadNotifications() {
