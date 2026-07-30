@@ -180,11 +180,20 @@
                   <p class="upi-hint">Leave blank for default merchant UPI. Scan the QR code with any UPI app to pay.</p>
                 </div>
                 <div id="upi-qr-container" class="upi-qr-container" style="display: none;">
+                  <div class="upi-qr-brand">
+                    <i class="fas fa-qrcode"></i> UPI QR Payment
+                  </div>
                   <div id="upi-qr-image" class="upi-qr-image"></div>
-                  <p class="upi-qr-instructions">Scan this QR code with Google Pay, PhonePe, Paytm, or any UPI app</p>
+                  <p class="upi-qr-instructions">Scan with <strong>Google Pay</strong>, <strong>PhonePe</strong>, <strong>Paytm</strong>, or any UPI app</p>
                   <div class="upi-qr-amount">
                     <span>Amount to pay:</span>
                     <strong id="upi-qr-amount">?0</strong>
+                  </div>
+                  <div class="upi-id-copy-row">
+                    <span>UPI ID: <strong id="upi-qr-id-display">papjoy@upi</strong></span>
+                    <button id="copy-upi-id-btn" class="copy-upi-btn" onclick="copyUPIId()" title="Copy UPI ID">
+                      <i class="fas fa-copy"></i> Copy
+                    </button>
                   </div>
                   <div id="upi-qr-status" class="upi-qr-status">
                     <div class="upi-qr-spinner"></div>

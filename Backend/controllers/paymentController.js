@@ -79,17 +79,38 @@ async function verifyRazorpayPayment(req, res) {
   try {
     const { razorpay_payment_id, razorpay_order_id, razorpay_signature, items, deliveryInfo, shipping, discount, notes } = req.body;
 
-    if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
+    if (!razorpay_payment_id || !razorpay_order_id) {
       return res.status(400).json({ error: 'Missing payment verification data' });
     }
 
-    const isValid = verifyRazorpaySignature(razorpay_payment_id, razorpay_order_id, razorpay_signature);
-    if (!isValid) {
-      logger.warn('Razorpay signature verification failed', { paymentId: razorpay_payment_id, orderId: razorpay_order_id });
-      return res.status(400).json({ error: 'Payment verification failed. Invalid signature.' });
+    const razorpay = getRazorpayClient();
+
+    // External payments (UPI QR) — no HMAC signature available, verify via Razorpay API
+    const isExternal = !razorpay_signature || razorpay_signature === 'upi_qr_verified' || razorpay_signature.startsWith('external_');
+
+    if (isExternal) {
+      if (!razorpay) {
+        return res.status(503).json({ error: 'Razorpay not configured' });
+      }
+      try {
+        const payment = await razorpay.payments.fetch(razorpay_payment_id);
+        if (payment.status !== 'captured') {
+          logger.warn('UPI QR payment not captured', { paymentId: razorpay_payment_id, status: payment.status });
+          return res.status(400).json({ error: 'Payment not captured. Please try again.' });
+        }
+      } catch (fetchErr) {
+        logger.error('Failed to fetch Razorpay payment for UPI QR verification', { error: fetchErr.message });
+        return res.status(400).json({ error: 'Could not verify payment. Please contact support.' });
+      }
+    } else {
+      // Standard HMAC-SHA256 verification for card/checkout payments
+      const isValid = verifyRazorpaySignature(razorpay_payment_id, razorpay_order_id, razorpay_signature);
+      if (!isValid) {
+        logger.warn('Razorpay signature verification failed', { paymentId: razorpay_payment_id, orderId: razorpay_order_id });
+        return res.status(400).json({ error: 'Payment verification failed. Invalid signature.' });
+      }
     }
 
-    const razorpay = getRazorpayClient();
     let paymentDetails = null;
     if (razorpay) {
       try {
@@ -101,12 +122,13 @@ async function verifyRazorpayPayment(req, res) {
 
     const paymentStatus = paymentDetails?.status === 'captured' ? 'paid' : 'paid';
 
+    const paymentMethodLabel = isExternal ? 'upi' : 'card';
     let order;
     try {
       order = await createOrderFromData({
         userId: req.userId || null,
         items: items || [],
-        paymentMethod: 'card',
+        paymentMethod: paymentMethodLabel,
         shipping: shipping || 0,
         discount: discount || 0,
         currency: RAZORPAY_CURRENCY || 'INR',
@@ -119,6 +141,7 @@ async function verifyRazorpayPayment(req, res) {
       return res.status(500).json({ error: 'Payment succeeded but order creation failed. Contact support with Payment ID: ' + razorpay_payment_id });
     }
 
+    const cardInfo = paymentDetails?.card || {};
     order.paymentDetails = {
       razorpayPaymentId: razorpay_payment_id,
       razorpayOrderId: razorpay_order_id,
@@ -126,8 +149,17 @@ async function verifyRazorpayPayment(req, res) {
       method: paymentDetails?.method || 'card',
       amount: paymentDetails?.amount ? paymentDetails.amount / 100 : order.total,
       bank: paymentDetails?.bank || '',
-      cardType: paymentDetails?.card?.type || '',
-      last4: paymentDetails?.card?.last4 || ''
+      cardType: cardInfo.type || '',
+      last4: cardInfo.last4 || '',
+      card: cardInfo.network || cardInfo.type ? {
+        network: cardInfo.network || cardInfo.type,
+        type: cardInfo.type || '',
+        last4: cardInfo.last4 || '',
+        issuer: cardInfo.issuer || ''
+      } : undefined,
+      upi: paymentDetails?.upi ? {
+        vpa: paymentDetails.upi.vpa || ''
+      } : undefined
     };
     await order.save();
 

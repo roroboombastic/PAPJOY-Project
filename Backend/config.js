@@ -37,9 +37,9 @@ const GST_PERCENT = Number(process.env.GST_PERCENT || 18);
 const GST_STATE = process.env.GST_STATE || 'Delhi';
 const GST_RETURN_POLICY = process.env.GST_RETURN_POLICY || 'Returns accepted within 7 days for unused items in original packaging.';
 const CUSTOMER_SUPPORT = process.env.CUSTOMER_SUPPORT || 'papp.joyy@gmail.com';
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey_dev_only';
+const JWT_SECRET = process.env.JWT_SECRET || '';
 const JWT_EXPIRE = process.env.JWT_EXPIRE || '7d';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'supersecretrefresh_dev_only';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || '';
 const JWT_REFRESH_EXPIRE = process.env.JWT_REFRESH_EXPIRE || '30d';
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || '';
 const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET || process.env.PAYPAL_SECRET || '';
@@ -181,18 +181,18 @@ const config = {
     secret: getEnv('JWT_SECRET', undefined, {
       required: isProd,
       validate: (val) => ({
-        valid: val && val.length >= 32 && val !== 'supersecretkey_dev_only',
+        valid: val && val.length >= 32,
         message: isProd ? 'Must be at least 32 characters in production' : ''
       })
-    }) || 'dev-secret-key-do-not-use-in-production',
+    }) || '',
     expire: getEnv('JWT_EXPIRE', '7d'),
     refreshSecret: getEnv('JWT_REFRESH_SECRET', undefined, {
       required: isProd,
       validate: (val) => ({
-        valid: val && val.length >= 32 && val !== 'supersecretrefresh_dev_only',
+        valid: val && val.length >= 32,
         message: isProd ? 'Must be at least 32 characters in production' : ''
       })
-    }) || 'dev-refresh-secret-do-not-use-in-production',
+    }) || '',
     refreshExpire: getEnv('JWT_REFRESH_EXPIRE', '30d')
   },
 
@@ -261,7 +261,7 @@ function validateConfiguration() {
     errors.push('MONGO_URI must be set in production');
   }
 
-  if (!config.jwt.secret || config.jwt.secret === 'dev-secret-key-do-not-use-in-production') {
+  if (!config.jwt.secret) {
     if (isProd) {
       errors.push('JWT_SECRET must be set to a secure value in production');
     }

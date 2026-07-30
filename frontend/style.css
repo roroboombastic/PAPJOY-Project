@@ -1947,6 +1947,65 @@ label {
   line-height: 1.5;
 }
 
+.upi-qr-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent-strong);
+}
+
+.upi-qr-brand i {
+  font-size: 1.3rem;
+}
+
+.upi-id-copy-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.85rem;
+  background: rgba(31, 75, 63, 0.04);
+  padding: 8px 14px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 320px;
+  justify-content: space-between;
+}
+
+.upi-id-copy-row span {
+  color: var(--text-muted, #666);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.copy-upi-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--accent);
+  color: #111;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  white-space: nowrap;
+}
+
+.copy-upi-btn:hover {
+  background: var(--accent-strong);
+  transform: scale(1.04);
+}
+
+.copy-upi-btn.copied {
+  background: #4caf50;
+  color: white;
+}
+
 .upi-qr-container {
   display: grid;
   gap: 16px;

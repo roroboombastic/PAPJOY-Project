@@ -271,6 +271,9 @@ async function startUPICheckout() {
     if (qrImage) qrImage.innerHTML = `<img src="${data.qrImage}" alt="UPI QR Code" />`;
     if (qrAmount) qrAmount.textContent = formatCurrency(totals.total);
 
+    const vpaDisplay = document.getElementById('upi-qr-id-display');
+    if (vpaDisplay) vpaDisplay.textContent = data.merchantVpa || 'papjoy@upi';
+
     setCheckoutMessage('Scan the QR code with any UPI app to complete payment.');
 
     if (data.razorpayOrderId) {
@@ -348,6 +351,23 @@ function updateUPIQRStatus(message, success) {
     statusEl.innerHTML = success
       ? `<i class="fas fa-check-circle" style="color: #4caf50;"></i> <span>${escapeHTML(message)}</span>`
       : `<div class="upi-qr-spinner"></div> <span>${escapeHTML(message)}</span>`;
+  }
+}
+
+async function copyUPIId() {
+  const vpaEl = document.getElementById('upi-qr-id-display');
+  if (!vpaEl) return;
+  try {
+    await navigator.clipboard.writeText(vpaEl.textContent);
+    const btn = document.getElementById('copy-upi-id-btn');
+    if (btn) {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2000);
+    }
+  } catch {
+    showToast('Could not copy UPI ID');
   }
 }
 
@@ -526,6 +546,27 @@ function renderSuccessDetails(order) {
   ];
   if (order.paymentDetails?.razorpayPaymentId) {
     summary.push({ label: 'Payment ID', value: order.paymentDetails.razorpayPaymentId });
+  }
+  if (order.paymentDetails?.card) {
+    const c = order.paymentDetails.card;
+    const brand = c.network || c.type || '';
+    const last = c.last4 || '';
+    if (brand || last) summary.push({ label: 'Card Used', value: `${brand}${last ? ' •••• ' + last : ''}`.trim() });
+    if (c.issuer) summary.push({ label: 'Bank/Issuer', value: c.issuer });
+  }
+  if (order.paymentDetails?.upi) {
+    const vpa = order.paymentDetails.upi.vpa;
+    if (vpa) summary.push({ label: 'UPI VPA', value: vpa });
+  }
+  if (order.paymentDetails?.bank) {
+    summary.push({ label: 'Bank', value: order.paymentDetails.bank });
+  }
+  if (order.paymentDetails?.method === 'wallet') {
+    summary.push({ label: 'Wallet', value: order.paymentDetails.wallet || 'Wallet' });
+  }
+  const paymentMethod = order.paymentDetails?.method || providerKey;
+  if (paymentMethod === 'upi') {
+    summary.push({ label: 'UPI Transaction', value: 'Completed' });
   }
   summary.forEach(({ label, value }) => {
     const row = document.createElement('div');
