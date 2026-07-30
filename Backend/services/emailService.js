@@ -17,7 +17,15 @@ function getTransporter() {
     host: smtp.host,
     port: smtp.port,
     secure: smtp.secure,
-    auth: { user: smtp.user, pass: smtp.pass }
+    auth: { user: smtp.user, pass: smtp.pass },
+    requireTLS: !smtp.secure
+  });
+
+  transporter.verify().then(() => {
+    logger.info('SMTP connection verified successfully');
+  }).catch((err) => {
+    logger.error('SMTP connection verification failed', { error: err.message });
+    transporter = null;
   });
 
   return transporter;

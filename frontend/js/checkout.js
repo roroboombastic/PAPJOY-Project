@@ -198,7 +198,7 @@ async function startCardCheckout() {
           }));
           resetCartState();
           syncCart();
-          window.location.href = 'success.html?provider=card';
+          window.location.href = 'thankyou.html?provider=card';
         } catch (verifyErr) {
           console.error('Payment verification error:', verifyErr);
           setCheckoutMessage('Payment received but verification failed. Please contact support with Payment ID: ' + response.razorpay_payment_id, true);
@@ -250,7 +250,7 @@ async function startCODCheckout() {
     sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'cod', order: result.order }));
     resetCartState();
     syncCart();
-    window.location.href = 'success.html?provider=cod';
+    window.location.href = 'thankyou.html?provider=cod';
   } catch (error) {
     console.error('COD order error:', error);
     setCheckoutMessage(error.message || 'COD order failed. Please try again.', true);
@@ -491,6 +491,38 @@ async function renderSuccessPage() {
     console.error('Success page error:', error);
     statusEl.textContent = error.message || translate('error.verifyOrder');
     statusEl.style.color = '#F44336';
+  }
+}
+
+async function renderThankYouPage() {
+  const params = getQueryParams();
+  const storedOrder = sessionStorage.getItem('papjoy-order');
+  const orderNumEl = document.getElementById('thankyou-order-number');
+  const detailsEl = document.getElementById('thankyou-details');
+  const trackBtn = document.getElementById('thankyou-track-btn');
+  const invoiceBtn = document.getElementById('thankyou-invoice-btn');
+
+  try {
+    if (storedOrder) {
+      const { order } = JSON.parse(storedOrder);
+      if (orderNumEl) orderNumEl.textContent = order.orderNumber || order._id || 'N/A';
+      if (detailsEl) renderSuccessDetails(order);
+      resetCartState();
+      syncCart();
+      sessionStorage.removeItem('papjoy-order');
+
+      const orderId = order._id || order.id;
+      if (trackBtn && orderId) {
+        trackBtn.href = `tracking.html?order=${order.orderNumber || orderId}`;
+      }
+      if (invoiceBtn && orderId) {
+        invoiceBtn.href = `invoice-preview.html?orderId=${orderId}`;
+      }
+      return;
+    }
+    if (orderNumEl) orderNumEl.textContent = 'Order placed';
+  } catch (error) {
+    console.error('Thank you page error:', error);
   }
 }
 
@@ -763,6 +795,7 @@ window.loadDeliveryInfo = loadDeliveryInfo;
 window.fillDeliveryAddressWithGPS = fillDeliveryAddressWithGPS;
 window.getDeliveryInfo = getDeliveryInfo;
 window.validateDeliveryForm = validateDeliveryForm;
+window.renderThankYouPage = renderThankYouPage;
 window.renderSuccessPage = renderSuccessPage;
 window.renderSignInPage = renderSignInPage;
 window.renderSignUpPage = renderSignUpPage;

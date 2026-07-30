@@ -1012,6 +1012,9 @@ async function renderPage() {
   if (page === 'success') {
     await renderSuccessPage();
   }
+  if (page === 'thankyou') {
+    await renderThankYouPage();
+  }
   if (page === 'account') {
     await renderAccountPage();
   }
