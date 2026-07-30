@@ -220,13 +220,17 @@ async function forgotPassword(req, res) {
     const resetUrl = `${APP_URL}/reset-password.html?token=${resetToken}`;
     logger.info('Password reset token generated', { userId: user._id, email: normalizedEmail });
 
-    emailService.sendMail({
+    const emailResult = await emailService.sendMail({
       to: normalizedEmail,
       subject: 'Reset your PAP-JOY password',
       html: emailService.passwordResetTemplate(user.name, resetUrl)
     });
 
-    res.json({ success: true, message: 'If that email is registered, password reset instructions will be sent.' });
+    if (emailResult?.skipped) {
+      res.json({ success: true, message: 'Password reset link generated.', resetUrl });
+    } else {
+      res.json({ success: true, message: 'If that email is registered, password reset instructions will be sent.' });
+    }
   } catch (err) {
     logger.error('Password reset request failed', { error: err.message });
     res.status(500).json({ success: false, error: 'Unable to create password reset token' });

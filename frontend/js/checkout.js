@@ -1,5 +1,5 @@
 let razorpayKeyId = null;
-let upiQRPaymentInterval = null;
+
 
 async function loadPaymentConfig() {
   try {
@@ -88,9 +88,6 @@ function selectPaymentMethod(method) {
   }
   if (method === 'cod') {
     updateCODAmount();
-  }
-  if (method !== 'upi') {
-    cancelUPIQR();
   }
 }
 
@@ -236,152 +233,9 @@ async function startCardCheckout() {
   }
 }
 
-async function startUPICheckout() {
-  if (!validateDeliveryForm()) return;
 
-  const payBtn = document.getElementById('upi-pay-btn');
-  if (payBtn) payBtn.style.display = 'none';
 
-  setCheckoutMessage('Generating UPI QR code...');
 
-  try {
-    const totals = getCartTotals();
-    const upiId = document.getElementById('upi-id')?.value.trim() || '';
-    const orderNumber = `PJ-${Date.now()}`;
-
-    const { response, data } = await apiFetch('/api/v1/payments/upi/qr', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        amount: totals.total,
-        orderNumber,
-        upiId: upiId || undefined
-      }),
-    });
-
-    if (!response.ok || !data?.qrImage) {
-      throw new Error(data?.error || 'Failed to generate QR code');
-    }
-
-    const qrContainer = document.getElementById('upi-qr-container');
-    const qrImage = document.getElementById('upi-qr-image');
-    const qrAmount = document.getElementById('upi-qr-amount');
-
-    if (qrContainer) qrContainer.style.display = 'block';
-    if (qrImage) qrImage.innerHTML = `<img src="${data.qrImage}" alt="UPI QR Code" />`;
-    if (qrAmount) qrAmount.textContent = formatCurrency(totals.total);
-
-    const vpaDisplay = document.getElementById('upi-qr-id-display');
-    if (vpaDisplay) vpaDisplay.textContent = data.merchantVpa || 'papjoy@upi';
-
-    setCheckoutMessage('Scan the QR code with any UPI app to complete payment.');
-
-    if (data.razorpayOrderId) {
-      startUPIQRPolling(data.razorpayOrderId, orderNumber);
-    }
-  } catch (error) {
-    console.error('UPI QR generation error:', error);
-    setCheckoutMessage(error.message || 'Failed to generate QR code. Please try again.', true);
-    const payBtn = document.getElementById('upi-pay-btn');
-    if (payBtn) payBtn.style.display = 'block';
-  }
-}
-
-function startUPIQRPolling(razorpayOrderId, orderNumber) {
-  if (upiQRPaymentInterval) clearInterval(upiQRPaymentInterval);
-
-  let attempts = 0;
-  const maxAttempts = 120;
-
-  upiQRPaymentInterval = setInterval(async () => {
-    attempts++;
-    if (attempts >= maxAttempts) {
-      clearInterval(upiQRPaymentInterval);
-      updateUPIQRStatus('Payment timed out. Please try again.', false);
-      const payBtn = document.getElementById('upi-pay-btn');
-      if (payBtn) payBtn.style.display = 'block';
-      return;
-    }
-
-    try {
-      const { response, data } = await apiFetch(`/api/v1/payments/razorpay/status/${razorpayOrderId}`);
-      if (response.ok && data?.paid) {
-        clearInterval(upiQRPaymentInterval);
-        updateUPIQRStatus('Payment confirmed! Processing...', true);
-
-        try {
-          const { response: verifyRes, data: verifyData } = await apiFetch('/api/v1/payments/razorpay/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              razorpay_payment_id: data.paymentId,
-              razorpay_order_id: razorpayOrderId,
-              razorpay_signature: 'upi_qr_verified',
-              items: getCheckoutItems(),
-              deliveryInfo: getDeliveryInfo(),
-              shipping: getCartTotals().shipping,
-              discount: getCartTotals().discount,
-              notes: `UPI QR payment - Order ${orderNumber}`
-            }),
-          });
-
-          if (verifyRes.ok && verifyData?.order) {
-            sessionStorage.setItem('papjoy-order', JSON.stringify({
-              provider: 'upi',
-              order: verifyData.order
-            }));
-            resetCartState();
-            syncCart();
-            window.location.href = 'success.html?provider=upi';
-          }
-        } catch (verifyErr) {
-          console.error('UPI QR verify error:', verifyErr);
-          setCheckoutMessage('Payment confirmed but order processing failed. Please contact support.', true);
-        }
-      }
-    } catch (pollErr) {
-      console.warn('Polling error:', pollErr);
-    }
-  }, 3000);
-}
-
-function updateUPIQRStatus(message, success) {
-  const statusEl = document.getElementById('upi-qr-status');
-  if (statusEl) {
-    statusEl.innerHTML = success
-      ? `<i class="fas fa-check-circle" style="color: #4caf50;"></i> <span>${escapeHTML(message)}</span>`
-      : `<div class="upi-qr-spinner"></div> <span>${escapeHTML(message)}</span>`;
-  }
-}
-
-async function copyUPIId() {
-  const vpaEl = document.getElementById('upi-qr-id-display');
-  if (!vpaEl) return;
-  try {
-    await navigator.clipboard.writeText(vpaEl.textContent);
-    const btn = document.getElementById('copy-upi-id-btn');
-    if (btn) {
-      const orig = btn.innerHTML;
-      btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-      btn.classList.add('copied');
-      setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2000);
-    }
-  } catch {
-    showToast('Could not copy UPI ID');
-  }
-}
-
-function cancelUPIQR() {
-  if (upiQRPaymentInterval) {
-    clearInterval(upiQRPaymentInterval);
-    upiQRPaymentInterval = null;
-  }
-  const qrContainer = document.getElementById('upi-qr-container');
-  if (qrContainer) qrContainer.style.display = 'none';
-  const payBtn = document.getElementById('upi-pay-btn');
-  if (payBtn) payBtn.style.display = 'block';
-  setCheckoutMessage('');
-}
 
 async function startCODCheckout() {
   if (!validateDeliveryForm()) return;
@@ -536,7 +390,7 @@ function renderSuccessDetails(order) {
   if (!container || !order) return;
   container.innerHTML = '';
   const providerKey = (order.paymentMethod || 'card').toLowerCase();
-  const readableProvider = { card: 'Card Payment', cod: 'Cash on Delivery', upi: 'UPI Payment' }[providerKey] || providerKey;
+  const readableProvider = { card: 'Online Payment', cod: 'Cash on Delivery' }[providerKey] || providerKey;
   const summary = [
     { label: 'Payment Method', value: readableProvider },
     { label: 'Order Number', value: order.orderNumber || order._id || order.id || 'N/A' },
@@ -554,19 +408,11 @@ function renderSuccessDetails(order) {
     if (brand || last) summary.push({ label: 'Card Used', value: `${brand}${last ? ' •••• ' + last : ''}`.trim() });
     if (c.issuer) summary.push({ label: 'Bank/Issuer', value: c.issuer });
   }
-  if (order.paymentDetails?.upi) {
-    const vpa = order.paymentDetails.upi.vpa;
-    if (vpa) summary.push({ label: 'UPI VPA', value: vpa });
-  }
   if (order.paymentDetails?.bank) {
     summary.push({ label: 'Bank', value: order.paymentDetails.bank });
   }
   if (order.paymentDetails?.method === 'wallet') {
     summary.push({ label: 'Wallet', value: order.paymentDetails.wallet || 'Wallet' });
-  }
-  const paymentMethod = order.paymentDetails?.method || providerKey;
-  if (paymentMethod === 'upi') {
-    summary.push({ label: 'UPI Transaction', value: 'Completed' });
   }
   summary.forEach(({ label, value }) => {
     const row = document.createElement('div');
@@ -631,8 +477,7 @@ async function renderSuccessPage() {
       resetCartState();
       syncCart();
       const providerMessages = {
-        card: 'Card payment confirmed!',
-        upi: 'UPI payment confirmed!',
+        card: 'Online payment confirmed!',
         cod: 'COD order placed successfully!'
       };
       statusEl.textContent = providerMessages[params.provider] || translate('success.orderComplete');
@@ -862,7 +707,14 @@ async function renderForgotPasswordPage() {
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/forgot-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Unable to send reset link.');
-      if (statusMessage) { statusMessage.innerHTML = `If that email exists, a reset link is ready.<br /><strong>Reset link:</strong> <a href="${data.resetUrl}">${data.resetUrl}</a>`; statusMessage.style.color = '#4CAF50'; }
+      if (statusMessage) {
+        if (data.resetUrl) {
+          statusMessage.innerHTML = `Password reset link generated.<br /><strong>Reset link:</strong> <a href="${data.resetUrl}">${data.resetUrl}</a><br /><small style="color:#888;">(This link appears here because email is not configured. In production it will be emailed.)</small>`;
+        } else {
+          statusMessage.textContent = data.message || 'If that email is registered, password reset instructions will be sent.';
+        }
+        statusMessage.style.color = '#4CAF50';
+      }
     } catch (error) {
       console.error('Forgot password error:', error);
       if (statusMessage) { statusMessage.textContent = error.message || 'Unable to send reset link.'; statusMessage.style.color = '#ff8b94'; }
@@ -901,9 +753,7 @@ window.checkout = checkout;
 window.setCheckoutMessage = setCheckoutMessage;
 window.getCheckoutItems = getCheckoutItems;
 window.startCardCheckout = startCardCheckout;
-window.startUPICheckout = startUPICheckout;
 window.startCODCheckout = startCODCheckout;
-window.cancelUPIQR = cancelUPIQR;
 window.selectPaymentMethod = selectPaymentMethod;
 window.renderInvoicePreviewPage = renderInvoicePreviewPage;
 window.renderCheckoutItems = renderCheckoutItems;

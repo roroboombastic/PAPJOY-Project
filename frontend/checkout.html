@@ -15,7 +15,7 @@
   })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Complete your purchase securely with multiple payment options including Razorpay, PayPal, and UPI." />
+  <meta name="description" content="Complete your purchase securely with Razorpay online payment or Cash on Delivery." />
   <meta name="theme-color" content="#0a0a0a" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <title>PAP-JOY | Checkout</title>
@@ -34,7 +34,7 @@
   <link rel="manifest" href="/manifest.json" />
   
   <meta property="og:title" content="PAP-JOY | Checkout" />
-  <meta property="og:description" content="Complete your purchase securely with multiple payment options including Razorpay, PayPal, and UPI." />
+  <meta property="og:description" content="Complete your purchase securely with Razorpay online payment or Cash on Delivery." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="PAP-JOY" />
   <meta property="og:image" content="https://papjoy.com/favicon.svg" />
@@ -146,66 +146,23 @@
               <div class="payment-tab-header">
                 <div class="payment-tab-icon"><i class="fas fa-credit-card"></i></div>
                 <div class="payment-tab-info">
-                  <h4>Card Payment</h4>
-                  <p>Credit or Debit Card</p>
+                  <h4>Online Payment</h4>
+                  <p>Credit Card, Debit Card, Net Banking</p>
                 </div>
                 <div class="payment-tab-check"><i class="fas fa-circle-check"></i></div>
               </div>
               <div class="payment-tab-body" id="card-body">
                 <div class="card-info-box">
                   <i class="fas fa-shield-halved"></i>
-                  <p>Card details are securely handled by Razorpay. You'll see the secure payment form after clicking Pay Now.</p>
+                  <p>Payment is securely processed by Razorpay. You'll be redirected to the secure payment page after clicking Pay Now.</p>
                 </div>
                 <button class="checkout-button pay-now-btn" onclick="startCardCheckout()">
-                  <i class="fas fa-lock"></i> Pay Securely with Card
+                  <i class="fas fa-lock"></i> Pay Online
                 </button>
               </div>
             </div>
 
-            <div class="payment-tab" data-method="upi" onclick="selectPaymentMethod('upi')">
-              <div class="payment-tab-header">
-                <div class="payment-tab-icon"><i class="fas fa-mobile-screen-button"></i></div>
-                <div class="payment-tab-info">
-                  <h4>UPI Payment</h4>
-                  <p>Google Pay, PhonePe, Paytm & more</p>
-                </div>
-                <div class="payment-tab-check"><i class="fas fa-circle-check"></i></div>
-              </div>
-              <div class="payment-tab-body" id="upi-body" style="display: none;">
-                <div class="upi-form-grid">
-                  <div class="form-group">
-                    <label for="upi-id">UPI ID (Optional - for QR payment)</label>
-                    <input type="text" id="upi-id" placeholder="yourname@upi" />
-                  </div>
-                  <p class="upi-hint">Leave blank for default merchant UPI. Scan the QR code with any UPI app to pay.</p>
-                </div>
-                <div id="upi-qr-container" class="upi-qr-container" style="display: none;">
-                  <div class="upi-qr-brand">
-                    <i class="fas fa-qrcode"></i> UPI QR Payment
-                  </div>
-                  <div id="upi-qr-image" class="upi-qr-image"></div>
-                  <p class="upi-qr-instructions">Scan with <strong>Google Pay</strong>, <strong>PhonePe</strong>, <strong>Paytm</strong>, or any UPI app</p>
-                  <div class="upi-qr-amount">
-                    <span>Amount to pay:</span>
-                    <strong id="upi-qr-amount">?0</strong>
-                  </div>
-                  <div class="upi-id-copy-row">
-                    <span>UPI ID: <strong id="upi-qr-id-display">papjoy@upi</strong></span>
-                    <button id="copy-upi-id-btn" class="copy-upi-btn" onclick="copyUPIId()" title="Copy UPI ID">
-                      <i class="fas fa-copy"></i> Copy
-                    </button>
-                  </div>
-                  <div id="upi-qr-status" class="upi-qr-status">
-                    <div class="upi-qr-spinner"></div>
-                    <span>Waiting for payment...</span>
-                  </div>
-                  <button class="checkout-button secondary" onclick="cancelUPIQR()" style="margin-top: 0.75rem;">Cancel</button>
-                </div>
-                <button id="upi-pay-btn" class="checkout-button pay-now-btn" onclick="startUPICheckout()">
-                  <i class="fas fa-qrcode"></i> Generate UPI QR Code
-                </button>
-              </div>
-            </div>
+
 
             <div class="payment-tab" data-method="cod" onclick="selectPaymentMethod('cod')">
               <div class="payment-tab-header">

@@ -3,6 +3,7 @@ const logger = require('../utils/logger');
 const { createOrderFromData, restoreInventoryForOrder } = require('../services/orderService');
 const invoiceController = require('./invoiceController');
 const emailService = require('../services/emailService');
+const { ADMIN_EMAILS } = require('../config');
 
 async function createOrder(req, res) {
   try {
@@ -34,11 +35,14 @@ async function createOrder(req, res) {
       });
     }
 
-    // Notify admin of new order
-    emailService.sendMail({
-      to: 'papp.joyy@gmail.com',
-      subject: `New Order #${order.orderNumber || order._id} — ₹${(order.total || order.amount || 0).toFixed(2)}`,
-      html: `<p>A new order has been placed.</p><p>Order: #${order.orderNumber || order._id}</p><p>Amount: ₹${(order.total || order.amount || 0).toFixed(2)}</p>`
+    // Notify admin(s) of new order
+    const adminEmails = ADMIN_EMAILS.length ? ADMIN_EMAILS : ['papp.joyy@gmail.com'];
+    adminEmails.forEach(adminEmail => {
+      emailService.sendMail({
+        to: adminEmail,
+        subject: `New Order #${order.orderNumber || order._id} — ₹${(order.total || order.amount || 0).toFixed(2)}`,
+        html: `<p>A new order has been placed.</p><p>Order: #${order.orderNumber || order._id}</p><p>Amount: ₹${(order.total || order.amount || 0).toFixed(2)}</p>`
+      });
     });
 
     res.status(201).json({ success: true, order });
