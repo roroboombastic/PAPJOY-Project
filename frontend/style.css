@@ -2190,25 +2190,42 @@ label {
 
 .password-field input {
   width: 100%;
-  padding-right: 42px;
+  padding-right: 48px;
 }
 
 .toggle-password {
   position: absolute;
-  right: 8px;
+  right: 6px;
   top: 50%;
   transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   background: none;
   border: none;
+  border-radius: 8px;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 4px 6px;
   font-size: 0.9rem;
-  transition: color 0.2s;
+  z-index: 1;
+  transition: color 0.2s, background 0.2s;
 }
 
 .toggle-password:hover {
   color: var(--text);
+  background: var(--accent-soft);
+}
+
+.toggle-password:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.toggle-password:active {
+  transform: translateY(-50%) scale(0.92);
 }
 
 .checkbox-group input {
@@ -2889,22 +2906,6 @@ textarea {
   background: var(--surface);
   border: 1px solid var(--card-border);
   border-radius: 18px;
-}
-
-.password-field input {
-  width: 100%;
-}
-
-.password-toggle {
-  position: absolute;
-  right: 18px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: var(--accent);
-  font-weight: 700;
-  cursor: pointer;
 }
 
 .checkbox-group {
@@ -5001,10 +5002,6 @@ textarea {
   display: block;
   color: var(--text-muted, #666);
   line-height: 1.4;
-}
-
-.password-toggle {
-  white-space: nowrap;
 }
 
 /* ================== ADMIN MOBILE HEADER ================== */
@@ -7282,16 +7279,6 @@ a.breadcrumb-item:hover {
 .clear-all-btn {
   padding: 8px 16px;
   min-height: 44px;
-}
-
-.toggle-password {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  padding: 0;
 }
 
 .locale-select {
