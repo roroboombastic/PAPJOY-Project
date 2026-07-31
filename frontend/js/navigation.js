@@ -249,24 +249,6 @@ function createLocaleSwitcher() {
 
 function initPageTransitions() {
   createPageTransitionOverlay();
-
-  document.addEventListener('click', (event) => {
-    const anchor = event.target.closest('a[href]');
-    if (!anchor) return;
-    if (anchor.target === '_blank' || anchor.hasAttribute('download')) return;
-
-    const href = anchor.getAttribute('href');
-    if (!href || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) return;
-    if (href.startsWith('#')) return;
-
-    const destination = new URL(href, window.location.href);
-    if (destination.origin !== window.location.origin) return;
-    if (destination.pathname === window.location.pathname && destination.hash) return;
-    if (anchor.getAttribute('data-no-transition') !== null) return;
-
-    event.preventDefault();
-    triggerPageTransition(destination.href);
-  });
 }
 
 function applyTheme(value) {

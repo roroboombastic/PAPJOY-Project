@@ -38,17 +38,7 @@ function createPageTransitionOverlay() {
 window.createPageTransitionOverlay = createPageTransitionOverlay;
 
 function triggerPageTransition(href) {
-  const overlay = document.getElementById('page-transition-overlay');
-  if (!overlay) {
-    window.location.href = href;
-    return;
-  }
-  requestAnimationFrame(function() {
-    overlay.classList.add('visible');
-    window.setTimeout(function() {
-      window.location.href = href;
-    }, 240);
-  });
+  window.location.href = href;
 }
 window.triggerPageTransition = triggerPageTransition;
 
