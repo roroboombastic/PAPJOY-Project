@@ -78,7 +78,7 @@ function orderConfirmationTemplate(order) {
   return `
     <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">
       <h2 style="color:#2d5a27">Order Confirmed</h2>
-      <p>Hi ${order.deliveryInfo?.name || 'there'},</p>
+      <p>Hi ${order.deliveryInfo?.name || order.shippingAddress?.name || 'there'},</p>
       <p>Your order <strong>#${order.orderNumber || order._id}</strong> has been placed successfully.</p>
       <table style="width:100%;border-collapse:collapse;margin:16px 0">${itemsHtml}</table>
       <p style="font-size:15px"><strong>Total: ₹${(order.total || order.amount || 0).toFixed(2)}</strong></p>

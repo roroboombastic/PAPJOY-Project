@@ -1,8 +1,35 @@
-const { Order, Product, Notification, Cart, Shipment } = require('../models');
+const { Order, Product, Notification, Cart, Shipment, User } = require('../models');
 const logger = require('../utils/logger');
 const { calculateOrderTotals, GST_STATE } = require('../utils/gst');
+const emailService = require('./emailService');
+const { ADMIN_EMAILS } = require('../config');
 let sseManager;
 try { sseManager = require('../utils/sse').sseManager; } catch (_) { /* SSE optional */ }
+
+async function sendOrderEmails(order, userId) {
+  let customerEmail = order.deliveryInfo?.email || order.shippingAddress?.email;
+  if (!customerEmail && userId) {
+    try {
+      const user = await User.findById(userId).select('email');
+      customerEmail = user?.email;
+    } catch (_) { /* ignore */ }
+  }
+  if (customerEmail) {
+    emailService.sendMail({
+      to: customerEmail,
+      subject: `Order Confirmed - #${order.orderNumber || order._id}`,
+      html: emailService.orderConfirmationTemplate(order)
+    });
+  }
+  const adminEmails = ADMIN_EMAILS.length ? ADMIN_EMAILS : ['papp.joyy@gmail.com'];
+  adminEmails.forEach((adminEmail) => {
+    emailService.sendMail({
+      to: adminEmail,
+      subject: `New Order #${order.orderNumber || order._id} — ₹${(order.total || order.amount || 0).toFixed(2)}`,
+      html: `<p>A new order has been placed.</p><p>Order: #${order.orderNumber || order._id}</p><p>Amount: ₹${(order.total || order.amount || 0).toFixed(2)}</p>`
+    });
+  });
+}
 
 function createOrderNumber() {
   return `PJ-${Date.now()}-${Math.floor(Math.random() * 900 + 100)}`;
@@ -306,6 +333,7 @@ async function createOrderFromData({
 
 module.exports = {
   createOrderFromData,
+  sendOrderEmails,
   restoreInventoryForOrder,
   adjustInventory
 };

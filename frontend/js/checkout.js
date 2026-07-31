@@ -36,6 +36,7 @@ function getDeliveryInfo() {
   return {
     fullName: document.getElementById('delivery-fullname')?.value.trim() || '',
     phone: document.getElementById('delivery-phone')?.value.trim() || '',
+    email: document.getElementById('delivery-email')?.value.trim() || (getCurrentUser?.()?.email || ''),
     address: document.getElementById('delivery-address')?.value.trim() || '',
     city: document.getElementById('delivery-city')?.value.trim() || '',
     state: document.getElementById('delivery-state')?.value.trim() || '',
@@ -47,7 +48,7 @@ function getDeliveryInfo() {
 
 function validateDeliveryForm() {
   const requiredFields = [
-    'delivery-fullname', 'delivery-phone', 'delivery-address',
+    'delivery-fullname', 'delivery-phone', 'delivery-email', 'delivery-address',
     'delivery-city', 'delivery-state', 'delivery-postal', 'delivery-country'
   ];
   for (const fieldId of requiredFields) {
@@ -57,6 +58,12 @@ function validateDeliveryForm() {
       if (field) field.focus();
       return false;
     }
+  }
+  const emailField = document.getElementById('delivery-email');
+  if (emailField && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailField.value.trim())) {
+    setCheckoutMessage('Please enter a valid email address.', true);
+    emailField.focus();
+    return false;
   }
   return true;
 }
@@ -304,6 +311,7 @@ function loadDeliveryInfo() {
   const f = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
   f('delivery-fullname', user.shippingAddress?.fullName || user.name || '');
   f('delivery-phone', user.shippingAddress?.phone || user.phone || '');
+  f('delivery-email', user.shippingAddress?.email || user.email || '');
   f('delivery-address', user.shippingAddress?.line1 || '');
   f('delivery-city', user.shippingAddress?.city || '');
   f('delivery-state', user.shippingAddress?.state || '');

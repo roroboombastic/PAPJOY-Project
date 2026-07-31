@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const QRCode = require('qrcode');
 const { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_CURRENCY, APP_URL, BUSINESS_NAME } = require('../config');
 const { isRazorpayConfigured, getRazorpayInstance } = require('../utils/paymentConfig');
-const { createOrderFromData } = require('../services/orderService');
+const { createOrderFromData, sendOrderEmails } = require('../services/orderService');
 const { Order, Invoice, Notification } = require('../models');
 const invoiceController = require('./invoiceController');
 const logger = require('../utils/logger');
@@ -165,6 +165,10 @@ async function verifyRazorpayPayment(req, res) {
 
     invoiceController.generateInvoice(order._id).catch((err) => {
       logger.error('Auto invoice generation failed', { error: err.message, orderId: order._id });
+    });
+
+    sendOrderEmails(order, req.userId).catch((err) => {
+      logger.error('Order email notification failed', { error: err.message, orderId: order._id });
     });
 
     logger.info('Razorpay payment verified and order created', {

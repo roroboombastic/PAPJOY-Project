@@ -1,9 +1,7 @@
 const { Order, User } = require('../models');
 const logger = require('../utils/logger');
-const { createOrderFromData, restoreInventoryForOrder } = require('../services/orderService');
+const { createOrderFromData, sendOrderEmails, restoreInventoryForOrder } = require('../services/orderService');
 const invoiceController = require('./invoiceController');
-const emailService = require('../services/emailService');
-const { ADMIN_EMAILS } = require('../config');
 
 async function createOrder(req, res) {
   try {
@@ -26,23 +24,9 @@ async function createOrder(req, res) {
       logger.error('Auto invoice generation failed', { error: invoiceErr.message, orderId: order._id });
     });
 
-    const customerEmail = order.deliveryInfo?.email || req.body?.deliveryInfo?.email || '';
-    if (customerEmail) {
-      emailService.sendMail({
-        to: customerEmail,
-        subject: `Order Confirmed - #${order.orderNumber || order._id}`,
-        html: emailService.orderConfirmationTemplate(order)
-      });
-    }
-
-    // Notify admin(s) of new order
-    const adminEmails = ADMIN_EMAILS.length ? ADMIN_EMAILS : ['papp.joyy@gmail.com'];
-    adminEmails.forEach(adminEmail => {
-      emailService.sendMail({
-        to: adminEmail,
-        subject: `New Order #${order.orderNumber || order._id} — ₹${(order.total || order.amount || 0).toFixed(2)}`,
-        html: `<p>A new order has been placed.</p><p>Order: #${order.orderNumber || order._id}</p><p>Amount: ₹${(order.total || order.amount || 0).toFixed(2)}</p>`
-      });
+    // Notify customer and admin(s)
+    sendOrderEmails(order, req.userId).catch((err) => {
+      logger.error('Order email notification failed', { error: err.message, orderId: order._id });
     });
 
     res.status(201).json({ success: true, order });
