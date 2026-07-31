@@ -6,6 +6,7 @@ const isProd = NODE_ENV === 'production';
 const isDev = NODE_ENV === 'development';
 const PORT = Number(process.env.PORT) || 3000;
 const APP_URL = process.env.APP_URL || `http://127.0.0.1:${PORT}`;
+const FRONTEND_URL = process.env.FRONTEND_URL || (NODE_ENV === 'production' ? 'https://papjoy-project.vercel.app' : 'http://127.0.0.1:5500');
 const API_BASE_PATH = '/api/v1';
 const TRUST_PROXY = process.env.TRUST_PROXY === 'true';
 const FORCE_HTTPS = process.env.FORCE_HTTPS === 'true';
@@ -312,6 +313,7 @@ module.exports = {
   NODE_ENV,
   PORT,
   APP_URL,
+  FRONTEND_URL,
   API_BASE_PATH,
   TRUST_PROXY,
   FORCE_HTTPS,

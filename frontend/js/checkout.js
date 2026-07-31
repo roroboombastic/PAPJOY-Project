@@ -726,61 +726,6 @@ async function renderSignUpPage() {
   await initGoogleSignIn('google-signup-button', 'remember-signup');
 }
 
-async function renderForgotPasswordPage() {
-  const form = document.getElementById('forgot-password-form');
-  const statusMessage = document.getElementById('auth-message');
-  if (!form) return;
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const email = document.getElementById('email').value.trim();
-    if (!email) { if (statusMessage) { statusMessage.textContent = 'Please enter your email address.'; statusMessage.style.color = '#ff8b94'; } return; }
-    if (statusMessage) { statusMessage.textContent = 'Sending password reset link...'; statusMessage.style.color = '#d7d7ff'; }
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/forgot-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Unable to send reset link.');
-      if (statusMessage) {
-        if (data.resetUrl) {
-          statusMessage.innerHTML = `Password reset link generated.<br /><strong>Reset link:</strong> <a href="${data.resetUrl}">${data.resetUrl}</a><br /><small style="color:#888;">(This link appears here because email is not configured. In production it will be emailed.)</small>`;
-        } else {
-          statusMessage.textContent = data.message || 'If that email is registered, password reset instructions will be sent.';
-        }
-        statusMessage.style.color = '#4CAF50';
-      }
-    } catch (error) {
-      console.error('Forgot password error:', error);
-      if (statusMessage) { statusMessage.textContent = error.message || 'Unable to send reset link.'; statusMessage.style.color = '#ff8b94'; }
-    }
-  });
-}
-
-async function renderResetPasswordPage() {
-  const form = document.getElementById('reset-password-form');
-  const statusMessage = document.getElementById('auth-message');
-  if (!form) return;
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get('token');
-  if (!token) { if (statusMessage) { statusMessage.textContent = 'Invalid reset link.'; statusMessage.style.color = '#ff8b94'; } return; }
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const password = document.getElementById('password').value.trim();
-    const confirmPassword = document.getElementById('confirm-password').value.trim();
-    if (!password || !confirmPassword) { if (statusMessage) { statusMessage.textContent = 'Please enter and confirm your new password.'; statusMessage.style.color = '#ff8b94'; } return; }
-    if (password !== confirmPassword) { if (statusMessage) { statusMessage.textContent = 'Passwords do not match.'; statusMessage.style.color = '#ff8b94'; } return; }
-    if (statusMessage) { statusMessage.textContent = 'Resetting password...'; statusMessage.style.color = '#d7d7ff'; }
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/reset-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, password }) });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Unable to reset password.');
-      if (statusMessage) { statusMessage.textContent = 'Password reset successfully. You may now sign in.'; statusMessage.style.color = '#4CAF50'; }
-      setTimeout(() => { window.location.href = 'signin.html'; }, 1600);
-    } catch (error) {
-      console.error('Reset password error:', error);
-      if (statusMessage) { statusMessage.textContent = error.message || 'Unable to reset password.'; statusMessage.style.color = '#ff8b94'; }
-    }
-  });
-}
-
 window.checkout = checkout;
 window.setCheckoutMessage = setCheckoutMessage;
 window.getCheckoutItems = getCheckoutItems;
@@ -799,7 +744,5 @@ window.renderThankYouPage = renderThankYouPage;
 window.renderSuccessPage = renderSuccessPage;
 window.renderSignInPage = renderSignInPage;
 window.renderSignUpPage = renderSignUpPage;
-window.renderForgotPasswordPage = renderForgotPasswordPage;
-window.renderResetPasswordPage = renderResetPasswordPage;
 window.fillAddressFromSaved = fillAddressFromSaved;
 window.loadCheckoutAddresses = loadCheckoutAddresses;

@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 const emailService = require('../services/emailService');
 const {
-  APP_URL,
+  FRONTEND_URL,
   JWT_SECRET,
   JWT_EXPIRE,
   JWT_REFRESH_SECRET,
@@ -217,7 +217,7 @@ async function forgotPassword(req, res) {
     user.passwordResetExpires = Date.now() + 3600 * 1000;
     await user.save({ validateBeforeSave: false });
 
-    const resetUrl = `${APP_URL}/reset-password.html?token=${resetToken}`;
+    const resetUrl = `${FRONTEND_URL}/reset-password.html?token=${resetToken}`;
     logger.info('Password reset token generated', { userId: user._id, email: normalizedEmail });
 
     const emailResult = await emailService.sendMail({
@@ -226,7 +226,9 @@ async function forgotPassword(req, res) {
       html: emailService.passwordResetTemplate(user.name, resetUrl)
     });
 
-    if (emailResult?.skipped) {
+    logger.info('Password reset email result', { emailResult });
+
+    if (emailResult?.skipped || emailResult?.error) {
       res.json({ success: true, message: 'Password reset link generated.', resetUrl });
     } else {
       res.json({ success: true, message: 'If that email is registered, password reset instructions will be sent.' });

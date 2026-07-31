@@ -24,13 +24,13 @@ test('UPI and COD are always enabled', () => {
 test('config reads Razorpay credentials from the canonical env names', () => {
   const configPath = require.resolve('../config');
   delete require.cache[configPath];
-  process.env.RAZORPAY_KEY_ID = 'rzp_live_456';
-  process.env.RAZORPAY_KEY_SECRET = 'live-secret';
+  process.env.RAZORPAY_KEY_ID = 'rzp_test_dummy_placeholder_12345';
+  process.env.RAZORPAY_KEY_SECRET = 'dummy-placeholder-secret';
   delete process.env.RAZORPAY_KEY;
   delete process.env.RAZORPAY_SECRET;
 
   const config = require('../config');
 
-  assert.equal(config.RAZORPAY_KEY, 'rzp_live_456');
-  assert.equal(config.RAZORPAY_SECRET, 'live-secret');
+  assert.equal(config.RAZORPAY_KEY, 'rzp_test_dummy_placeholder_12345');
+  assert.equal(config.RAZORPAY_SECRET, 'dummy-placeholder-secret');
 });

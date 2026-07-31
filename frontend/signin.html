@@ -111,7 +111,7 @@
           </form>
 
           <div class="auth-footnote">
-            <p><a href="#" id="forgot-password-link">Forgot your password?</a></p>
+            <p><a href="forgot-password.html" id="forgot-password-link">Forgot your password?</a></p>
             <p>Don't have an account? <a href="#signup">Create one</a></p>
           </div>
         </div>
@@ -178,64 +178,6 @@
 
           <div class="auth-footnote">
             <p>Already have an account? <a href="#signin">Sign in</a></p>
-          </div>
-        </div>
-
-        <!-- Forgot Password Panel -->
-        <div class="auth-tab-body" id="panel-forgot" style="display: none;">
-          <div class="auth-panel-intro">
-            <h2>Reset your password</h2>
-            <p>Enter your email and we'll send you a reset link.</p>
-          </div>
-
-          <div id="forgot-message" class="auth-message"></div>
-
-          <form id="forgot-password-form" class="auth-form" novalidate>
-            <div class="form-group">
-              <label for="forgot-email">Email address</label>
-              <input type="email" id="forgot-email" name="email" placeholder="you@example.com" required autocomplete="email" />
-            </div>
-            <button type="submit" class="checkout-button">Send reset link</button>
-          </form>
-
-          <div class="auth-footnote">
-            <p>Remember your password? <a href="#signin">Sign in</a></p>
-          </div>
-        </div>
-
-        <!-- Reset Password Panel -->
-        <div class="auth-tab-body" id="panel-reset" style="display: none;">
-          <div class="auth-panel-intro">
-            <h2>Set new password</h2>
-            <p>Choose a strong new password for your account.</p>
-          </div>
-
-          <div id="reset-message" class="auth-message"></div>
-
-          <form id="reset-password-form" class="auth-form" novalidate>
-            <div class="form-group">
-              <label for="reset-password">New password</label>
-              <div class="password-field">
-                <input type="password" id="reset-password" name="password" placeholder="At least 8 characters" required autocomplete="new-password" />
-                <button type="button" class="toggle-password reset-pw-toggle" aria-label="Toggle password visibility">
-                  <i class="fas fa-eye"></i>
-                </button>
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="reset-confirm-password">Confirm new password</label>
-              <div class="password-field">
-                <input type="password" id="reset-confirm-password" name="confirmPassword" placeholder="Re-enter your password" required autocomplete="new-password" />
-                <button type="button" class="toggle-password reset-confirm-toggle" aria-label="Toggle password visibility">
-                  <i class="fas fa-eye"></i>
-                </button>
-              </div>
-            </div>
-            <button type="submit" class="checkout-button">Reset password</button>
-          </form>
-
-          <div class="auth-footnote">
-            <p><a href="#signin">Back to sign in</a></p>
           </div>
         </div>
 
@@ -312,9 +254,7 @@
       const tabs = document.querySelectorAll('.auth-tab');
       const panels = {
         signin: document.getElementById('panel-signin'),
-        signup: document.getElementById('panel-signup'),
-        forgot: document.getElementById('panel-forgot'),
-        reset: document.getElementById('panel-reset')
+        signup: document.getElementById('panel-signup')
       };
       const tabsContainer = document.getElementById('auth-tabs');
 
@@ -325,15 +265,13 @@
           panels[name].style.display = '';
           const matchingTab = document.querySelector('.auth-tab[data-tab="' + name + '"]');
           if (matchingTab) matchingTab.classList.add('active');
-          if (tabsContainer) tabsContainer.style.display = (name === 'forgot' || name === 'reset') ? 'none' : '';
+          if (tabsContainer) tabsContainer.style.display = '';
         }
       }
 
       function handleHash() {
         const hash = window.location.hash.replace('#', '') || 'signin';
         if (hash === 'signup') showPanel('signup');
-        else if (hash === 'forgot-password') showPanel('forgot');
-        else if (hash === 'reset-password') showPanel('reset');
         else showPanel('signin');
       }
 
@@ -343,14 +281,6 @@
           window.location.hash = target === 'signin' ? '' : target;
         });
       });
-
-      var forgotLink = document.getElementById('forgot-password-link');
-      if (forgotLink) {
-        forgotLink.addEventListener('click', function(e) {
-          e.preventDefault();
-          window.location.hash = 'forgot-password';
-        });
-      }
 
       // Toggle password visibility for all toggle buttons
       document.querySelectorAll('.toggle-password').forEach(function(btn) {
@@ -363,57 +293,6 @@
           if (icon) icon.className = isPw ? 'fas fa-eye-slash' : 'fas fa-eye';
         });
       });
-
-      // Forgot password form
-      var forgotForm = document.getElementById('forgot-password-form');
-      if (forgotForm) {
-        forgotForm.addEventListener('submit', async function(e) {
-          e.preventDefault();
-          var email = document.getElementById('forgot-email')?.value?.trim();
-          var msg = document.getElementById('forgot-message');
-          if (!email) { if (msg) { msg.textContent = 'Please enter your email.'; msg.style.color = '#ff8b94'; } return; }
-          if (msg) { msg.textContent = 'Sending reset link...'; msg.style.color = '#d7d7ff'; }
-          try {
-            var resp = await fetch((window.API_BASE_URL || '') + '/api/v1/auth/forgot-password', {
-              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email })
-            });
-            var data = await resp.json();
-            if (!resp.ok) throw new Error(data.error || 'Unable to send reset link.');
-            if (msg) { msg.innerHTML = 'If that email exists, a reset link is ready.'; msg.style.color = '#4CAF50'; }
-          } catch (err) {
-            if (msg) { msg.textContent = err.message || 'Unable to send reset link.'; msg.style.color = '#ff8b94'; }
-          }
-        });
-      }
-
-      // Reset password form
-      var resetForm = document.getElementById('reset-password-form');
-      if (resetForm) {
-        var params = new URLSearchParams(window.location.search);
-        var token = params.get('token');
-        if (!token) { var rm = document.getElementById('reset-message'); if (rm) { rm.textContent = 'Invalid reset link.'; rm.style.color = '#ff8b94'; } }
-        resetForm.addEventListener('submit', async function(e) {
-          e.preventDefault();
-          var pw = document.getElementById('reset-password')?.value?.trim();
-          var cpw = document.getElementById('reset-confirm-password')?.value?.trim();
-          var msg = document.getElementById('reset-message');
-          if (!pw || !cpw) { if (msg) { msg.textContent = 'Please enter and confirm your new password.'; msg.style.color = '#ff8b94'; } return; }
-          if (pw !== cpw) { if (msg) { msg.textContent = 'Passwords do not match.'; msg.style.color = '#ff8b94'; } return; }
-          if (pw.length < 8) { if (msg) { msg.textContent = 'Password must be at least 8 characters.'; msg.style.color = '#ff8b94'; } return; }
-          if (msg) { msg.textContent = 'Resetting password...'; msg.style.color = '#d7d7ff'; }
-          try {
-            var resp = await fetch((window.API_BASE_URL || '') + '/api/v1/auth/reset-password', {
-              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: token, password: pw })
-            });
-            var data = await resp.json();
-            if (!resp.ok) throw new Error(data.error || 'Unable to reset password.');
-            if (msg) { msg.textContent = 'Password reset successfully. You may now sign in.'; msg.style.color = '#4CAF50'; }
-            setTimeout(function() { window.location.hash = ''; window.location.href = 'signin.html'; }, 1600);
-          } catch (err) {
-            if (msg) { msg.textContent = err.message || 'Unable to reset password.'; msg.style.color = '#ff8b94'; }
-          }
-        });
-      }
 
       window.addEventListener('hashchange', handleHash);
       handleHash();

@@ -1,31 +1,33 @@
 const nodemailer = require('nodemailer');
 const logger = require('../utils/logger');
+const {
+  SMTP_HOST,
+  SMTP_PORT,
+  SMTP_USER,
+  SMTP_PASS,
+  SMTP_FROM_NAME,
+  SMTP_FROM_ADDRESS
+} = require('../config');
 
 let transporter = null;
 
 function getTransporter() {
   if (transporter) return transporter;
 
-  const { smtp } = require('../config');
-
-  if (!smtp.host || !smtp.user || !smtp.pass) {
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
     logger.warn('SMTP not configured — emails will not be sent');
     return null;
   }
 
   transporter = nodemailer.createTransport({
-    host: smtp.host,
-    port: smtp.port,
-    secure: smtp.secure,
-    auth: { user: smtp.user, pass: smtp.pass },
-    requireTLS: !smtp.secure
-  });
-
-  transporter.verify().then(() => {
-    logger.info('SMTP connection verified successfully');
-  }).catch((err) => {
-    logger.error('SMTP connection verification failed', { error: err.message });
-    transporter = null;
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465,
+    auth: { user: SMTP_USER, pass: SMTP_PASS },
+    requireTLS: SMTP_PORT !== 465,
+    tls: { rejectUnauthorized: false },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000
   });
 
   return transporter;
@@ -38,20 +40,18 @@ async function sendMail({ to, subject, html }) {
     return { success: false, skipped: true };
   }
 
-  const { smtp } = require('../config');
-
   try {
     const info = await t.sendMail({
-      from: `"${smtp.fromName}" <${smtp.fromAddress}>`,
+      from: `"${SMTP_FROM_NAME}" <${SMTP_FROM_ADDRESS}>`,
       to,
       subject,
       html
     });
-    logger.info(`Email sent to ${to}`, { messageId: info.messageId });
+    logger.info(`Email sent to ${to}`, { messageId: info.messageId, accepted: info.accepted, rejected: info.rejected, response: info.response });
     return { success: true, messageId: info.messageId };
   } catch (err) {
-    logger.error(`Failed to send email to ${to}`, { error: err.message });
-    return { success: false, error: err.message };
+    logger.error(`Failed to send email to ${to}`, { error: err.message, code: err.code, command: err.command });
+    return { success: false, error: err.message, code: err.code };
   }
 }
 
