@@ -33,7 +33,7 @@ function getTransporter() {
   return transporter;
 }
 
-async function sendMail({ to, subject, html }) {
+async function sendMail({ to, subject, html, text }) {
   const t = getTransporter();
   if (!t) {
     logger.info(`[EMAIL SKIPPED] To: ${to} | Subject: ${subject}`);
@@ -45,7 +45,8 @@ async function sendMail({ to, subject, html }) {
       from: `"${SMTP_FROM_NAME}" <${SMTP_FROM_ADDRESS}>`,
       to,
       subject,
-      html
+      html,
+      text: text || htmlToText(html)
     });
     logger.info(`Email sent to ${to}`, { messageId: info.messageId, accepted: info.accepted, rejected: info.rejected, response: info.response });
     return { success: true, messageId: info.messageId };
@@ -55,19 +56,44 @@ async function sendMail({ to, subject, html }) {
   }
 }
 
+function htmlToText(html) {
+  if (!html) return '';
+  return html
+    .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '$2 ($1)')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<\/tr>/gi, '\n')
+    .replace(/<\/td>/gi, ' | ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#8377;/g, 'Rs ')
+    .replace(/₹/g, 'Rs ')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 function passwordResetTemplate(name, resetUrl) {
-  return `
-    <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">
-      <h2 style="color:#2d5a27">Password Reset</h2>
-      <p>Hi ${name || 'there'},</p>
-      <p>We received a request to reset your PAP-JOY password. Click the button below to set a new one. This link expires in 1 hour.</p>
-      <p style="text-align:center;margin:28px 0">
-        <a href="${resetUrl}" style="display:inline-block;padding:12px 28px;background:#2d5a27;color:#fff;text-decoration:none;border-radius:6px;font-size:15px">Reset Password</a>
-      </p>
-      <p>If you didn't request this, you can safely ignore this email.</p>
-      <hr style="border:none;border-top:1px solid#e0e0e0;margin:24px 0">
-      <p style="font-size:12px;color:#888">PAP-JOY · Premium footwear for every journey.</p>
-    </div>`;
+  return {
+    subject: 'Reset your PAP-JOY password',
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">
+        <h2 style="color:#2d5a27">Password Reset</h2>
+        <p>Hi ${name || 'there'},</p>
+        <p>We received a request to reset your PAP-JOY password. Click the button below to set a new one. This link expires in 1 hour.</p>
+        <p style="text-align:center;margin:28px 0">
+          <a href="${resetUrl}" style="display:inline-block;padding:12px 28px;background:#2d5a27;color:#fff;text-decoration:none;border-radius:6px;font-size:15px">Reset Password</a>
+        </p>
+        <p>If the button doesn't work, copy and paste this link into your browser:</p>
+        <p style="word-break:break-all;font-size:12px;color:#555">${resetUrl}</p>
+        <p>If you didn't request this, you can safely ignore this email.</p>
+        <hr style="border:none;border-top:1px solid #e0e0e0;margin:24px 0">
+        <p style="font-size:12px;color:#888">PAP-JOY · Premium footwear for every journey.</p>
+      </div>`
+  };
 }
 
 function orderConfirmationTemplate(order) {
@@ -75,41 +101,50 @@ function orderConfirmationTemplate(order) {
     `<tr><td style="padding:6px 0">${item.name} × ${item.quantity}</td><td style="padding:6px 0;text-align:right">₹${(item.unitPrice * item.quantity).toFixed(2)}</td></tr>`
   ).join('');
 
-  return `
-    <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">
-      <h2 style="color:#2d5a27">Order Confirmed</h2>
-      <p>Hi ${order.deliveryInfo?.name || order.shippingAddress?.name || 'there'},</p>
-      <p>Your order <strong>#${order.orderNumber || order._id}</strong> has been placed successfully.</p>
-      <table style="width:100%;border-collapse:collapse;margin:16px 0">${itemsHtml}</table>
-      <p style="font-size:15px"><strong>Total: ₹${(order.total || order.amount || 0).toFixed(2)}</strong></p>
-      <p>We'll notify you when it ships.</p>
-      <hr style="border:none;border-top:1px solid#e0e0e0;margin:24px 0">
-      <p style="font-size:12px;color:#888">PAP-JOY · Premium footwear for every journey.</p>
-    </div>`;
+  return {
+    subject: `Order Confirmed - #${order.orderNumber || order._id}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">
+        <h2 style="color:#2d5a27">Order Confirmed</h2>
+        <p>Hi ${order.deliveryInfo?.name || order.shippingAddress?.name || 'there'},</p>
+        <p>Your order <strong>#${order.orderNumber || order._id}</strong> has been placed successfully.</p>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0">${itemsHtml}</table>
+        <p style="font-size:15px"><strong>Total: ₹${(order.total || order.amount || 0).toFixed(2)}</strong></p>
+        <p>We'll notify you when it ships.</p>
+        <hr style="border:none;border-top:1px solid #e0e0e0;margin:24px 0">
+        <p style="font-size:12px;color:#888">PAP-JOY · Premium footwear for every journey.</p>
+      </div>`
+  };
 }
 
 function invoiceEmailTemplate(invoice, pdfUrl) {
-  return `
-    <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">
-      <h2 style="color:#2d5a27">Invoice #${invoice.invoiceNumber}</h2>
-      <p>Hi ${invoice.customerName || 'there'},</p>
-      <p>Your invoice for order <strong>#${invoice.orderNumber || invoice.orderId}</strong> is ready.</p>
-      ${pdfUrl ? `<p style="text-align:center;margin:24px 0"><a href="${pdfUrl}" style="display:inline-block;padding:12px 28px;background:#2d5a27;color:#fff;text-decoration:none;border-radius:6px;font-size:15px">Download Invoice (PDF)</a></p>` : ''}
-      <hr style="border:none;border-top:1px solid#e0e0e0;margin:24px 0">
-      <p style="font-size:12px;color:#888">PAP-JOY · Premium footwear for every journey.</p>
-    </div>`;
+  return {
+    subject: `Invoice #${invoice.invoiceNumber} for your PAP-JOY order`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">
+        <h2 style="color:#2d5a27">Invoice #${invoice.invoiceNumber}</h2>
+        <p>Hi ${invoice.customerName || 'there'},</p>
+        <p>Your invoice for order <strong>#${invoice.orderNumber || invoice.orderId}</strong> is ready.</p>
+        ${pdfUrl ? `<p style="text-align:center;margin:24px 0"><a href="${pdfUrl}" style="display:inline-block;padding:12px 28px;background:#2d5a27;color:#fff;text-decoration:none;border-radius:6px;font-size:15px">Download Invoice (PDF)</a></p>` : ''}
+        <hr style="border:none;border-top:1px solid #e0e0e0;margin:24px 0">
+        <p style="font-size:12px;color:#888">PAP-JOY · Premium footwear for every journey.</p>
+      </div>`
+  };
 }
 
 function orderUpdateTemplate(order) {
-  return `
-    <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">
-      <h2 style="color:#2d5a27">Order Update</h2>
-      <p>Hi ${order.deliveryInfo?.name || 'there'},</p>
-      <p>Your order <strong>#${order.orderNumber || order._id}</strong> status has been updated to <strong>${order.status}</strong>.</p>
-      ${order.trackingNumber ? `<p>Tracking: <strong>${order.trackingNumber}</strong></p>` : ''}
-      <hr style="border:none;border-top:1px solid#e0e0e0;margin:24px 0">
-      <p style="font-size:12px;color:#888">PAP-JOY · Premium footwear for every journey.</p>
-    </div>`;
+  return {
+    subject: `Order Update - #${order.orderNumber || order._id}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">
+        <h2 style="color:#2d5a27">Order Update</h2>
+        <p>Hi ${order.deliveryInfo?.name || order.shippingAddress?.name || 'there'},</p>
+        <p>Your order <strong>#${order.orderNumber || order._id}</strong> status has been updated to <strong>${order.status}</strong>.</p>
+        ${order.trackingNumber ? `<p>Tracking: <strong>${order.trackingNumber}</strong></p>` : ''}
+        <hr style="border:none;border-top:1px solid #e0e0e0;margin:24px 0">
+        <p style="font-size:12px;color:#888">PAP-JOY · Premium footwear for every journey.</p>
+      </div>`
+  };
 }
 
 module.exports = {

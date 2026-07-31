@@ -447,8 +447,7 @@ async function updateOrderStatus(req, res) {
       const emailService = require('../services/emailService');
       emailService.sendMail({
         to: customerEmail,
-        subject: `Order #${order.orderNumber || order._id} is now ${status}`,
-        html: emailService.orderUpdateTemplate(order)
+        ...emailService.orderUpdateTemplate(order)
       });
     }
 

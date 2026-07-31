@@ -174,8 +174,7 @@ async function generateInvoice(orderId) {
     if (customerEmail) {
       emailService.sendMail({
         to: customerEmail,
-        subject: `Invoice #${invoiceNumber} for your PAP-JOY order`,
-        html: emailService.invoiceEmailTemplate(invoiceData)
+        ...emailService.invoiceEmailTemplate(invoiceData)
       });
     }
 

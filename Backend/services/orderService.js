@@ -17,8 +17,7 @@ async function sendOrderEmails(order, userId) {
   if (customerEmail) {
     emailService.sendMail({
       to: customerEmail,
-      subject: `Order Confirmed - #${order.orderNumber || order._id}`,
-      html: emailService.orderConfirmationTemplate(order)
+      ...emailService.orderConfirmationTemplate(order)
     });
   }
   const adminEmails = ADMIN_EMAILS.length ? ADMIN_EMAILS : ['papp.joyy@gmail.com'];

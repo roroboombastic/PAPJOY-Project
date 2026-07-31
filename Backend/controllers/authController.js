@@ -235,8 +235,7 @@ async function forgotPassword(req, res) {
 
     const emailResult = await emailService.sendMail({
       to: normalizedEmail,
-      subject: 'Reset your PAP-JOY password',
-      html: emailService.passwordResetTemplate(user.name, resetUrl)
+      ...emailService.passwordResetTemplate(user.name, resetUrl)
     });
 
     logger.info('Password reset email result', { emailResult });
