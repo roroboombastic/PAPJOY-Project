@@ -268,6 +268,12 @@ function validateConfiguration() {
     }
   }
 
+  if (!config.jwt.refreshSecret) {
+    if (isProd) {
+      errors.push('JWT_REFRESH_SECRET must be set to a secure value in production');
+    }
+  }
+
   // Production-specific validations
   if (isProd) {
     // Business information

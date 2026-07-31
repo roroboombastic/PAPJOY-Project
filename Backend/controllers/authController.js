@@ -17,6 +17,9 @@ const {
 const logger = require('../utils/logger');
 
 function signToken(payload, secret, expiresIn) {
+  if (!secret || secret.length < 32) {
+    throw new Error('JWT signing secret is not configured (set JWT_SECRET / JWT_REFRESH_SECRET)');
+  }
   return jwt.sign(payload, secret, { expiresIn, algorithm: 'HS256', issuer: 'papjoy' });
 }
 
