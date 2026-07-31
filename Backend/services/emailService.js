@@ -97,9 +97,19 @@ function passwordResetTemplate(name, resetUrl) {
 }
 
 function orderConfirmationTemplate(order) {
+  const inr = (n) => '₹' + (Number(n) || 0).toFixed(2);
   const itemsHtml = (order.items || []).map(item =>
-    `<tr><td style="padding:6px 0">${item.name} × ${item.quantity}</td><td style="padding:6px 0;text-align:right">₹${(item.unitPrice * item.quantity).toFixed(2)}</td></tr>`
+    `<tr><td style="padding:6px 0">${item.name} × ${item.quantity}</td><td style="padding:6px 0;text-align:right">${inr(item.unitPrice * item.quantity)}</td></tr>`
   ).join('');
+  const breakdownRows = [
+    `<tr><td style="padding:4px 0;color:#666">Subtotal</td><td style="padding:4px 0;text-align:right;color:#666">${inr(order.subtotal)}</td></tr>`,
+    `<tr><td style="padding:4px 0;color:#666">GST</td><td style="padding:4px 0;text-align:right;color:#666">${inr(order.tax != null ? order.tax : order.gstTotal)}</td></tr>`,
+    `<tr><td style="padding:4px 0;color:#666">Shipping</td><td style="padding:4px 0;text-align:right;color:#666">${order.shipping ? inr(order.shipping) : 'FREE'}</td></tr>`
+  ];
+  if (order.discount) {
+    breakdownRows.push(`<tr><td style="padding:4px 0;color:#666">Discount</td><td style="padding:4px 0;text-align:right;color:#666">-${inr(order.discount)}</td></tr>`);
+  }
+  breakdownRows.push(`<tr><td style="padding:6px 0;font-weight:bold;border-top:1px solid #e0e0e0">Total</td><td style="padding:6px 0;text-align:right;font-weight:bold;border-top:1px solid #e0e0e0">${inr(order.total || order.amount)}</td></tr>`);
 
   return {
     subject: `Order Confirmed - #${order.orderNumber || order._id}`,
@@ -109,7 +119,7 @@ function orderConfirmationTemplate(order) {
         <p>Hi ${order.deliveryInfo?.name || order.shippingAddress?.name || 'there'},</p>
         <p>Your order <strong>#${order.orderNumber || order._id}</strong> has been placed successfully.</p>
         <table style="width:100%;border-collapse:collapse;margin:16px 0">${itemsHtml}</table>
-        <p style="font-size:15px"><strong>Total: ₹${(order.total || order.amount || 0).toFixed(2)}</strong></p>
+        <table style="width:100%;border-collapse:collapse;margin:8px 0">${breakdownRows.join('')}</table>
         <p>We'll notify you when it ships.</p>
         <hr style="border:none;border-top:1px solid #e0e0e0;margin:24px 0">
         <p style="font-size:12px;color:#888">PAP-JOY · Premium footwear for every journey.</p>

@@ -38,7 +38,7 @@ const productSchema = new mongoose.Schema({
   price: { type: Number, required: true, min: 0 },
   comparePrice: { type: Number, default: 0 },
   costPrice: { type: Number, default: 0 },
-  categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+  categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
   brand: String,
   sku: { type: String, unique: true, sparse: true },
   barcode: String,
@@ -70,8 +70,16 @@ const productSchema = new mongoose.Schema({
   stockMovements: [stockMovementSchema]
 });
 
+function generateEan13() {
+  const base = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join('');
+  const sum = base.split('').reduce((acc, d, i) => acc + Number(d) * (i % 2 === 0 ? 1 : 3), 0);
+  const check = (10 - (sum % 10)) % 10;
+  return base + check;
+}
+
 productSchema.pre('save', function () {
   this.updatedAt = Date.now();
+  if (!this.barcode) this.barcode = generateEan13();
 });
 
 productSchema.index({ categoryId: 1 });

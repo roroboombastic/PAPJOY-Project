@@ -6,6 +6,13 @@ function escapeRegex(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function generateEan13Barcode() {
+  const base = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join('');
+  const sum = base.split('').reduce((acc, d, i) => acc + Number(d) * (i % 2 === 0 ? 1 : 3), 0);
+  const check = (10 - (sum % 10)) % 10;
+  return base + check;
+}
+
 function getRangeBounds(range = 'month', from, to) {
   const end = to ? new Date(to) : new Date();
   let start;
@@ -306,6 +313,11 @@ async function createProduct(req, res) {
     if (typeof body.gstPercentage === 'string') body.gstPercentage = Number(body.gstPercentage);
 
     const { name, slug, description, price, categoryId, sku, brand, inventory, isActive, isFeatured, tags, images, videos } = body;
+
+    if (isActive !== false && !categoryId) {
+      return res.status(400).json({ error: 'Category is required to publish a product. Select a category or save as a draft.' });
+    }
+
     const productSlug = slug || (name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
     const imageUrls = [];
@@ -387,8 +399,18 @@ async function updateProduct(req, res) {
       }
     }
 
+    const existing = await Product.findById(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Product not found' });
+
+    if (updateData.isActive === true && !(updateData.categoryId || existing.categoryId)) {
+      return res.status(400).json({ error: 'Category is required to publish a product. Select a category or save as a draft.' });
+    }
+
+    if (!updateData.barcode && !existing.barcode) {
+      updateData.barcode = generateEan13Barcode();
+    }
+
     const product = await Product.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
-    if (!product) return res.status(404).json({ error: 'Product not found' });
     res.json(product);
   } catch (err) {
     if (err.code === 11000) {
