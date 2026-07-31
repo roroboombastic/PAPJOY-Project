@@ -38,6 +38,17 @@ function createSecurityMiddleware(app) {
   }));
 
   const corsOrigins = config.cors.origin;
+  const isAllowedOrigin = (origin) => {
+    if (corsOrigins.includes(origin)) return true;
+    try {
+      const hostname = new URL(origin).hostname.toLowerCase();
+      if (hostname === 'papjoy-project.vercel.app') return true;
+      if (hostname.startsWith('papjoy-project-') && hostname.endsWith('.vercel.app')) return true;
+    } catch (err) {
+      return false;
+    }
+    return false;
+  };
   const corsOptions = {
     origin: (origin, callback) => {
       if (!origin) {
@@ -49,7 +60,7 @@ function createSecurityMiddleware(app) {
         }
         return callback(null, true);
       }
-      if (corsOrigins.includes(origin)) {
+      if (isAllowedOrigin(origin)) {
         return callback(null, true);
       }
       console.warn('[WARN] CORS origin rejected', { origin, allowedOrigins: corsOrigins });
