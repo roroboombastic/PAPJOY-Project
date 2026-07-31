@@ -7354,7 +7354,7 @@ a.breadcrumb-item:hover {
   }
 
   .cart-item {
-    grid-template-columns: 70px 1fr;
+    grid-template-columns: 1fr;
     gap: 12px;
     padding: 12px;
   }

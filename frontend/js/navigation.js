@@ -3,6 +3,7 @@ let navResizeHandler = null;
 let notificationSSE = null;
 let notificationPermissionRequested = false;
 let notificationListenersBound = false;
+let sseRetryDelay = 1000;
 
 function updateUserLinks() {
   const user = getCurrentUser();
@@ -549,6 +550,7 @@ function connectNotificationSSE(user) {
       });
       if (!response.ok || !response.body) {
         if (response.status === 401) {
+          sseRetryDelay = 1000;
           console.warn('Notification stream rejected (401), reconnecting on next page load');
           return;
         }
@@ -569,13 +571,16 @@ function connectNotificationSSE(user) {
         }
       }
       shouldReconnect = true;
+      sseRetryDelay = 1000;
     } catch (err) {
       if (err.name === 'AbortError') return;
       console.warn('Notification stream disconnected:', err);
       shouldReconnect = true;
     } finally {
       if (shouldReconnect && !controller.signal.aborted) {
-        setTimeout(() => connectNotificationSSE(user), 5000);
+        const delay = sseRetryDelay;
+        sseRetryDelay = Math.min(sseRetryDelay * 2, 30000);
+        setTimeout(() => connectNotificationSSE(user), delay);
       }
     }
   })();

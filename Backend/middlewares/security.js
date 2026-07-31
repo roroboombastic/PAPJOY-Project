@@ -78,7 +78,8 @@ function createSecurityMiddleware(app) {
     max: 200,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { error: 'Too many requests, please try again later' }
+    message: { error: 'Too many requests, please try again later' },
+    skip: (req) => req.originalUrl.includes('/stream/')
   });
   app.use(generalLimiter);
 
