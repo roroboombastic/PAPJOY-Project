@@ -567,7 +567,7 @@ function renderOrderItems(order) {
   container.innerHTML = order.items.map(item => `
     <div class="tracking-order-item">
       <span>${item.name}${item.variant && item.variant !== 'Standard' ? ' — ' + item.variant : ''} × ${item.quantity}</span>
-      <span>${formatCurrency(item.price * item.quantity)}</span>
+      <span>${formatINR(item.price * item.quantity)}</span>
     </div>
   `).join('');
 }

@@ -56,7 +56,7 @@ async function loadAdminDashboard() {
     const data = await response.json();
 
     if (data.stats) {
-      document.getElementById('stat-revenue').textContent = formatCurrency(data.stats.totalRevenue || 0);
+      document.getElementById('stat-revenue').textContent = formatINR(data.stats.totalRevenue || 0);
       document.getElementById('stat-orders').textContent = data.stats.totalOrders || 0;
       document.getElementById('stat-products').textContent = data.stats.totalProducts || 0;
       document.getElementById('stat-users').textContent = data.stats.totalUsers || 0;
@@ -71,7 +71,7 @@ async function loadAdminDashboard() {
           <tr>
             <td data-label="Order ID">${escapeHTML(order.orderNumber || order._id?.slice(-8) || 'N/A')}</td>
             <td data-label="Customer">${escapeHTML(order.userId?.name || order.shippingAddress?.name || 'Guest')}</td>
-            <td data-label="Total">${formatCurrency(order.total || 0)}</td>
+            <td data-label="Total">${formatINR(order.total || 0)}</td>
             <td data-label="Status"><span class="status-badge">${escapeHTML(order.status)}</span></td>
             <td data-label="Date">${new Date(order.createdAt).toLocaleDateString()}</td>
             <td data-label="Action"><button class="btn-small" onclick="showOrderModal('${order._id}', '${escapeHTML(order.status)}')">Update</button></td>
@@ -127,7 +127,7 @@ async function loadAdminProducts(page = 1) {
         <tr>
           <td data-label="Product Name">${escapeHTML(product.name)}</td>
           <td data-label="SKU">${escapeHTML(product.sku || 'N/A')}</td>
-          <td data-label="Price">${formatCurrency(product.price)}</td>
+          <td data-label="Price">${formatINR(product.price)}</td>
           <td data-label="Stock">${product.inventory?.quantity || 0}</td>
           <td data-label="Status"><span class="badge ${product.isActive ? 'active' : 'inactive'}">${product.isActive ? 'Active' : 'Inactive'}</span></td>
           <td data-label="Actions">
@@ -304,7 +304,7 @@ async function loadAdminOrders(page = 1) {
           <tr>
             <td data-label="Order #">${escapeHTML(order.orderNumber || order._id?.slice(-8) || 'N/A')}</td>
             <td data-label="Customer">${escapeHTML(order.userId?.name || order.shippingAddress?.name || 'Guest')}</td>
-            <td data-label="Total">${formatCurrency(order.total || 0)}</td>
+            <td data-label="Total">${formatINR(order.total || 0)}</td>
             <td data-label="Status"><span class="status-badge">${escapeHTML(order.status)}</span></td>
             <td data-label="Payment">${escapeHTML(order.paymentStatus || order.paymentMethod || 'N/A')}</td>
             <td data-label="Date">${new Date(order.createdAt).toLocaleDateString()}</td>
@@ -459,7 +459,7 @@ async function loadAnalytics() {
         const height = ((d.revenue || 0) / maxRevenue) * 100;
         const dateLabel = d._id || d.date || '';
         const shortDate = dateLabel.length > 5 ? dateLabel.slice(5) : dateLabel;
-        return `<div class="chart-bar-wrapper" title="${escapeHTML(dateLabel)}: ${formatCurrency(d.revenue || 0)}">
+        return `<div class="chart-bar-wrapper" title="${escapeHTML(dateLabel)}: ${formatINR(d.revenue || 0)}">
           <div class="chart-bar" style="height: ${height}%"></div>
           <span class="chart-label">${escapeHTML(shortDate)}</span>
         </div>`;
@@ -478,7 +478,7 @@ async function loadAnalytics() {
           <tr>
             <td data-label="Product">${i + 1}. ${escapeHTML(p.product?.name || p._id || 'Unknown')}</td>
             <td data-label="Units Sold">${p.quantity || p.totalSold || p.sold || 0}</td>
-            <td data-label="Revenue">${formatCurrency(p.revenue || p.totalRevenue || 0)}</td>
+            <td data-label="Revenue">${formatINR(p.revenue || p.totalRevenue || 0)}</td>
           </tr>
         `).join('');
       }
@@ -509,7 +509,7 @@ async function loadAnalytics() {
                 <tr>
                   <td data-label="Category">${escapeHTML(c._id || c.name || 'Unknown')}</td>
                   <td data-label="Orders">${c.count || c.orders || 0}</td>
-                  <td data-label="Revenue">${formatCurrency(c.revenue || c.totalRevenue || 0)}</td>
+                  <td data-label="Revenue">${formatINR(c.revenue || c.totalRevenue || 0)}</td>
                 </tr>
               `).join('')}</tbody>
             </table>

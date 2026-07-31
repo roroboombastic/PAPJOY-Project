@@ -3,7 +3,7 @@ function formatOrderData(order) {
   const date = order.createdAt ? new Date(order.createdAt).toLocaleString() : 'Unknown';
   const shortDate = order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'Unknown';
   const statusText = order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1).replace(/_/g, ' ') : 'Pending';
-  const totalText = order.total != null ? formatCurrency(order.total) : '—';
+  const totalText = order.total != null ? formatINR(order.total) : '—';
   const orderId = order._id || order.id || '';
   return { number, date, shortDate, statusText, totalText, orderId, status: order.status || 'pending' };
 }
@@ -182,7 +182,7 @@ function renderAccountStats(user, orders = []) {
   if (totalOrders) totalOrders.textContent = orders.length;
   if (totalSpent) {
     const sum = orders.reduce((acc, o) => acc + (o.total || 0), 0);
-    totalSpent.textContent = sum > 0 ? formatCurrency(sum) : '—';
+    totalSpent.textContent = sum > 0 ? formatINR(sum) : '—';
   }
   if (memberSince && user?.createdAt) {
     memberSince.textContent = new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
@@ -402,7 +402,7 @@ function renderAccountInvoices(orders = []) {
 
   invoicesContainer.innerHTML = orders.slice(0, 5).map((order) => {
     const orderId = order._id || order.id || order.orderNumber || '';
-    const totalText = order.total != null ? formatCurrency(order.total) : '—';
+    const totalText = order.total != null ? formatINR(order.total) : '—';
     const issuedOn = order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'Unknown';
     return `
       <div class="order-item">

@@ -6259,6 +6259,22 @@ a.breadcrumb-item:hover {
   white-space: nowrap;
 }
 
+.barcode-input-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.barcode-input-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.barcode-input-row .editor-btn {
+  padding: 0 14px;
+  flex-shrink: 0;
+}
+
 .editor-btn-primary {
   background: var(--accent);
   color: #fff;

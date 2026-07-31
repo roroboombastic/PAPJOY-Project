@@ -89,7 +89,7 @@ function updateCODAmount() {
   const totals = getCartTotals();
   const codAmount = document.getElementById('cod-amount');
   if (codAmount) {
-    codAmount.textContent = formatCurrency(totals.total + 50);
+    codAmount.textContent = formatINR(totals.total + 50);
   }
 }
 
@@ -264,7 +264,7 @@ function renderCheckoutItems() {
     itemRow.className = 'checkout-item';
     itemRow.innerHTML = `
       <span>${escapeHTML(item.name)} x ${item.quantity}</span>
-      <span>${formatCurrency(item.price * item.quantity)}</span>
+      <span>${formatINR(item.price * item.quantity)}</span>
     `;
     container.appendChild(itemRow);
   });
@@ -391,7 +391,7 @@ function renderSuccessDetails(order) {
     { label: 'Order Number', value: order.orderNumber || order._id || order.id || 'N/A' },
     { label: 'Payment Status', value: order.paymentStatus || 'pending' },
     { label: 'Order Status', value: order.status || 'confirmed' },
-    { label: 'Total', value: order.total ? formatCurrency(order.total) : 'N/A' },
+    { label: 'Total', value: order.total ? formatINR(order.total) : 'N/A' },
   ];
   if (order.paymentDetails?.razorpayPaymentId) {
     summary.push({ label: 'Payment ID', value: order.paymentDetails.razorpayPaymentId });
@@ -423,7 +423,7 @@ function renderSuccessDetails(order) {
     order.items.forEach((item) => {
       const row = document.createElement('div');
       row.className = 'receipt-row';
-      row.innerHTML = `<span>${escapeHTML(item.name)} x ${item.quantity}</span><strong>${formatCurrency(item.price * item.quantity)}</strong>`;
+      row.innerHTML = `<span>${escapeHTML(item.name)} x ${item.quantity}</span><strong>${formatINR(item.price * item.quantity)}</strong>`;
       container.appendChild(row);
     });
   }
@@ -558,9 +558,9 @@ async function renderInvoicePreviewPage() {
       <tr>
         <td>${escapeHTML(item.productName || item.name || 'Item')}</td>
         <td>${item.quantity || 1}</td>
-        <td>${formatCurrency(item.unitPrice || item.price || 0)}</td>
+        <td>${formatINR(item.unitPrice || item.price || 0)}</td>
         <td>${item.gstRate != null ? item.gstRate + '%' : '--'}</td>
-        <td>${formatCurrency(item.total || 0)}</td>
+        <td>${formatINR(item.total || 0)}</td>
       </tr>
     `).join('');
     previewContainer.innerHTML = `
@@ -568,7 +568,7 @@ async function renderInvoicePreviewPage() {
         <div><strong>Invoice #</strong> ${escapeHTML(invoiceData.invoiceNumber || invoiceData.orderNumber || '')}</div>
         <div><strong>Status</strong> ${escapeHTML(invoiceData.status || 'issued')}</div>
         <div><strong>Payment</strong> ${escapeHTML(invoiceData.paymentStatus || 'pending')}</div>
-        <div><strong>Total</strong> ${formatCurrency(invoiceData.total || 0)}</div>
+        <div><strong>Total</strong> ${formatINR(invoiceData.total || 0)}</div>
       </div>
       <section class="invoice-details">
         <div class="invoice-block"><h3>Customer</h3><p>${escapeHTML(invoiceData.customerName || '')}</p><p>${escapeHTML(invoiceData.customerEmail || '')}</p><p>${escapeHTML(invoiceData.customerPhone || '')}</p></div>
@@ -577,11 +577,11 @@ async function renderInvoicePreviewPage() {
       </section>
       <table class="invoice-table"><thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>GST</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table>
       <div class="invoice-total">
-        <div>Subtotal: ${formatCurrency(invoiceData.subtotal || 0)}</div>
-        <div>GST: ${formatCurrency(invoiceData.taxTotal || invoiceData.tax || 0)}</div>
-        <div>Shipping: ${formatCurrency(invoiceData.shippingCharges || invoiceData.shipping || 0)}</div>
-        <div>Discount: ${formatCurrency(invoiceData.discount || 0)}</div>
-        <strong>Total: ${formatCurrency(invoiceData.total || 0)}</strong>
+        <div>Subtotal: ${formatINR(invoiceData.subtotal || 0)}</div>
+        <div>GST: ${formatINR(invoiceData.taxTotal || invoiceData.tax || 0)}</div>
+        <div>Shipping: ${formatINR(invoiceData.shippingCharges || invoiceData.shipping || 0)}</div>
+        <div>Discount: ${formatINR(invoiceData.discount || 0)}</div>
+        <strong>Total: ${formatINR(invoiceData.total || 0)}</strong>
       </div>
     `;
     previewMessage.textContent = '';

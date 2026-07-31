@@ -1,10 +1,11 @@
 (function () {
-  const FALLBACK_IMG = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600';
+  const FALLBACK_IMG = (typeof window !== 'undefined' && window.PRODUCT_FALLBACK_IMAGE) || ('data:image/svg+xml;charset=UTF-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600"><rect width="600" height="600" fill="#f3f1ea"/><text x="300" y="310" font-family="Georgia, serif" font-size="40" fill="#9a9379" text-anchor="middle">PAP-JOY</text></svg>'));
   let currentProduct = null;
   let imageList = [];
   let videoList = [];
   let pendingFiles = [];
   let categories = [];
+  let pendingCategoryId = null;
   let isDirty = false;
   let saving = false;
 
@@ -48,6 +49,13 @@
     const ytId = getYouTubeId(url);
     if (ytId) return `https://img.youtube.com/vi/${ytId}/mqdefault.jpg`;
     return null;
+  }
+
+  function generateEan13Barcode() {
+    const base = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join('');
+    const sum = base.split('').reduce((acc, d, i) => acc + Number(d) * (i % 2 === 0 ? 1 : 3), 0);
+    const check = (10 - (sum % 10)) % 10;
+    return base + check;
   }
 
   // =========================================================================
@@ -134,8 +142,7 @@
     renderVideos();
 
     if (p.categoryId) {
-      const catId = typeof p.categoryId === 'object' ? p.categoryId._id : p.categoryId;
-      setTimeout(() => { $('pe-category').value = catId; updatePreview(); }, 300);
+      pendingCategoryId = typeof p.categoryId === 'object' ? p.categoryId._id : p.categoryId;
     }
   }
 
@@ -164,6 +171,12 @@
           select.appendChild(opt);
         }
       });
+
+      if (pendingCategoryId) {
+        select.value = pendingCategoryId;
+        pendingCategoryId = null;
+      }
+      updatePreview();
     } catch (err) {
       console.error('Load categories error:', err);
     }
@@ -209,6 +222,16 @@
     $('pe-image-url').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); addImageUrl(); }
     });
+
+    const barcodeBtn = $('btn-generate-barcode');
+    if (barcodeBtn) {
+      barcodeBtn.addEventListener('click', () => {
+        const barcode = generateEan13Barcode();
+        $('pe-barcode').value = barcode;
+        isDirty = true;
+        if (typeof showToast === 'function') showToast('Random barcode generated: ' + barcode, 'info');
+      });
+    }
 
     $('btn-add-video').addEventListener('click', addVideoUrl);
     $('pe-video-url').addEventListener('keydown', (e) => {
@@ -473,6 +496,12 @@
     const tags = $('pe-tags').value.split(',').map(t => t.trim()).filter(Boolean);
     const seoKeywords = $('pe-seo-keywords').value.split(',').map(t => t.trim()).filter(Boolean);
 
+    let barcode = $('pe-barcode').value.trim();
+    if (!barcode) {
+      barcode = generateEan13Barcode();
+      $('pe-barcode').value = barcode;
+    }
+
     const productData = {
       name,
       slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
@@ -485,7 +514,7 @@
       categoryId: categoryId || undefined,
       brand: $('pe-brand').value.trim(),
       sku: $('pe-sku').value.trim(),
-      barcode: $('pe-barcode').value.trim(),
+      barcode,
       hsnCode: $('pe-hsn').value.trim(),
       sacCode: $('pe-sac').value.trim(),
       inventory: {

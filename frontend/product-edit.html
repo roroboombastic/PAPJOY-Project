@@ -121,7 +121,10 @@
             </div>
             <div class="editor-field">
               <label for="pe-barcode">Barcode</label>
-              <input type="text" id="pe-barcode" placeholder="UPC / EAN" />
+              <div class="barcode-input-row">
+                <input type="text" id="pe-barcode" placeholder="UPC / EAN" />
+                <button type="button" id="btn-generate-barcode" class="editor-btn editor-btn-secondary">Generate</button>
+              </div>
             </div>
             <div class="editor-field">
               <label for="pe-stock">Stock Quantity *</label>
