@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const https = require('https');
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const { User, Notification } = require('../models');
 const emailService = require('../services/emailService');
 const {
   FRONTEND_URL,
@@ -71,6 +71,16 @@ async function register(req, res) {
     const isSecure = isProd;
     res.cookie('papjoy-auth', token, { httpOnly: true, secure: isSecure, sameSite: 'lax', maxAge: 7 * 24 * 60 * 60 * 1000, path: '/' });
     res.cookie('papjoy-refresh', refreshToken, { httpOnly: true, secure: isSecure, sameSite: 'lax', maxAge: 30 * 24 * 60 * 60 * 1000, path: '/' });
+
+    Notification.create({
+      userId: user._id,
+      type: 'system',
+      channel: 'app',
+      title: 'Welcome to PAP-JOY!',
+      message: `Hi ${user.name}, your account is ready. Happy shopping!`,
+      data: { source: 'registration' }
+    }).catch(() => null);
+
     res.status(201).json({ success: true, token, refreshToken, user: userResponse(user) });
   } catch (err) {
     logger.error('Register failed', { error: err.message, stack: err.stack });

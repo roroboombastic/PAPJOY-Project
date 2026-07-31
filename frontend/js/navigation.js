@@ -548,18 +548,26 @@ function requestNotificationPermission() {
 
 function showBrowserNotification(notification) {
   if (!('Notification' in window)) return;
-  if (Notification.permission !== 'granted') return;
-  if (document.hasFocus()) return;
 
-  try {
-    const iconMap = { order: 'fa-box', payment: 'fa-credit-card', delivery: 'fa-truck' };
-    new Notification(notification.title || 'PAP-JOY', {
-      body: notification.message || '',
-      icon: '/favicon.svg',
-      tag: notification._id || `papjoy-${Date.now()}`,
-      renotify: true,
+  const show = () => {
+    try {
+      new Notification(notification.title || 'PAP-JOY', {
+        body: notification.message || '',
+        icon: '/favicon.svg',
+        tag: notification._id || `papjoy-${Date.now()}`,
+        renotify: true,
+      });
+    } catch (_) {}
+  };
+
+  if (Notification.permission === 'granted') {
+    show();
+  } else if (Notification.permission === 'default') {
+    notificationPermissionRequested = true;
+    Notification.requestPermission().then((permission) => {
+      if (permission === 'granted') show();
     });
-  } catch (_) {}
+  }
 }
 
 function getTimeAgo(dateString) {
