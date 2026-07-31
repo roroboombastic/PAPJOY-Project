@@ -20,8 +20,7 @@ function setupSSEHeaders(res) {
 function extractUserFromRequest(req) {
   const cookieToken = req.cookies?.['papjoy-auth'];
   const headerToken = req.headers.authorization?.split(' ')[1];
-  const queryToken = req.query?.token;
-  const token = queryToken || headerToken || cookieToken;
+  const token = headerToken || cookieToken;
   if (!token) return null;
   try {
     const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'], issuer: 'papjoy' });
@@ -31,7 +30,7 @@ function extractUserFromRequest(req) {
   }
 }
 
-router.get('/stream/notifications', (req, res) => {
+router.get('/notifications', (req, res) => {
   const user = extractUserFromRequest(req);
   if (!user) {
     return res.status(401).json({ error: 'Authentication required for notifications stream' });
@@ -41,7 +40,7 @@ router.get('/stream/notifications', (req, res) => {
   logger.debug('Notification SSE connected', { userId: user.userId });
 });
 
-router.get('/stream/orders/:orderNumber', async (req, res) => {
+router.get('/orders/:orderNumber', async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const user = extractUserFromRequest(req);
@@ -88,7 +87,7 @@ router.get('/stream/orders/:orderNumber', async (req, res) => {
   }
 });
 
-router.get('/stream/gps/:orderNumber', async (req, res) => {
+router.get('/gps/:orderNumber', async (req, res) => {
   try {
     const { orderNumber } = req.params;
     const user = extractUserFromRequest(req);

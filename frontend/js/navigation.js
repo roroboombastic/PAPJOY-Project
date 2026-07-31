@@ -484,11 +484,12 @@ function connectNotificationSSE(user) {
   if (!user || !user.token) return;
 
   const baseUrl = (window.API_BASE_URL || '').replace(/\/$/, '');
-  const url = `${baseUrl}/api/v1/stream/notifications?token=${encodeURIComponent(user.token)}`;
+  const url = `${baseUrl}/api/v1/stream/notifications`;
 
-  notificationSSE = new EventSource(url);
+  const controller = new AbortController();
+  notificationSSE = { close() { controller.abort(); } };
 
-  notificationSSE.addEventListener('notification', (e) => {
+  const handleNotificationEvent = (e) => {
     try {
       const data = JSON.parse(e.data);
       const notification = data.notification;
@@ -526,13 +527,58 @@ function connectNotificationSSE(user) {
     } catch (err) {
       console.warn('SSE notification parse error:', err);
     }
-  });
-
-  notificationSSE.onerror = () => {
-    notificationSSE.close();
-    notificationSSE = null;
-    setTimeout(() => connectNotificationSSE(user), 5000);
   };
+
+  const parseSSEBlock = (block) => {
+    let eventName = 'message';
+    let dataLines = [];
+    for (const line of block.split('\n')) {
+      if (line.startsWith('event:')) eventName = line.slice(6).trim();
+      else if (line.startsWith('data:')) dataLines.push(line.slice(5).replace(/^ /, ''));
+    }
+    if (dataLines.length === 0) return;
+    if (eventName === 'notification') handleNotificationEvent({ data: dataLines.join('\n') });
+  };
+
+  (async () => {
+    let shouldReconnect = false;
+    try {
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${user.token}` },
+        credentials: 'include',
+      });
+      if (!response.ok || !response.body) {
+        if (response.status === 401) {
+          console.warn('Notification stream rejected (401), reconnecting on next page load');
+          return;
+        }
+        throw new Error(`Notification stream failed: ${response.status}`);
+      }
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let idx;
+        while ((idx = buffer.indexOf('\n\n')) !== -1) {
+          const block = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 2);
+          parseSSEBlock(block);
+        }
+      }
+      shouldReconnect = true;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      console.warn('Notification stream disconnected:', err);
+      shouldReconnect = true;
+    } finally {
+      if (shouldReconnect && !controller.signal.aborted) {
+        setTimeout(() => connectNotificationSSE(user), 5000);
+      }
+    }
+  })();
 }
 
 function requestNotificationPermission() {
