@@ -25,34 +25,69 @@ function reloadModule(env = {}) {
   return mod;
 }
 
+function withEnv(key, value, fn) {
+  process.env[key] = value;
+  try {
+    return fn();
+  } finally {
+    delete process.env[key];
+  }
+}
+
 test('getEnv accepts boolean validator (true -> returns value)', () => {
-  const mod = reloadModule({ NODE_ENV: 'development', TEST_BOOL: 'ok' });
-  const v = mod._internals.getEnv('TEST_BOOL', undefined, { validate: () => true });
+  const mod = reloadModule({ NODE_ENV: 'development' });
+  const v = withEnv('TEST_BOOL', 'ok', () =>
+    mod._internals.getEnv('TEST_BOOL', undefined, { validate: () => true })
+  );
   assert.equal(v, 'ok');
 });
 
 test('getEnv accepts boolean validator (false -> returns undefined)', () => {
-  const mod = reloadModule({ NODE_ENV: 'development', TEST_BOOL2: 'bad' });
-  const v = mod._internals.getEnv('TEST_BOOL2', undefined, { validate: () => false });
+  const mod = reloadModule({ NODE_ENV: 'development' });
+  const v = withEnv('TEST_BOOL2', 'bad', () =>
+    mod._internals.getEnv('TEST_BOOL2', undefined, { validate: () => false })
+  );
   assert.equal(v, undefined);
 });
 
 test('getEnv accepts object validator (invalid -> undefined)', () => {
-  const mod = reloadModule({ NODE_ENV: 'development', TEST_OBJ: 'x' });
-  const v = mod._internals.getEnv('TEST_OBJ', undefined, { validate: () => ({ valid: false, message: 'nope' }) });
+  const mod = reloadModule({ NODE_ENV: 'development' });
+  const v = withEnv('TEST_OBJ', 'x', () =>
+    mod._internals.getEnv('TEST_OBJ', undefined, { validate: () => ({ valid: false, message: 'nope' }) })
+  );
   assert.equal(v, undefined);
 });
 
+test('getEnv accepts object validator (valid -> returns value)', () => {
+  const mod = reloadModule({ NODE_ENV: 'development' });
+  const v = withEnv('TEST_OBJ2', 'y', () =>
+    mod._internals.getEnv('TEST_OBJ2', undefined, { validate: () => ({ valid: true, message: '' }) })
+  );
+  assert.equal(v, 'y');
+});
+
 test('getEnv handles unexpected validator return (-> undefined)', () => {
-  const mod = reloadModule({ NODE_ENV: 'development', TEST_BAD: 'x' });
-  const v = mod._internals.getEnv('TEST_BAD', undefined, { validate: () => 12345 });
+  const mod = reloadModule({ NODE_ENV: 'development' });
+  const v = withEnv('TEST_BAD', 'x', () =>
+    mod._internals.getEnv('TEST_BAD', undefined, { validate: () => 12345 })
+  );
   assert.equal(v, undefined);
 });
 
 test('getPositiveNumber returns default on invalid numbers', () => {
-  const mod = reloadModule({ NODE_ENV: 'development', PORT: 'not-a-number' });
-  const val = mod._internals.getPositiveNumber('PORT', 3000);
+  const mod = reloadModule({ NODE_ENV: 'development' });
+  const val = withEnv('PORT', 'not-a-number', () =>
+    mod._internals.getPositiveNumber('PORT', 3000)
+  );
   assert.equal(val, 3000);
+});
+
+test('getPositiveNumber returns parsed value on valid numbers', () => {
+  const mod = reloadModule({ NODE_ENV: 'development' });
+  const val = withEnv('PORT', '8080', () =>
+    mod._internals.getPositiveNumber('PORT', 3000)
+  );
+  assert.equal(val, 8080);
 });
 
 test('adminEmails parsing filters invalid and lowercases', () => {

@@ -42,8 +42,8 @@ async function generateInvoiceNumber(invoiceDate = new Date()) {
   const year = invoiceDate.getFullYear();
   const sequenceDoc = await InvoiceSequence.findOneAndUpdate(
     { year },
-    { $inc: { sequence: 1 }, $setOnInsert: { year, sequence: 0 } },
-    { new: true, upsert: true }
+    { $inc: { sequence: 1 } },
+    { new: true, upsert: true, setDefaultsOnInsert: true }
   );
   return `PAP-INV-${year}-${String(sequenceDoc.sequence).padStart(6, '0')}`;
 }
@@ -55,7 +55,8 @@ function buildAddressLine(address = {}) {
 function canAccessInvoice(invoice, req, guestEmail = '') {
   if (req.userEmail && ADMIN_EMAILS.includes(normalizeEmail(req.userEmail))) return true;
   if (invoice.userId && req.userId) {
-    return invoice.userId.toString() === req.userId.toString();
+    const invoiceUserId = (invoice.userId._id || invoice.userId).toString();
+    return invoiceUserId === req.userId.toString();
   }
   if (!invoice.userId) {
     return normalizeEmail(guestEmail) && normalizeEmail(guestEmail) === normalizeEmail(invoice.customerEmail);

@@ -1,5 +1,7 @@
 // Invoice functionality test
 const http = require('http');
+const crypto = require('crypto');
+const { RAZORPAY_KEY_SECRET } = require('../config');
 
 const API_BASE_URL = 'http://localhost:3000/api/v1';
 
@@ -58,7 +60,7 @@ async function testInvoiceFlow() {
       email,
       password: 'password123',
       name: 'Test User',
-      phone: '+919876543210'
+      phone: `9${String(Date.now()).slice(-9)}`
     });
 
     if (res.statusCode === 201 && res.body?.token) {
@@ -79,26 +81,32 @@ async function testInvoiceFlow() {
   // Test 2: Create Order with payment
   console.log('Test 2: Create Order with Razorpay Verification');
   try {
-    const products = [
-      {
-        productId: '6a201f0c1234567890abcdef',
-        name: 'Premium Shoe',
-        quantity: 2,
-        price: 5000
-      }
-    ];
+    const razorpay_payment_id = `pay_test_${Date.now()}`;
+    const razorpay_order_id = `order_test_${Date.now()}`;
+    const razorpay_signature = crypto
+      .createHmac('sha256', RAZORPAY_KEY_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest('hex');
 
-    const res = await makeRequest('POST', '/verify-payment', {
-      paymentId: 'pay_' + Date.now(),
-      orderId: 'ord_' + Date.now(),
-      signature: require('crypto').createHmac('sha256', 'razorpay_test_key').update(`ord_${Date.now()}|pay_${Date.now()}`).digest('hex'),
-      products,
-      amount: 10000,
+    const res = await makeRequest('POST', '/payments/razorpay/verify', {
+      razorpay_payment_id,
+      razorpay_order_id,
+      razorpay_signature,
+      items: [
+        {
+          productId: '6a201f0c1234567890abcdef',
+          name: 'Premium Shoe',
+          quantity: 2,
+          price: 5000
+        }
+      ],
+      shipping: 0,
+      discount: 0,
       deliveryInfo: {
         address: 'Test Address',
         city: 'Delhi',
         state: 'Delhi',
-        zipCode: '110001'
+        postalCode: '110001'
       }
     }, {
       'Authorization': `Bearer ${signinToken}`
@@ -109,7 +117,7 @@ async function testInvoiceFlow() {
       console.log(`✅ Order created with ID: ${orderId}\n`);
       testsPassed++;
     } else {
-      console.log(`❌ Order creation failed: ${res.statusCode}\n`);
+      console.log(`❌ Order creation failed: ${res.statusCode} ${res.body?.error || ''}\n`);
       testsFailed++;
     }
   } catch (error) {
@@ -121,15 +129,20 @@ async function testInvoiceFlow() {
   if (orderId) {
     console.log('Test 3: Get Invoice Details');
     try {
-      const res = await makeRequest('GET', `/invoices/${orderId}`, null, {
-        'Authorization': `Bearer ${signinToken}`
-      });
+      let res = null;
+      for (let attempt = 0; attempt < 10; attempt++) {
+        res = await makeRequest('GET', `/invoices/${orderId}`, null, {
+          'Authorization': `Bearer ${signinToken}`
+        });
+        if (res.statusCode === 200 && res.body?.invoiceNumber) break;
+        await new Promise(r => setTimeout(r, 500));
+      }
 
-      if (res.statusCode === 200 && res.body?.invoiceNumber) {
+      if (res && res.statusCode === 200 && res.body?.invoiceNumber) {
         console.log(`✅ Invoice retrieved: ${res.body.invoiceNumber}\n`);
         testsPassed++;
       } else {
-        console.log(`❌ Invoice retrieval failed: ${res.statusCode}\n`);
+        console.log(`❌ Invoice retrieval failed: ${res?.statusCode}\n`);
         testsFailed++;
       }
     } catch (error) {

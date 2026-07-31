@@ -65,7 +65,7 @@ async function runTests() {
       email: `test_${Date.now()}@example.com`,
       password: 'TestPassword123!',
       name: 'Test User',
-      phone: `99999${String(Math.random()).slice(2, 7)}`
+      phone: `9${String(Date.now()).slice(-9)}`
     });
     if (res.status === 201 && res.body.token) {
       signupToken = res.body.token;
@@ -91,7 +91,7 @@ async function runTests() {
       email: testEmail,
       password: 'TestPassword123!',
       name: 'Signin Test User',
-      phone: `99999${String(Math.random()).slice(2, 7)}`
+      phone: `9${String(Date.now()).slice(-9)}`
     });
     
     // Now try to signin
@@ -122,7 +122,7 @@ async function runTests() {
       const res = await makeRequest('GET', '/api/v1/auth/me', null, {
         Authorization: `Bearer ${signinToken}`
       });
-      if (res.status === 200 && res.body.email) {
+      if (res.status === 200 && res.body.user?.email) {
         console.log('✅ Profile retrieved successfully\n');
         testsPassed++;
       } else {
@@ -144,11 +144,11 @@ async function runTests() {
     } else {
       const res = await makeRequest('PUT', '/api/v1/auth/me', {
         name: 'Updated Test User',
-        phone: '9999999999'
+        phone: `9${String(Date.now()).slice(-9)}`
       }, {
         Authorization: `Bearer ${signinToken}`
       });
-      if (res.status === 200 && res.body.name === 'Updated Test User') {
+      if (res.status === 200 && res.body.user?.name === 'Updated Test User') {
         console.log('✅ Profile updated successfully\n');
         testsPassed++;
       } else {
