@@ -7,10 +7,6 @@ function onUnhandledRejection(event) {
 window.addEventListener('error', onPageError);
 window.addEventListener('unhandledrejection', onUnhandledRejection);
 
-if (!('startViewTransition' in document)) {
-  document.documentElement.classList.add('no-view-transitions');
-}
-
 window.addEventListener('pagehide', () => {
   window.removeEventListener('error', onPageError);
   window.removeEventListener('unhandledrejection', onUnhandledRejection);

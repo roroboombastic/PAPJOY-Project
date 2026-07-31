@@ -171,38 +171,25 @@ body {
 .toast-info { border-left: 3px solid #4299e1; }
 
 
-/* --- Cross-document page transitions (View Transitions API) --- */
-@view-transition {
-  navigation: auto;
+/* --- Page transitions ---
+   Cross-document View Transitions caused jank on some browsers, so navigation
+   is now instant and clean. A subtle, GPU-composited slide (no opacity flash)
+   plays once on page load for a smooth feel. */
+main {
+  animation: pageSlide 220ms ease-out both;
 }
 
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 240ms;
-}
-
-/* --- Page entrance fade-in (fallback for browsers without View Transitions) --- */
-.no-view-transitions main {
-  animation: pageEnter 350ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
-}
-
-@keyframes pageEnter {
+@keyframes pageSlide {
   from {
-    opacity: 0;
     transform: translateY(8px);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .no-view-transitions main {
-    animation: none;
-  }
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
+  main {
     animation: none;
   }
 }
