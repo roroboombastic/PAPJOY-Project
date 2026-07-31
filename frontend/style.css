@@ -171,31 +171,25 @@ body {
 .toast-info { border-left: 3px solid #4299e1; }
 
 
-.page-transition-overlay {
-  position: fixed;
-  inset: 0;
-  background: #0d1510;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 280ms cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 9999;
-  will-change: opacity;
+/* --- Cross-document page transitions (View Transitions API) --- */
+@view-transition {
+  navigation: auto;
 }
 
-.page-transition-overlay.visible {
-  opacity: 1;
-  pointer-events: auto;
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 240ms;
 }
 
-/* Page entrance fade-in */
-main {
-  animation: pageEnter 400ms cubic-bezier(0.4, 0, 0.2, 1) both;
+/* --- Page entrance fade-in (fallback for browsers without View Transitions) --- */
+.no-view-transitions main {
+  animation: pageEnter 350ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
 @keyframes pageEnter {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -204,10 +198,11 @@ main {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .page-transition-overlay {
-    transition: none;
+  .no-view-transitions main {
+    animation: none;
   }
-  main {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
     animation: none;
   }
 }
@@ -7823,15 +7818,7 @@ body.keyboard-open .mobile-menu-toggle {
   border-radius: 4px;
 }
 
-/* --- Page enter animation --- */
-@keyframes pageEnter {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-main {
-  animation: pageEnter 0.35s cubic-bezier(0.22, 0.61, 0.36, 1) both;
-}
+/* --- Page enter animation (unified above; single definition to avoid conflicts) --- */
 
 /* --- Auth panel enter animation --- */
 @keyframes authPanelEnter {

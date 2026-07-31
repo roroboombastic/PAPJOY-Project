@@ -28,20 +28,6 @@ function showToast(message, type) {
 }
 window.showToast = showToast;
 
-function createPageTransitionOverlay() {
-  if (document.getElementById('page-transition-overlay')) return;
-  const overlay = document.createElement('div');
-  overlay.id = 'page-transition-overlay';
-  overlay.className = 'page-transition-overlay';
-  document.body.appendChild(overlay);
-}
-window.createPageTransitionOverlay = createPageTransitionOverlay;
-
-function triggerPageTransition(href) {
-  window.location.href = href;
-}
-window.triggerPageTransition = triggerPageTransition;
-
 function injectWishlistNav() {
   if (document.getElementById('wishlist-nav-link')) return;
   const nav = document.querySelector('.sidebar-nav');

@@ -7,6 +7,10 @@ function onUnhandledRejection(event) {
 window.addEventListener('error', onPageError);
 window.addEventListener('unhandledrejection', onUnhandledRejection);
 
+if (!('startViewTransition' in document)) {
+  document.documentElement.classList.add('no-view-transitions');
+}
+
 window.addEventListener('pagehide', () => {
   window.removeEventListener('error', onPageError);
   window.removeEventListener('unhandledrejection', onUnhandledRejection);
@@ -160,7 +164,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (typeof loadNotifications === 'function') loadNotifications();
   if (typeof requestNotificationPermission === 'function') requestNotificationPermission();
   initCookieConsent();
-  if (typeof initPageTransitions === 'function') initPageTransitions();
   addScrollClasses();
   requestAnimationFrame(() => initScrollAnimations());
   initMobileEnhancements();

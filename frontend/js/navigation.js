@@ -2,6 +2,7 @@ let sidebarCreated = false;
 let navResizeHandler = null;
 let notificationSSE = null;
 let notificationPermissionRequested = false;
+let notificationListenersBound = false;
 
 function updateUserLinks() {
   const user = getCurrentUser();
@@ -247,10 +248,6 @@ function createLocaleSwitcher() {
   target.prepend(wrapper);
 }
 
-function initPageTransitions() {
-  createPageTransitionOverlay();
-}
-
 function applyTheme(value) {
   var current = document.documentElement.getAttribute('data-theme');
   var target = value === 'auto' ? null : value;
@@ -407,37 +404,41 @@ async function loadNotifications() {
   const dropdown = document.getElementById('notification-dropdown');
   if (!badge || !list) return;
 
-  bellBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isOpening = !dropdown.classList.contains('active');
-    dropdown.classList.toggle('active');
+  if (!notificationListenersBound) {
+    notificationListenersBound = true;
 
-    if (isOpening && window.innerWidth <= 1024) {
-      const bellRect = bellBtn.getBoundingClientRect();
-      dropdown.style.bottom = 'auto';
-      dropdown.style.top = Math.max(8, bellRect.top - 8) + 'px';
-    }
-  });
+    bellBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpening = !dropdown.classList.contains('active');
+      dropdown.classList.toggle('active');
 
-  document.addEventListener('click', (e) => {
-    if (!dropdown.contains(e.target) && e.target !== bellBtn) {
-      dropdown.classList.remove('active');
-    }
-  });
-
-  if (markAllBtn) {
-    markAllBtn.addEventListener('click', async () => {
-      const unreadItems = list.querySelectorAll('.notification-item.unread');
-      for (const item of unreadItems) {
-        const id = item.dataset.id;
-        if (id) {
-          try {
-            await fetch(`${API_BASE_URL}/api/v1/notifications/${id}/read`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token || ''}` } });
-          } catch (_) {}
-        }
+      if (isOpening && window.innerWidth <= 1024) {
+        const bellRect = bellBtn.getBoundingClientRect();
+        dropdown.style.bottom = 'auto';
+        dropdown.style.top = Math.max(8, bellRect.top - 8) + 'px';
       }
-      loadNotifications();
     });
+
+    document.addEventListener('click', (e) => {
+      if (!dropdown.contains(e.target) && e.target !== bellBtn) {
+        dropdown.classList.remove('active');
+      }
+    });
+
+    if (markAllBtn) {
+      markAllBtn.addEventListener('click', async () => {
+        const unreadItems = list.querySelectorAll('.notification-item.unread');
+        for (const item of unreadItems) {
+          const id = item.dataset.id;
+          if (id) {
+            try {
+              await fetch(`${API_BASE_URL}/api/v1/notifications/${id}/read`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token || ''}` } });
+            } catch (_) {}
+          }
+        }
+        loadNotifications();
+      });
+    }
   }
 
   try {
@@ -580,7 +581,6 @@ window.getActivePageName = getActivePageName;
 window.isActiveNavPage = isActiveNavPage;
 window.createSidebar = createSidebar;
 window.createLocaleSwitcher = createLocaleSwitcher;
-window.initPageTransitions = initPageTransitions;
 window.initThemeToggle = initThemeToggle;
 window.createMobileThemeToggle = createMobileThemeToggle;
 window.loadNotifications = loadNotifications;
