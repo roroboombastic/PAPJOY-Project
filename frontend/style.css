@@ -2086,16 +2086,16 @@ label {
 
 .password-field input {
   width: 100%;
-  padding-right: 48px;
+  padding-right: 44px;
 }
 
 .toggle-password {
   position: absolute;
-  right: 6px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
-  width: 44px;
-  height: 44px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2105,9 +2105,18 @@ label {
   border-radius: 8px;
   color: var(--text-muted);
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   z-index: 1;
-  transition: color 0.2s, background 0.2s;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: color 0.2s, background 0.2s, opacity 0.15s ease;
+}
+
+.password-field.has-value .toggle-password {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .toggle-password:hover {
@@ -3872,7 +3881,11 @@ textarea {
   }
 
   main {
-    padding: 64px 20px 50px;
+    padding: 76px 20px 50px;
+  }
+
+  main.product-section.auth-page {
+    padding-top: 76px;
   }
 
   .shop-filter-bar {
@@ -7507,10 +7520,6 @@ a.breadcrumb-item:hover {
     padding: 0 0 20px;
   }
 
-  .product-section {
-    padding-top: 16px;
-  }
-
   .stat-value {
     font-size: 1.3rem;
   }
@@ -7523,7 +7532,7 @@ a.breadcrumb-item:hover {
 /* --- Small Phones (max-width: 480px) --- */
 @media (max-width: 480px) {
   main {
-    padding: 64px 12px 32px;
+    padding: 76px 12px 32px;
   }
 
   .hero {
@@ -8118,9 +8127,14 @@ body.mobile-nav-open .mobile-nav-overlay {
     min-height: 50px;
   }
 
+  .password-field input {
+    padding-right: 48px !important;
+  }
+
   .toggle-password {
-    right: 14px;
-    padding: 8px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
   }
 
   .checkbox-group {

@@ -425,6 +425,16 @@ function togglePasswordField(toggleBtn) {
   }
 }
 
+function initPasswordFieldVisibility() {
+  document.querySelectorAll('.password-field').forEach(function(field) {
+    const input = field.querySelector('input');
+    if (!input) return;
+    const update = () => field.classList.toggle('has-value', input.value.length > 0);
+    input.addEventListener('input', update);
+    update();
+  });
+}
+
 function initPasswordStrength() {
   const passwordInput = document.getElementById('signup-password');
   const fill = document.getElementById('signup-password-strength-fill');
@@ -458,6 +468,8 @@ window.register = register;
 window.togglePasswordField = togglePasswordField;
 
 document.addEventListener('DOMContentLoaded', () => {
+  initPasswordFieldVisibility();
+
   const authForm = document.getElementById('auth-form');
   if (authForm) {
     authForm.addEventListener('submit', login);
