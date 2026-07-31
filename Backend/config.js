@@ -60,7 +60,7 @@ const SMTP_USER = process.env.SMTP_USER || '';
 const SMTP_PASS = process.env.SMTP_PASS || '';
 const SMTP_FROM_NAME = process.env.SMTP_FROM_NAME || 'PAP-JOY';
 const SMTP_FROM_ADDRESS = process.env.SMTP_FROM_ADDRESS || CUSTOMER_SUPPORT;
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(email => email.trim().toLowerCase()).filter(Boolean);
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || CUSTOMER_SUPPORT || 'papp.joyy@gmail.com').split(',').map(email => email.trim().toLowerCase()).filter(Boolean);
 
 /**
  * Safely retrieve environment variable with validation
