@@ -1006,22 +1006,22 @@ async function renderPage() {
 
   updateUserLinks();
 
-  if (page === 'checkout') {
+  if (page === 'checkout' && typeof renderCheckoutPage === 'function') {
     await renderCheckoutPage();
   }
-  if (page === 'success') {
+  if (page === 'success' && typeof renderSuccessPage === 'function') {
     await renderSuccessPage();
   }
-  if (page === 'thankyou') {
+  if (page === 'thankyou' && typeof renderThankYouPage === 'function') {
     await renderThankYouPage();
   }
-  if (page === 'account') {
+  if (page === 'account' && typeof renderAccountPage === 'function') {
     await renderAccountPage();
   }
-  if (page === 'invoice-preview') {
+  if (page === 'invoice-preview' && typeof renderInvoicePreviewPage === 'function') {
     await renderInvoicePreviewPage();
   }
-  if (page === 'product-detail') {
+  if (page === 'product-detail' && typeof renderProductDetailPage === 'function') {
     await renderProductDetailPage();
   }
 }

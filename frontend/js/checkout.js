@@ -32,19 +32,6 @@ function setCheckoutMessage(message, isError = false) {
   messageEl.style.display = message ? 'flex' : 'none';
 }
 
-function getCheckoutItems() {
-  return cart.map((item) => ({
-    id: item.id,
-    productId: item.productId || item.id,
-    name: item.name,
-    price: item.price,
-    quantity: item.quantity,
-    variant: item.variant || 'Standard',
-    category: item.category,
-    subtitle: item.subtitle,
-  }));
-}
-
 function getDeliveryInfo() {
   return {
     fullName: document.getElementById('delivery-fullname')?.value.trim() || '',

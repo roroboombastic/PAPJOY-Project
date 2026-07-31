@@ -12,6 +12,19 @@ function saveCart() {
   if (typeof updateCartCount === 'function') updateCartCount();
 }
 
+function getCheckoutItems() {
+  return cart.map((item) => ({
+    id: item.id,
+    productId: item.productId || item.id,
+    name: item.name,
+    price: item.price,
+    quantity: item.quantity,
+    variant: item.variant || 'Standard',
+    category: item.category,
+    subtitle: item.subtitle,
+  }));
+}
+
 function normalizeServerCartItem(item) {
   const product = item.productId || {};
   return {

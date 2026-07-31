@@ -155,6 +155,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (typeof createSidebar === 'function') createSidebar();
   if (typeof createLocaleSwitcher === 'function') createLocaleSwitcher();
   if (typeof updateUserLinks === 'function') updateUserLinks();
+  if (typeof translatePage === 'function') translatePage();
+  if (typeof injectWishlistNav === 'function') injectWishlistNav();
+  if (typeof updateWishlistCount === 'function') updateWishlistCount();
   if (typeof initThemeToggle === 'function') initThemeToggle();
   if (typeof createMobileThemeToggle === 'function') createMobileThemeToggle();
   if (typeof loadNotifications === 'function') loadNotifications();
