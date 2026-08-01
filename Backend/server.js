@@ -80,7 +80,10 @@ app.get('/health', (req, res) => {
 });
 
 const uploadsDir = path.join(__dirname, '../uploads');
-app.use('/uploads', express.static(uploadsDir, { maxAge: '30d', immutable: config.isProd }));
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(uploadsDir, { maxAge: '30d', immutable: config.isProd }));
 
 const staticRoot = path.join(__dirname, '../frontend');
 app.use(express.static(staticRoot, {

@@ -239,7 +239,7 @@ async function editProduct(productId) {
     if (imageUrlInput) {
       const images = product.images || [];
       const firstUrl = images.length > 0 ? (typeof images[0] === 'string' ? images[0] : images[0]?.url || '') : '';
-      imageUrlInput.value = firstUrl;
+      imageUrlInput.value = resolveProductImageUrl(firstUrl);
     }
   } catch (error) {
     console.error('Product edit error:', error);

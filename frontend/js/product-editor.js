@@ -349,7 +349,7 @@
 
     grid.innerHTML = imageList.map((url, i) => `
       <div class="editor-image-card">
-        <img src="${escapeHTML(url)}" alt="Image ${i + 1}" onerror="this.src='${FALLBACK_IMG}'" />
+        <img src="${escapeHTML(resolveProductImageUrl(url))}" alt="Image ${i + 1}" onerror="this.src='${FALLBACK_IMG}'" />
         <div class="editor-image-actions">
           <button type="button" onclick="window._peMoveImage(${i}, ${i - 1})" title="Move left" ${i === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>
           <span class="editor-image-num">${i === 0 ? 'Primary' : i + 1}</span>
@@ -454,7 +454,7 @@
 
     const imgEl = $('preview-image');
     if (primaryImg) {
-      imgEl.innerHTML = `<img src="${escapeHTML(primaryImg)}" alt="${escapeHTML(name)}" onerror="this.src='${FALLBACK_IMG}'" />`;
+      imgEl.innerHTML = `<img src="${escapeHTML(resolveProductImageUrl(primaryImg))}" alt="${escapeHTML(name)}" onerror="this.src='${FALLBACK_IMG}'" />`;
     } else {
       imgEl.innerHTML = '<div class="editor-preview-placeholder"><i class="fas fa-image"></i> No image</div>';
     }

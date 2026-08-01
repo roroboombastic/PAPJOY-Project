@@ -31,18 +31,28 @@ async function fetchWithTimeout(resource, options = {}) {
   }
 }
 
+function resolveProductImageUrl(url) {
+  if (!url) return '';
+  const str = String(url);
+  if (/^(https?:|data:|blob:)/i.test(str)) return str;
+  if (str.startsWith('/') && typeof API_BASE_URL === 'string' && API_BASE_URL) {
+    return API_BASE_URL.replace(/\/+$/, '') + str;
+  }
+  return str;
+}
+
 function getProductImageUrls(product) {
   if (!product) return [];
   if (Array.isArray(product.images)) {
     return product.images
       .map((img) => {
-        if (typeof img === 'string') return img;
-        return img?.url || img?.src || '';
+        if (typeof img === 'string') return resolveProductImageUrl(img);
+        return resolveProductImageUrl(img?.url || img?.src || '');
       })
       .filter(Boolean);
   }
   if (typeof product.image === 'string' && product.image) {
-    return [product.image];
+    return [resolveProductImageUrl(product.image)];
   }
   return [];
 }
@@ -141,6 +151,7 @@ window.debounce = debounce;
 window.escapeHTML = escapeHTML;
 window.fetchWithTimeout = fetchWithTimeout;
 window.getProductImageUrls = getProductImageUrls;
+window.resolveProductImageUrl = resolveProductImageUrl;
 window.normalizeVariantName = normalizeVariantName;
 window.getItemIdentity = getItemIdentity;
 window.dedupeItemsByKey = dedupeItemsByKey;
