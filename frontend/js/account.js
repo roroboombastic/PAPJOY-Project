@@ -805,6 +805,14 @@ async function renderAccountPage() {
     const isAdmin = user.role === 'admin' || user.role === 'super_admin';
     adminCard.style.display = isAdmin ? '' : 'none';
   }
+
+  const hashTarget = (window.location.hash || '').replace('#', '');
+  if (hashTarget) {
+    requestAnimationFrame(() => {
+      const target = document.getElementById(hashTarget) || document.getElementById(hashTarget + '-container');
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
 }
 
 window.formatOrderData = formatOrderData;

@@ -13,7 +13,11 @@ function createProductCardElement(product) {
   if (!product || !product.name) return null;
   const card = document.createElement('div');
   card.className = 'product-card';
-  card.onclick = () => { window.location.href = getProductLink(product); };
+  card.onclick = (event) => {
+    if (event.target.closest('[data-quick-view]')) return;
+    if (event.target.closest('button')) return;
+    window.location.href = getProductLink(product);
+  };
 
   const imageUrls = getProductImageUrls(product);
   const primaryImage = imageUrls[0] || product.image || getNextFallbackImage();
