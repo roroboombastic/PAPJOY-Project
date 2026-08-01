@@ -12,6 +12,7 @@ const routes = require('./routes');
 const { User, Product, Order } = require('./models');
 const mongoose = require('mongoose');
 const logger = require('./utils/logger');
+const gridfs = require('./utils/gridfs');
 
 const app = express();
 createSecurityMiddleware(app);
@@ -80,10 +81,33 @@ app.get('/health', (req, res) => {
 });
 
 const uploadsDir = path.join(__dirname, '../uploads');
-app.use('/uploads', (req, res, next) => {
+app.use('/uploads', async (req, res, next) => {
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  if (req.method !== 'GET') return next();
+  const relative = req.path.replace(/^\/+/, '');
+  if (!relative) return next();
+  try {
+    const files = await gridfs.fileExists(relative);
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.contentType) res.type(file.contentType);
+      else res.type(path.extname(relative) || 'application/octet-stream');
+      res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+      const stream = gridfs.openDownloadStreamByName(relative);
+      stream.on('error', () => {
+        if (!res.headersSent) res.status(404).end();
+        else res.end();
+      });
+      stream.pipe(res);
+      return;
+    }
+  } catch (err) {
+    logger.warn('GridFS read failed', { file: relative, error: err.message });
+  }
   next();
-}, express.static(uploadsDir, { maxAge: '30d', immutable: config.isProd }));
+});
+
+app.use('/uploads', express.static(uploadsDir, { maxAge: '30d', immutable: config.isProd }));
 
 const staticRoot = path.join(__dirname, '../frontend');
 app.use(express.static(staticRoot, {
