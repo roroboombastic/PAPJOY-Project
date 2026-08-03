@@ -33,14 +33,16 @@ function createProductCardElement(product) {
   card.innerHTML = `
     <div class="product-image" data-quick-view="${productId}" role="button" tabindex="0" aria-label="Quick view ${product.name}">
       <img src="${primaryImage}" alt="${product.name || 'Product'}" loading="lazy" onerror="if(!this.dataset.fb){this.dataset.fb='1';this.src=getNextFallbackImage();}else{this.style.display='none';}">
-      <button class="wishlist-heart" data-product-id="${productId}" title="Add to wishlist"><i class="${isInWishlist(productId) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
       ${product.isFeatured ? '<div class="badge featured">Featured</div>' : ''}
       ${lowStock ? '<div class="badge low-stock-badge">Low Stock</div>' : ''}
       ${outOfStock ? '<div class="badge out-of-stock-badge">Out of Stock</div>' : ''}
       <button class="quick-view-btn" data-quick-view="${productId}" title="Quick view"><i class="fas fa-eye"></i></button>
     </div>
     <div class="product-info">
-      <div class="category">${product.category || 'Uncategorized'}</div>
+      <div class="product-info-top">
+        <div class="category">${product.category || 'Uncategorized'}</div>
+        <button class="wishlist-heart" data-product-id="${productId}" title="Add to wishlist" aria-label="Add to wishlist"><i class="${isInWishlist(productId) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
+      </div>
       <h3 class="product-name">${product.name}</h3>
       <p class="product-subtitle">${product.subtitle || (product.description || '').slice(0, 80) + '...'}</p>
       ${stockLabel ? '<div class="stock-indicator ' + stockStatus + '"><span class="dot"></span>' + stockLabel + '</div>' : ''}
@@ -262,7 +264,8 @@ async function renderProductDetailPage() {
 
   renderBreadcrumbs(product);
 
-  const activeImage = product.images && product.images.length ? product.images[0] : (product.image || PRODUCT_FALLBACK_IMAGE);
+  const detailImages = getProductImageUrls(product);
+  const activeImage = detailImages[0] || product.image || PRODUCT_FALLBACK_IMAGE;
   const variantButtons = (product.variants || []).map((variant, index) => `
         <button class="variant-option${index === 0 ? ' active' : ''}" data-price-delta="${variant.priceDelta || 0}" data-variant="${variant.name || 'Standard'}">
           ${variant.name || 'Standard'}${variant.priceDelta ? ` +${formatCurrency(variant.priceDelta)}` : ''}
@@ -274,9 +277,8 @@ async function renderProductDetailPage() {
     <div class="product-detail-card">
       <div class="product-gallery">
         <img id="detail-main-image" src="${activeImage}" alt="${escapeHTML(product.name || 'Product')}" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
-        <button class="wishlist-heart detail-wishlist-heart" data-product-id="${product.id || product._id}" title="Add to wishlist"><i class="${isInWishlist(product.id || product._id) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
         <div class="gallery-thumbs">
-          ${(product.images || [product.image || PRODUCT_FALLBACK_IMAGE]).map((src, index) => `
+          ${(detailImages.length ? detailImages : [product.image || PRODUCT_FALLBACK_IMAGE]).map((src, index) => `
             <button class="gallery-thumb${index === 0 ? ' active' : ''}" type="button" data-image="${src}">
               <img src="${src}" alt="${escapeHTML(product.name || 'Product')} image ${index + 1}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
             </button>
@@ -301,6 +303,7 @@ async function renderProductDetailPage() {
           <span id="detail-price">${formatCurrency(product.price || 0)}</span>
           <button id="detail-add-button" type="button">${translate('product.addToCart')}</button>
           <button id="detail-buy-button" type="button" class="buy-now-button">Buy now</button>
+          <button class="wishlist-heart detail-wishlist-heart" type="button" data-product-id="${product.id || product._id}" title="Add to wishlist" aria-label="Add to wishlist"><i class="${isInWishlist(product.id || product._id) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
         </div>
       </div>
     </div>
@@ -353,7 +356,7 @@ async function renderProductDetailPage() {
     '@type': 'Product',
     name: product.name,
     description: product.description || product.subtitle || '',
-    image: (product.images && product.images.length) ? product.images : [product.image || ''],
+    image: detailImages.length ? detailImages : [product.image || ''],
     sku: product.sku || (product.id || product._id),
     brand: { '@type': 'Brand', name: product.brand || 'PAP-JOY' },
     offers: {
@@ -634,7 +637,7 @@ async function renderRecommendations(productId) {
         ${items.slice(0, 4).map((recProduct) => `
           <div class="recommendation-card">
             <a href="${getProductLink(recProduct)}">
-              <img src="${recProduct.image || (recProduct.images && recProduct.images[0]) || ''}" alt="${recProduct.name}" loading="lazy" />
+              <img src="${getProductImageUrls(recProduct)[0] || getNextFallbackImage()}" alt="${recProduct.name}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
               <h4>${recProduct.name}</h4>
               <p>${formatCurrency(recProduct.price)}</p>
             </a>
@@ -792,7 +795,7 @@ async function fetchAutocomplete(query, dropdown) {
     }
 
     dropdown.innerHTML = items.slice(0, 6).map(product => {
-      const image = (product.images && product.images[0]) || product.image || PRODUCT_FALLBACK_IMAGE;
+      const image = getProductImageUrls(product)[0] || product.image || PRODUCT_FALLBACK_IMAGE;
       const link = getProductLink(normalizeProduct(product));
       const price = formatCurrency(product.price || 0);
       return `

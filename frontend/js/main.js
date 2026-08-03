@@ -271,7 +271,7 @@ function initQuickView() {
     var pid = trigger.dataset.quickView;
     var product = typeof getProductById === 'function' ? getProductById(pid) : null;
     if (!product) return;
-    var img = (product.images && product.images[0]) || product.image || '';
+    var img = (typeof getProductImageUrls === 'function' && getProductImageUrls(product)[0]) || (typeof resolveProductImageUrl === 'function' ? resolveProductImageUrl(product.image) : product.image) || '';
     var name = product.name || 'Product';
     var priceFmt = typeof formatCurrency === 'function' ? formatCurrency(product.price || 0) : '\u20b9' + (product.price || 0);
     var desc = typeof escapeHTML === 'function' ? escapeHTML(product.description || '') : product.description || '';

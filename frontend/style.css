@@ -1416,6 +1416,51 @@ body.mobile-nav-open .mobile-nav-overlay {
   letter-spacing: 0.12em;
 }
 
+.product-info-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.wishlist-heart {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--card-border, rgba(0, 0, 0, 0.1));
+  border-radius: 999px;
+  background: var(--surface, #fff);
+  color: var(--accent);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.25s ease, color 0.25s ease, transform 0.15s ease;
+}
+
+.wishlist-heart:hover {
+  color: var(--danger, #e74c3c);
+  transform: scale(1.08);
+}
+
+.wishlist-heart.active {
+  color: var(--danger, #e74c3c);
+  border-color: var(--danger, #e74c3c);
+}
+
+.detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.detail-meta .wishlist-heart {
+  width: 44px;
+  height: 44px;
+}
+
 .product-name {
   margin: 0;
   font-size: clamp(1.1rem, 2.5vw, 1.3rem);
