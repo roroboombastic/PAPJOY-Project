@@ -89,7 +89,7 @@ function updateCODAmount() {
   const totals = getCartTotals();
   const codAmount = document.getElementById('cod-amount');
   if (codAmount) {
-    codAmount.textContent = formatINR(totals.total + 50);
+    codAmount.textContent = formatINR(totals.total);
   }
 }
 
@@ -238,7 +238,7 @@ async function startCODCheckout() {
   setCheckoutMessage('Placing your COD order...');
 
   try {
-    const result = await createOrderBackend('cod', { shippingFee: 50, notes: codNotes });
+    const result = await createOrderBackend('cod', { notes: codNotes });
     if (!result) return;
 
     sessionStorage.setItem('papjoy-order', JSON.stringify({ provider: 'cod', order: result.order }));

@@ -63,6 +63,7 @@ const productUpdateSchema = Joi.object({
   hsnCode: Joi.string().max(20).allow('', null).optional(),
   sacCode: Joi.string().max(20).allow('', null).optional(),
   gstPercentage: Joi.number().min(0).max(100).optional(),
+  shippingCharge: Joi.number().min(0).optional(),
   inventory: Joi.object({
     quantity: Joi.number().min(0).optional(),
     lowStockThreshold: Joi.number().min(0).optional(),

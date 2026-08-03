@@ -8,6 +8,7 @@ const orderItemSchema = new mongoose.Schema({
   price: { type: Number, required: true, min: 0 },
   total: { type: Number, required: true, min: 0 },
   gstRate: { type: Number, default: 18 },
+  shippingCharge: { type: Number, default: 0 },
   cgst: { type: Number, default: 0 },
   sgst: { type: Number, default: 0 },
   igst: { type: Number, default: 0 }

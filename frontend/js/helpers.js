@@ -51,6 +51,9 @@ function getProductImageUrls(product) {
       })
       .filter(Boolean);
   }
+  if (product.images && typeof product.images === 'object') {
+    return [resolveProductImageUrl(product.images?.url || product.images?.src || '')].filter(Boolean);
+  }
   if (typeof product.image === 'string' && product.image) {
     return [resolveProductImageUrl(product.image)];
   }

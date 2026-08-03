@@ -9,7 +9,7 @@ const http = require('http');
 const logger = require('../utils/logger');
 const emailService = require('../services/emailService');
 const { calculateOrderTotals, roundMoney, BUSINESS_GSTIN, BUSINESS_NAME, GST_PERCENT, GST_STATE, GST_RETURN_POLICY, CUSTOMER_SUPPORT } = require('../utils/gst');
-const { ADMIN_EMAILS } = require('../config');
+const { ADMIN_EMAILS, APP_URL } = require('../config');
 
 const PAPJOY_LOGO_URL = 'https://cdn.phototourl.com/free/2026-07-26-69fc6ff4-f369-46df-91d3-e8ca8e11dda2.jpg';
 
@@ -172,9 +172,10 @@ async function generateInvoice(orderId) {
     logger.info('Invoice generated', { invoiceNumber, orderId, userId: order.userId?._id || order.userId || null });
 
     if (customerEmail) {
+      const pdfUrl = `${APP_URL}/api/v1/invoices/${orderId}/pdf`;
       emailService.sendMail({
         to: customerEmail,
-        ...emailService.invoiceEmailTemplate(invoiceData)
+        ...emailService.invoiceEmailTemplate(invoiceData, pdfUrl)
       });
     }
 
@@ -338,14 +339,17 @@ async function downloadInvoicePDF(req, res) {
     y += 14;
 
     const summaryLeft = 330;
+    const gstHalfRate = (invoice.items && invoice.items.length && invoice.items[0].gstRate)
+      ? invoice.items[0].gstRate / 2
+      : GST_PERCENT / 2;
     pdf.fontSize(10).font('Helvetica');
     pdf.text(`Subtotal`, summaryLeft, y, { width: 120 });
     pdf.text(`₹${roundMoney(invoice.subtotal).toLocaleString('en-IN')}`, 470, y, { width: 86, align: 'right' });
     y += 16;
-    pdf.text(`CGST (9%)`, summaryLeft, y, { width: 120 });
+    pdf.text(`CGST (${gstHalfRate}%)`, summaryLeft, y, { width: 120 });
     pdf.text(`₹${roundMoney(invoice.cgstTotal).toLocaleString('en-IN')}`, 470, y, { width: 86, align: 'right' });
     y += 16;
-    pdf.text(`SGST (9%)`, summaryLeft, y, { width: 120 });
+    pdf.text(`SGST (${gstHalfRate}%)`, summaryLeft, y, { width: 120 });
     pdf.text(`₹${roundMoney(invoice.sgstTotal).toLocaleString('en-IN')}`, 470, y, { width: 86, align: 'right' });
     y += 16;
     if (roundMoney(invoice.igstTotal) > 0) {
@@ -354,7 +358,7 @@ async function downloadInvoicePDF(req, res) {
       y += 16;
     }
     pdf.text(`Shipping`, summaryLeft, y, { width: 120 });
-    pdf.text(`₹${roundMoney(invoice.shippingCharges).toLocaleString('en-IN')}`, 470, y, { width: 86, align: 'right' });
+    pdf.text(roundMoney(invoice.shippingCharges) > 0 ? `₹${roundMoney(invoice.shippingCharges).toLocaleString('en-IN')}` : 'FREE', 470, y, { width: 86, align: 'right' });
     y += 16;
     pdf.text(`Discount`, summaryLeft, y, { width: 120 });
     pdf.text(`-₹${roundMoney(invoice.discount).toLocaleString('en-IN')}`, 470, y, { width: 86, align: 'right' });

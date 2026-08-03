@@ -45,6 +45,7 @@ const productSchema = new mongoose.Schema({
   hsnCode: String,
   sacCode: String,
   gstPercentage: { type: Number, default: 18 },
+  shippingCharge: { type: Number, default: 0, min: 0 },
   inventory: {
     quantity: { type: Number, default: 0, min: 0 },
     lowStockThreshold: { type: Number, default: 10 },

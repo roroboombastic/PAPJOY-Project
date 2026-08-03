@@ -764,7 +764,7 @@ body.mobile-nav-open .mobile-nav-overlay {
 .hero {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 28px;
   padding: 42px;
   border-radius: 40px;
@@ -797,6 +797,7 @@ body.mobile-nav-open .mobile-nav-overlay {
   position: relative;
   z-index: 1;
   max-width: 760px;
+  min-width: 0;
 }
 
 .hero-badge {
@@ -1125,7 +1126,7 @@ body.mobile-nav-open .mobile-nav-overlay {
 }
 
 .price-chip {
-  padding: 6px 14px;
+  padding: 9px 16px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: transparent;
@@ -1337,9 +1338,10 @@ body.mobile-nav-open .mobile-nav-overlay {
   color: var(--accent);
   cursor: pointer;
   font-size: inherit;
-  padding: 0 0 0 12px;
+  padding: 8px 4px 8px 12px;
   text-decoration: underline;
   text-underline-offset: 2px;
+  min-height: 40px;
 }
 
 .size-guide-btn:hover {
@@ -1454,6 +1456,35 @@ body.mobile-nav-open .mobile-nav-overlay {
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
+}
+
+.detail-meta #detail-add-button,
+.detail-meta #detail-buy-button {
+  min-height: 48px;
+  min-width: 140px;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 18px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.detail-meta #detail-add-button:hover,
+.detail-meta #detail-buy-button:hover {
+  transform: translateY(-1px);
+}
+
+.detail-meta #detail-add-button {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--accent-soft);
+}
+
+.detail-meta #detail-buy-button {
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: #111;
 }
 
 .detail-meta .wishlist-heart {

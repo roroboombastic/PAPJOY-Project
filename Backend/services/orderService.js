@@ -58,6 +58,7 @@ async function buildOrderLineItems(items = [], deliveryInfo = {}) {
       unitPrice: price,
       total: itemTotal,
       gstRate: Number(product?.gstPercentage || item.gstRate || 18),
+      shippingCharge: Number(product?.shippingCharge ?? item.shippingCharge ?? 0),
       cgst: 0,
       sgst: 0,
       igst: 0
@@ -207,9 +208,10 @@ async function createOrderFromData({
     throw new Error('No valid order items found');
   }
 
+  const computedShipping = lineItems.reduce((sum, item) => sum + Number(item.shippingCharge || 0) * item.quantity, 0);
   const orderTotals = calculateOrderTotals({
     items: lineItems,
-    shipping,
+    shipping: computedShipping,
     discount,
     billingState: deliveryInfo?.state,
     sellerState: GST_STATE

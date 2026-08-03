@@ -183,6 +183,7 @@ async function saveProduct(event) {
     sku: document.getElementById('product-sku')?.value,
     brand: document.getElementById('product-brand')?.value,
     inventory: { quantity: Number(document.getElementById('product-stock')?.value || 0) },
+    shippingCharge: Number(document.getElementById('product-shipping')?.value || 0),
     isActive: document.getElementById('product-active')?.checked || false
   };
 
@@ -233,13 +234,13 @@ async function editProduct(productId) {
     document.getElementById('product-sku').value = product.sku || '';
     document.getElementById('product-brand').value = product.brand || '';
     document.getElementById('product-stock').value = product.inventory?.quantity || 0;
+    document.getElementById('product-shipping').value = product.shippingCharge || 0;
     document.getElementById('product-active').checked = Boolean(product.isActive);
 
     const imageUrlInput = document.getElementById('product-image-url');
     if (imageUrlInput) {
-      const images = product.images || [];
-      const firstUrl = images.length > 0 ? (typeof images[0] === 'string' ? images[0] : images[0]?.url || '') : '';
-      imageUrlInput.value = resolveProductImageUrl(firstUrl);
+      const images = typeof getProductImageUrls === 'function' ? getProductImageUrls(product) : [];
+      imageUrlInput.value = images[0] || '';
     }
   } catch (error) {
     console.error('Product edit error:', error);

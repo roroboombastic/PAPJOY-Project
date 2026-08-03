@@ -22,6 +22,7 @@ function getCheckoutItems() {
     variant: item.variant || 'Standard',
     category: item.category,
     subtitle: item.subtitle,
+    shippingCharge: item.shippingCharge || 0,
   }));
 }
 
@@ -36,7 +37,8 @@ function normalizeServerCartItem(item) {
     price: Number(item.price || product.price || 0),
     quantity: Number(item.quantity || 1),
     category: product.category || (product.categoryId && product.categoryId.name) || item.category || '',
-    subtitle: product.shortDescription || product.subtitle || item.subtitle || ''
+    subtitle: product.shortDescription || product.subtitle || item.subtitle || '',
+    shippingCharge: Number(product.shippingCharge || item.shippingCharge || 0)
   };
 }
 
@@ -180,6 +182,7 @@ function addToCart(productId, variantName = 'Standard', variantPrice = null, red
       variant: selectedVariant,
       category: product.category,
       subtitle: product.subtitle,
+      shippingCharge: Number(product.shippingCharge) || 0,
     });
   }
 
@@ -270,8 +273,8 @@ function calculateOrderTotals(items = [], options = {}) {
   });
 
   const subtotal = normalizedItems.reduce((sum, item) => sum + item.total, 0);
-  const fallbackShipping = subtotal === 0 ? 0 : subtotal >= 20000 ? 0 : 299;
-  const shipping = Number.isFinite(Number(options.shipping)) ? Math.round(Number(options.shipping)) : fallbackShipping;
+  const itemShipping = normalizedItems.reduce((sum, item) => sum + (Number(item.shippingCharge) || 0) * item.quantity, 0);
+  const shipping = Number.isFinite(Number(options.shipping)) ? Math.round(Number(options.shipping)) : Math.round(itemShipping);
   const discount = Number.isFinite(Number(options.discount)) ? Math.round(Number(options.discount)) : 0;
   const taxRate = Number(options.taxRate || GST_RATE);
   const tax = Math.round(subtotal * taxRate);
@@ -326,10 +329,10 @@ function updateCartSummary() {
   if (shippingNote) {
     if (totals.subtotal === 0) {
       shippingNote.textContent = 'Add items to your cart to see shipping and delivery options.';
-    } else if (totals.subtotal >= 20000) {
-      shippingNote.textContent = 'Congratulations! Your order qualifies for free shipping.';
+    } else if (totals.shipping === 0) {
+      shippingNote.textContent = 'This order ships for FREE.';
     } else {
-      shippingNote.textContent = `Add ${formatCurrency(20000 - totals.subtotal)} more to unlock free shipping.`;
+      shippingNote.textContent = `Shipping charges apply based on the items in your cart (₹${formatCurrency(totals.shipping)}).`;
     }
   }
 

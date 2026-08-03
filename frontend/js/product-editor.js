@@ -116,6 +116,7 @@
     $('pe-compare-price').value = p.comparePrice || '';
     $('pe-cost-price').value = p.costPrice || '';
     $('pe-gst').value = p.gstPercentage ?? 18;
+    $('pe-shipping').value = p.shippingCharge ?? 0;
     $('pe-sku').value = p.sku || '';
     $('pe-barcode').value = p.barcode || '';
     $('pe-stock').value = p.inventory?.quantity ?? 0;
@@ -131,10 +132,10 @@
     $('pe-seo-desc').value = p.seo?.description || '';
     $('pe-seo-keywords').value = Array.isArray(p.seo?.keywords) ? p.seo.keywords.join(', ') : '';
 
-    imageList = (p.images || []).map(img => {
+    imageList = (typeof getProductImageUrls === 'function' ? getProductImageUrls(p) : (p.images || []).map(img => {
       if (typeof img === 'string') return img;
       return img.url || '';
-    }).filter(Boolean);
+    }).filter(Boolean));
 
     videoList = (p.videos || []).filter(Boolean);
 
@@ -575,6 +576,7 @@
       comparePrice: Number($('pe-compare-price').value) || 0,
       costPrice: Number($('pe-cost-price').value) || 0,
       gstPercentage: Number($('pe-gst').value) || 18,
+      shippingCharge: Number($('pe-shipping').value) || 0,
       categoryId: categoryId || undefined,
       brand: $('pe-brand').value.trim(),
       sku: $('pe-sku').value.trim(),

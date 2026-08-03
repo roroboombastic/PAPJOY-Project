@@ -371,7 +371,7 @@ async function renderProductDetailPage() {
   document.head.appendChild(ldScript);
 
   // Recommendations
-  renderRecommendations(product);
+  renderRecommendations(product.id || product._id);
 
   thumbButtons.forEach((button) => {
     button.addEventListener('click', () => {
