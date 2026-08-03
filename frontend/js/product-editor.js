@@ -223,6 +223,8 @@
       if (e.key === 'Enter') { e.preventDefault(); addImageUrl(); }
     });
 
+    $('btn-save-images').addEventListener('click', saveImages);
+
     const barcodeBtn = $('btn-generate-barcode');
     if (barcodeBtn) {
       barcodeBtn.addEventListener('click', () => {
@@ -299,6 +301,68 @@
     });
 
     $('pe-file-input').value = '';
+  }
+
+  // =========================================================================
+  // SAVE IMAGES (upload immediately, independent of publishing)
+  // =========================================================================
+  async function saveImages() {
+    if (!pendingFiles.length) {
+      if (typeof showToast === 'function') showToast('No new images to save. Add images first.', 'info');
+      return;
+    }
+
+    const token = getAuthToken();
+    if (!token) return;
+
+    const btn = $('btn-save-images');
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving images...';
+
+    try {
+      const formData = new FormData();
+      pendingFiles.forEach(f => formData.append('media', f.file));
+
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/uploads`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to save images');
+      }
+
+      const data = await res.json();
+      const files = data.files || [];
+
+      if (!files.length) throw new Error('No image URLs returned');
+
+      pendingFiles.forEach((f, i) => {
+        const serverUrl = files[i]?.url;
+        if (!serverUrl) return;
+        const idx = imageList.indexOf(f.dataUrl);
+        if (idx !== -1) imageList[idx] = serverUrl;
+        const vidx = videoList.indexOf(f.dataUrl);
+        if (vidx !== -1) videoList[vidx] = serverUrl;
+      });
+
+      pendingFiles = [];
+      renderImages();
+      renderVideos();
+      updatePreview();
+      isDirty = true;
+
+      if (typeof showToast === 'function') showToast(`${files.length} image${files.length > 1 ? 's' : ''} saved`, 'success');
+    } catch (err) {
+      console.error('Save images error:', err);
+      if (typeof showToast === 'function') showToast('Failed to save images: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
   }
 
   // =========================================================================

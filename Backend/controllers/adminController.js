@@ -13,6 +13,22 @@ function generateEan13Barcode() {
   return base + check;
 }
 
+async function uploadFiles(req, res) {
+  try {
+    if (!req.files || !req.files.length) {
+      return res.status(400).json({ error: 'No files provided. Upload at least one image.' });
+    }
+    const files = req.files.map(file => ({
+      url: `/uploads/products/${file.filename}`,
+      isVideo: /\.(mp4|webm|mov)$/i.test(file.originalname)
+    }));
+    res.status(201).json({ files });
+  } catch (err) {
+    logger.error('Upload files failed', { error: err.message });
+    res.status(500).json({ error: 'Failed to upload files' });
+  }
+}
+
 function getRangeBounds(range = 'month', from, to) {
   const end = to ? new Date(to) : new Date();
   let start;
@@ -626,6 +642,7 @@ async function getCategoryById(req, res) {
 }
 
 module.exports = {
+  uploadFiles,
   getSummary,
   getProducts,
   getOrders,
