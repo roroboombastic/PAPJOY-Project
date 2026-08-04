@@ -383,6 +383,7 @@ body.has-global-nav {
 
 /* ================== Announcement / Status Bar ================== */
 .announcement-bar {
+  display: none;
   position: fixed;
   top: 0;
   left: 280px;
@@ -392,6 +393,10 @@ body.has-global-nav {
   color: #fff;
   overflow: hidden;
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+}
+
+.announcement-bar.visible {
+  display: block;
 }
 
 .announcement-bar.hidden {

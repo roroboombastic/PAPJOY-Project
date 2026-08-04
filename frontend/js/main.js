@@ -48,6 +48,7 @@ function initAnnouncementBar() {
     return;
   }
 
+  bar.classList.add('visible');
   document.body.classList.add('has-announcement');
 
   const closeBtn = document.getElementById('announcement-close');
