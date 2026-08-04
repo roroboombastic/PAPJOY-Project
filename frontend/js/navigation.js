@@ -396,7 +396,6 @@ function createMobileThemeToggle() {
 
 async function loadNotifications() {
   const user = getCurrentUser();
-  if (!user) return;
 
   const badge = document.getElementById('notification-badge');
   const list = document.getElementById('notification-list');
@@ -428,18 +427,26 @@ async function loadNotifications() {
 
     if (markAllBtn) {
       markAllBtn.addEventListener('click', async () => {
+        const currentUser = getCurrentUser();
+        if (!currentUser) return;
         const unreadItems = list.querySelectorAll('.notification-item.unread');
         for (const item of unreadItems) {
           const id = item.dataset.id;
           if (id) {
             try {
-              await fetch(`${API_BASE_URL}/api/v1/notifications/${id}/read`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token || ''}` } });
+              await fetch(`${API_BASE_URL}/api/v1/notifications/${id}/read`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${currentUser.token || ''}` } });
             } catch (_) {}
           }
         }
         loadNotifications();
       });
     }
+  }
+
+  if (!user) {
+    list.innerHTML = '<p class="text-center" style="padding: 20px; color: var(--text-muted);">Sign in to receive order and account updates</p>';
+    badge.style.display = 'none';
+    return;
   }
 
   try {
