@@ -2154,7 +2154,7 @@ label {
 .auth-form input,
 .auth-form select,
 .auth-form textarea,
-.auth-form button,
+.auth-form button:not(.toggle-password),
 .auth-form .oauth-button,
 .auth-form .gps-container {
   width: 100%;
@@ -5737,6 +5737,113 @@ textarea:focus:not(:focus-visible) {
   color: var(--text-muted);
 }
 
+.order-modal-content {
+  max-width: 760px;
+}
+
+.order-form-title {
+  margin: 22px 0 14px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+}
+
+.order-detail-block {
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.order-detail-block h4 {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.order-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  align-items: center;
+  margin-bottom: 14px;
+  font-size: 0.9rem;
+}
+
+.order-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+}
+
+.order-cust p,
+.order-addr p {
+  margin: 2px 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.order-notes {
+  margin-top: 6px;
+  font-style: italic;
+}
+
+.order-track {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg);
+  font-size: 0.88rem;
+}
+
+.order-track p {
+  margin: 2px 0;
+  color: var(--text-muted);
+}
+
+.order-track a {
+  color: var(--accent, #2e7d32);
+  word-break: break-all;
+}
+
+.order-item-variant {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.order-items-table th,
+.order-items-table td {
+  white-space: nowrap;
+}
+
+.order-totals {
+  margin-top: 12px;
+  margin-left: auto;
+  max-width: 340px;
+  font-size: 0.9rem;
+}
+
+.order-totals p {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0;
+  color: var(--text-muted);
+}
+
+.order-totals .order-grand-total {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-weight: 700;
+  color: var(--text);
+  font-size: 1.02rem;
+}
+
 .form-group {
   margin-bottom: 16px;
 }
@@ -8144,6 +8251,13 @@ body.mobile-nav-open .mobile-nav-overlay {
   width: 100%;
   max-width: 520px;
   border-radius: 32px;
+}
+
+/* --- Auth pages with an in-page heading (forgot/reset password): stack heading above the panel so it fills the width --- */
+main.product-section.auth-page {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
 }
 
 /* --- Auth tabs smooth switching --- */

@@ -738,7 +738,7 @@ function setLanguage(lang) {
   selectedLanguage = lang;
   localStorage.setItem('papjoy-lang', lang);
   translatePage();
-  updateUserLinks();
+  if (typeof updateUserLinks === 'function') updateUserLinks();
 }
 
 function setRegion(regionCode) {

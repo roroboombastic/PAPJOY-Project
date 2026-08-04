@@ -69,6 +69,7 @@ router.get('/summary', adminController.getSummary);
 router.get('/products', adminController.getProducts);
 router.get('/products/:id', adminController.getProductById);
 router.get('/orders', adminController.getOrders);
+router.get('/orders/:id', adminController.getOrderById);
 router.get('/users', adminController.getUsers);
 router.get('/analytics', adminController.getAnalytics);
 router.get('/reports', adminController.getReports);

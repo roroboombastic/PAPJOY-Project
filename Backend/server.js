@@ -83,7 +83,7 @@ app.get('/health', (req, res) => {
 const uploadsDir = path.join(__dirname, '../uploads');
 app.use('/uploads', async (req, res, next) => {
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-  if (req.method !== 'GET') return next();
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
   const relative = req.path.replace(/^\/+/, '');
   if (!relative) return next();
   try {
@@ -93,6 +93,7 @@ app.use('/uploads', async (req, res, next) => {
       if (file.contentType) res.type(file.contentType);
       else res.type(path.extname(relative) || 'application/octet-stream');
       res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
+      if (req.method === 'HEAD') return res.end();
       const stream = gridfs.openDownloadStreamByName(relative);
       stream.on('error', () => {
         if (!res.headersSent) res.status(404).end();

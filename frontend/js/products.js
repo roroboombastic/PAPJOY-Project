@@ -1034,7 +1034,7 @@ async function renderPage() {
     renderSavedItems();
   }
 
-  updateUserLinks();
+  if (typeof updateUserLinks === 'function') updateUserLinks();
 
   if (page === 'checkout' && typeof renderCheckoutPage === 'function') {
     await renderCheckoutPage();

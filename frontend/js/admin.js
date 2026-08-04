@@ -309,7 +309,7 @@ async function loadAdminOrders(page = 1) {
             <td data-label="Status"><span class="status-badge">${escapeHTML(order.status)}</span></td>
             <td data-label="Payment">${escapeHTML(order.paymentStatus || order.paymentMethod || 'N/A')}</td>
             <td data-label="Date">${new Date(order.createdAt).toLocaleDateString()}</td>
-            <td data-label="Actions"><button class="btn-small" onclick="showOrderModal('${order._id}', '${escapeHTML(order.status)}')">Update</button></td>
+            <td data-label="Actions"><button class="btn-small" onclick="showOrderModal('${order._id}')">View</button></td>
           </tr>
         `).join('');
       }
@@ -570,13 +570,111 @@ async function showOrderModal(orderId, currentStatus) {
   const modal = document.getElementById('order-modal');
   if (!modal) return;
 
+  const token = getAuthToken();
+  if (!token) return;
+
   document.getElementById('order-id').value = orderId;
   document.getElementById('order-status-update').value = currentStatus || 'pending';
   document.getElementById('order-tracking-number').value = '';
   document.getElementById('order-carrier').value = '';
   document.getElementById('order-tracking-url').value = '';
 
+  const detailsEl = document.getElementById('order-details');
+  if (detailsEl) detailsEl.innerHTML = '<p class="text-center">Loading order details...</p>';
   modal.classList.add('active');
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/v1/admin/orders/${orderId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!response.ok) {
+      if (detailsEl) detailsEl.innerHTML = '<p class="text-center">Failed to load order details.</p>';
+      return;
+    }
+    const order = await response.json();
+    if (detailsEl) detailsEl.innerHTML = renderOrderDetails(order);
+
+    const statusEl = document.getElementById('order-status-update');
+    if (statusEl && order.status) statusEl.value = order.status;
+    const trackingNumber = document.getElementById('order-tracking-number');
+    const carrier = document.getElementById('order-carrier');
+    const trackingUrl = document.getElementById('order-tracking-url');
+    if (trackingNumber && order.shipment?.trackingNumber) trackingNumber.value = order.shipment.trackingNumber;
+    if (carrier && order.shipment?.carrier) carrier.value = order.shipment.carrier;
+    if (trackingUrl && order.shipment?.trackingUrl) trackingUrl.value = order.shipment.trackingUrl;
+  } catch (error) {
+    console.error('Admin order detail error:', error);
+    if (detailsEl) detailsEl.innerHTML = '<p class="text-center">Failed to load order details.</p>';
+  }
+}
+
+function renderOrderDetails(order) {
+  const addressBlock = (label, addr) => {
+    if (!addr) return '';
+    return `<div class="order-addr"><h4>${label}</h4><p>${escapeHTML(addr.name || '')}</p>` +
+      `${addr.street ? `<p>${escapeHTML(addr.street)}</p>` : ''}` +
+      `${addr.city ? `<p>${escapeHTML(addr.city)}${addr.state ? ', ' + escapeHTML(addr.state) : ''}${addr.zipCode ? ' - ' + escapeHTML(addr.zipCode) : ''}</p>` : ''}` +
+      `${addr.phone ? `<p>${escapeHTML(addr.phone)}</p>` : ''}</div>`;
+  };
+
+  const items = (order.items || []).map(item => `
+    <tr>
+      <td data-label="Item">${escapeHTML(item.name || 'N/A')}${item.variant ? `<span class="order-item-variant">${escapeHTML(item.variant)}</span>` : ''}</td>
+      <td data-label="Qty">${item.quantity}</td>
+      <td data-label="Price">${formatINR(item.price || 0)}</td>
+      <td data-label="GST">${formatINR((item.cgst || 0) + (item.sgst || 0) + (item.igst || 0))}</td>
+      <td data-label="Total">${formatINR(item.total || 0)}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="5" class="text-center">No items</td></tr>';
+
+  const gstTotal = order.gstTotal || ((order.cgstTotal || 0) + (order.sgstTotal || 0) + (order.igstTotal || 0)) || order.tax || 0;
+
+  const statusClass = `status-badge status-${String(order.status || 'pending').toLowerCase()}`;
+  const paymentStatusClass = `status-badge status-${String(order.paymentStatus || 'pending').toLowerCase()}`;
+
+  const tracking = order.shipment && (order.shipment.trackingNumber || order.shipment.trackingUrl) ? `
+    <div class="order-track">
+      <h4>Tracking</h4>
+      ${order.shipment.trackingNumber ? `<p>Number: ${escapeHTML(order.shipment.trackingNumber)}</p>` : ''}
+      ${order.shipment.carrier ? `<p>Carrier: ${escapeHTML(order.shipment.carrier)}</p>` : ''}
+      ${order.shipment.trackingUrl ? `<p>URL: <a href="${escapeHTML(order.shipment.trackingUrl)}" target="_blank" rel="noopener">${escapeHTML(order.shipment.trackingUrl)}</a></p>` : ''}
+    </div>` : '';
+
+  return `
+    <div class="order-detail-block">
+      <div class="order-summary-row">
+        <span><strong>Order:</strong> ${escapeHTML(order.orderNumber || order._id)}</span>
+        <span><strong>Placed:</strong> ${new Date(order.createdAt).toLocaleString()}</span>
+        <span><span class="${statusClass}">${escapeHTML(order.status || 'pending')}</span></span>
+        <span><span class="${paymentStatusClass}">${escapeHTML(order.paymentStatus || 'pending')} · ${escapeHTML(order.paymentMethod || '')}</span></span>
+      </div>
+      <div class="order-grid">
+        <div class="order-cust">
+          <h4>Customer</h4>
+          <p>${escapeHTML(order.userId?.name || order.shippingAddress?.name || order.billingAddress?.name || 'Guest')}</p>
+          ${order.userId?.email ? `<p>${escapeHTML(order.userId.email)}</p>` : ''}
+          ${order.userId?.phone ? `<p>${escapeHTML(order.userId.phone)}</p>` : ''}
+          ${order.notes ? `<p class="order-notes">Note: ${escapeHTML(order.notes)}</p>` : ''}
+        </div>
+        ${addressBlock('Shipping Address', order.shippingAddress)}
+        ${addressBlock('Billing Address', order.billingAddress)}
+      </div>
+      ${tracking}
+    </div>
+    <div class="order-detail-block">
+      <h4>Items</h4>
+      <table class="admin-table order-items-table">
+        <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>GST</th><th>Total</th></tr></thead>
+        <tbody>${items}</tbody>
+      </table>
+      <div class="order-totals">
+        <p><span>Subtotal</span><span>${formatINR(order.subtotal || 0)}</span></p>
+        <p><span>GST</span><span>${formatINR(gstTotal)}</span></p>
+        <p><span>Shipping</span><span>${formatINR(order.shipping || 0)}</span></p>
+        ${order.discount ? `<p><span>Discount</span><span>-${formatINR(order.discount)}</span></p>` : ''}
+        <p class="order-grand-total"><span>Total</span><span>${formatINR(order.total || 0)}</span></p>
+      </div>
+    </div>`;
 }
 
 function closeOrderModal() {

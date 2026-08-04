@@ -155,6 +155,17 @@ async function getOrders(req, res) {
   }
 }
 
+async function getOrderById(req, res) {
+  try {
+    const order = await Order.findById(req.params.id).populate('userId', 'name email phone');
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    res.json(order);
+  } catch (err) {
+    logger.error('Admin order detail failed', { error: err.message });
+    res.status(500).json({ error: 'Failed to load order' });
+  }
+}
+
 async function getUsers(req, res) {
   try {
     const { page = 1, limit = 50, search = '', role = 'all' } = req.query;
@@ -451,7 +462,7 @@ async function deleteProduct(req, res) {
 async function updateOrderStatus(req, res) {
   try {
     const { id } = req.params;
-    const { status, trackingNumber, note, carrier } = req.body;
+    const { status, trackingNumber, note, carrier, trackingUrl } = req.body;
 
     const validStatuses = ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled', 'returned', 'refunded'];
     if (status && !validStatuses.includes(status)) {
@@ -466,6 +477,7 @@ async function updateOrderStatus(req, res) {
     if (!order.shipment) order.shipment = {};
     if (trackingNumber) order.shipment.trackingNumber = trackingNumber;
     if (carrier) order.shipment.carrier = carrier;
+    if (trackingUrl) order.shipment.trackingUrl = trackingUrl;
     if (status) order.shipment.status = status;
 
     if (!order.shipment.events) order.shipment.events = [];
@@ -646,6 +658,7 @@ module.exports = {
   getSummary,
   getProducts,
   getOrders,
+  getOrderById,
   getUsers,
   getAnalytics,
   getAdminCategories,

@@ -352,10 +352,12 @@
 
   <!-- Order Modal -->
   <div id="order-modal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content order-modal-content">
       <span class="modal-close" onclick="closeOrderModal()">&times;</span>
-      <h2>Update Order Status</h2>
+      <h2>Order Details</h2>
+      <div id="order-details"><p class="text-center">Loading order details...</p></div>
       <form id="order-form" onsubmit="updateOrderStatus(event)">
+        <h3 class="order-form-title">Update Order Status</h3>
         <input type="hidden" id="order-id" />
         <div class="form-group">
           <label>Order Status *</label>
@@ -363,9 +365,12 @@
             <option value="pending">Pending</option>
             <option value="confirmed">Confirmed</option>
             <option value="processing">Processing</option>
+            <option value="packed">Packed</option>
             <option value="shipped">Shipped</option>
+            <option value="out_for_delivery">Out for Delivery</option>
             <option value="delivered">Delivered</option>
             <option value="cancelled">Cancelled</option>
+            <option value="returned">Returned</option>
             <option value="refunded">Refunded</option>
           </select>
         </div>

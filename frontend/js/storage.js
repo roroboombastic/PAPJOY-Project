@@ -66,7 +66,7 @@ function setCurrentUser(user, remember = true) {
     storage.setItem(AUTH_REFRESH_TOKEN_KEY, user.refreshToken);
   }
 
-  updateUserLinks();
+  if (typeof updateUserLinks === 'function') updateUserLinks();
 }
 
 function getLocalOrders() {
