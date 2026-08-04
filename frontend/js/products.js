@@ -693,15 +693,38 @@ window.renderBreadcrumbs = renderBreadcrumbs;
 
 // ================== RECENTLY VIEWED ==================
 
+function buildRecentlyViewedSection() {
+  let section = document.getElementById('recently-viewed-section');
+  if (section) return section;
+  section = document.createElement('section');
+  section.className = 'recently-viewed-section';
+  section.id = 'recently-viewed-section';
+  section.style.display = 'none';
+  section.innerHTML = `
+    <div class="section-header">
+      <p class="eyebrow">Your history</p>
+      <h2>Recently Viewed</h2>
+    </div>
+    <div class="product-grid" id="recently-viewed-grid"></div>
+  `;
+  const mount = document.querySelector('main') || document.body;
+  mount.appendChild(section);
+  return section;
+}
+window.buildRecentlyViewedSection = buildRecentlyViewedSection;
+
 function renderRecentlyViewed() {
-  const section = document.getElementById('recently-viewed-section');
+  const section = buildRecentlyViewedSection();
   const grid = document.getElementById('recently-viewed-grid');
   if (!section || !grid) return;
 
   let history = [];
   try {
     history = JSON.parse(localStorage.getItem('papjoy-history')) || [];
-  } catch (e) { return; }
+  } catch (e) {
+    section.style.display = 'none';
+    return;
+  }
 
   if (!history.length) {
     section.style.display = 'none';
