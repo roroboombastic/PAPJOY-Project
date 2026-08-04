@@ -61,8 +61,8 @@ function createProductCardElement(product) {
 }
 window.createProductCardElement = createProductCardElement;
 
-function initProductGridDelegation() {
-  const grid = document.querySelector('.product-grid') || document.getElementById('product-grid');
+function initProductGridDelegation(grid) {
+  grid = grid || document.querySelector('.product-grid') || document.getElementById('product-grid');
   if (!grid || grid._gridDelegated) return;
   grid._gridDelegated = true;
   grid.addEventListener('click', (e) => {
@@ -727,7 +727,7 @@ function renderRecentlyViewed() {
   grid.innerHTML = '';
   grid.appendChild(fragment);
   section.style.display = '';
-  initProductGridDelegation();
+  initProductGridDelegation(grid);
 }
 window.renderRecentlyViewed = renderRecentlyViewed;
 
@@ -995,7 +995,7 @@ async function renderPage() {
     initSearchAutocomplete();
   }
 
-  if (page === 'home') {
+  if (page === 'home' || page === 'product' || page === 'shop') {
     renderRecentlyViewed();
   }
 
