@@ -1,12 +1,14 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const { auth, verifyAdmin } = require('../middlewares/auth');
 const adminController = require('../controllers/adminController');
 const { validateProductCreate, validateProductUpdate } = require('../validations/productValidation');
 const { uploadToGridFS, isConnected } = require('../utils/gridfs');
+const logger = require('../utils/logger');
 
 const uploadsDir = path.join(__dirname, '../../uploads/products');
 
@@ -28,6 +30,12 @@ async function persistUploads(req, res, next) {
       const ext = path.extname(file.originalname);
       const name = `${crypto.randomBytes(8).toString('hex')}${ext}`;
       await uploadToGridFS(`products/${name}`, file.buffer, file.mimetype);
+      try {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+        fs.writeFileSync(path.join(uploadsDir, name), file.buffer);
+      } catch (diskErr) {
+        logger.warn('Local disk write failed for upload', { name, error: diskErr.message });
+      }
       file.filename = name;
     }
     next();
