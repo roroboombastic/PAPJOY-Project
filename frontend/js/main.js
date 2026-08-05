@@ -30,8 +30,8 @@ function initCookieConsent() {
   if (localStorage.getItem('papjoy-cookie-consent')) return;
   const banner = document.createElement('div');
   banner.id = 'cookie-consent-banner';
-  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:var(--bg-secondary,#1a1a1a);color:var(--text-primary,#e0e0e0);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;z-index:9999;font-size:0.9rem;border-top:1px solid var(--border,#333);flex-wrap:wrap;';
-  banner.innerHTML = '<span>We use cookies to improve your experience. By continuing, you agree to our use of cookies.</span><div style="display:flex;gap:8px;flex-shrink:0;"><button id="cookie-accept" style="background:var(--primary,#7c9a72);color:#fff;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-weight:500;">Accept</button><button id="cookie-dismiss" style="background:transparent;color:var(--text-muted,#999);border:1px solid var(--border,#444);padding:8px 16px;border-radius:6px;cursor:pointer;">Dismiss</button></div>';
+  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:var(--bg-secondary,#1a1a1a);color:var(--text-primary,#e0e0e0);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;z-index:100;font-size:0.9rem;border-top:1px solid var(--border,#333);flex-wrap:wrap;pointer-events:none;';
+  banner.innerHTML = '<span>We use cookies to improve your experience. By continuing, you agree to our use of cookies.</span><div style="display:flex;gap:8px;flex-shrink:0;pointer-events:auto;"><button id="cookie-accept" style="background:var(--primary,#7c9a72);color:#fff;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-weight:500;">Accept</button><button id="cookie-dismiss" style="background:transparent;color:var(--text-muted,#999);border:1px solid var(--border,#444);padding:8px 16px;border-radius:6px;cursor:pointer;">Dismiss</button></div>';
   document.body.appendChild(banner);
   const accept = () => { localStorage.setItem('papjoy-cookie-consent', 'accepted'); banner.remove(); };
   const dismiss = () => { localStorage.setItem('papjoy-cookie-consent', 'dismissed'); banner.remove(); };
@@ -241,18 +241,20 @@ function initSizeGuide() {
       '<div class="size-guide-modal">' +
         '<button class="size-guide-close" id="sg-close" aria-label="Close size guide"><i class="fas fa-times"></i></button>' +
         '<h3>Size Guide</h3>' +
-        '<p class="guide-sub">Men\'s footwear — measurements in centimetres</p>' +
+        '<p class="guide-sub">Women\'s footwear — measurements in centimetres</p>' +
         '<table class="size-guide-table">' +
           '<tr><th>India</th><th>UK</th><th>US</th><th>EU</th><th>Foot Length (cm)</th></tr>' +
-          '<tr><td>6</td><td>5.5</td><td>6.5</td><td>39</td><td>24.5</td></tr>' +
-          '<tr><td>7</td><td>6.5</td><td>7.5</td><td>40</td><td>25.5</td></tr>' +
-          '<tr><td>8</td><td>7.5</td><td>8.5</td><td>41</td><td>26.5</td></tr>' +
-          '<tr><td>9</td><td>8.5</td><td>9.5</td><td>42</td><td>27.5</td></tr>' +
-          '<tr><td>10</td><td>9.5</td><td>10.5</td><td>43</td><td>28.5</td></tr>' +
-          '<tr><td>11</td><td>10.5</td><td>11.5</td><td>44</td><td>29.5</td></tr>' +
-          '<tr><td>12</td><td>11.5</td><td>12.5</td><td>45</td><td>30.5</td></tr>' +
+          '<tr><td>2</td><td>2</td><td>4</td><td>35</td><td>21.5</td></tr>' +
+          '<tr><td>3</td><td>3</td><td>5</td><td>36</td><td>22.0</td></tr>' +
+          '<tr><td>4</td><td>4</td><td>6</td><td>37</td><td>22.5</td></tr>' +
+          '<tr><td>5</td><td>5</td><td>7</td><td>38</td><td>23.5</td></tr>' +
+          '<tr><td>6</td><td>6</td><td>8</td><td>39</td><td>24.0</td></tr>' +
+          '<tr><td>7</td><td>7</td><td>9</td><td>40</td><td>25.0</td></tr>' +
+          '<tr><td>8</td><td>8</td><td>10</td><td>41</td><td>25.5</td></tr>' +
+          '<tr><td>9</td><td>9</td><td>11</td><td>42</td><td>26.5</td></tr>' +
+          '<tr><td>10</td><td>10</td><td>12</td><td>43</td><td>27.5</td></tr>' +
         '</table>' +
-        '<p style="margin:16px 0 0;font-size:0.78rem;color:var(--text-muted);">Measure from heel to longest toe. If between sizes, choose the next size up.</p>' +
+        '<p style="margin:16px 0 0;font-size:0.78rem;color:var(--text-muted);">Measure from heel to longest toe. If between sizes, choose the next size up. Indian sizes follow UK sizing.</p>' +
       '</div>';
     document.body.appendChild(overlay);
     overlay.querySelector('#sg-close').addEventListener('click', function () { overlay.remove(); });

@@ -356,6 +356,15 @@
       updatePreview();
       isDirty = true;
 
+      if (currentProduct?._id) {
+        const persisted = await persistImagesToProduct(token);
+        if (persisted) {
+          if (typeof showToast === 'function') showToast(`${files.length} image${files.length > 1 ? 's' : ''} saved to product`, 'success');
+          return;
+        }
+        throw new Error('Images uploaded but could not be attached to the product');
+      }
+
       if (typeof showToast === 'function') showToast(`${files.length} image${files.length > 1 ? 's' : ''} saved`, 'success');
     } catch (err) {
       console.error('Save images error:', err);
@@ -363,6 +372,28 @@
     } finally {
       btn.disabled = false;
       btn.innerHTML = originalHtml;
+    }
+  }
+
+  async function persistImagesToProduct(token) {
+    const productId = currentProduct?._id;
+    if (!productId) return false;
+    const images = imageList
+      .filter(url => !url.startsWith('data:'))
+      .map((url, i) => ({ url, alt: $('pe-name')?.value?.trim() || 'Product', isPrimary: i === 0 }));
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/products/${productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ images })
+      });
+      if (!res.ok) return false;
+      const saved = await res.json();
+      if (saved && saved.images) currentProduct = saved;
+      return true;
+    } catch (err) {
+      console.error('Persist images error:', err);
+      return false;
     }
   }
 
