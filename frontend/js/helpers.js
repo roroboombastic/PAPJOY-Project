@@ -36,10 +36,8 @@ function resolveProductImageUrl(url) {
   const str = String(url);
   if (/^(https?:|data:|blob:)/i.test(str)) return str;
   if (str.startsWith('/') && typeof window.API_BASE_URL === 'string' && window.API_BASE_URL) {
-    return window.API_BASE_URL.replace(/\\/+$/, '') + str;
+    return window.API_BASE_URL.replace(/\/+$/, '') + str;
   }
-  return str;
-}
   return str;
 }
 
