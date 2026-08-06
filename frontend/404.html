@@ -24,6 +24,25 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <script>
+  (function(){
+    var V='papjoy-v19',K='papjoy-sw-version';
+    try{
+      if('serviceWorker'in navigator&&navigator.serviceWorker.controller){
+        if(localStorage.getItem(K)!==V){
+          localStorage.setItem(K,V);
+          navigator.serviceWorker.getRegistrations().then(function(list){
+            var ps=[];for(var i=0;i<list.length;i++){ps.push(list[i].unregister());}
+            return Promise.all(ps);
+          }).catch(function(){}).then(function(){location.reload();});
+        }
+      }else{
+        localStorage.setItem(K,V);
+      }
+    }catch(e){}
+  })();
+  </script>
 </head>
 <body>
   <main style="display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;width:100%;">

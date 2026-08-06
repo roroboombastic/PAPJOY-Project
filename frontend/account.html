@@ -40,7 +40,26 @@
   <meta property="og:site_name" content="PAP-JOY" />
   <meta property="og:image" content="https://papjoy.com/favicon.svg" />
   <meta name="twitter:card" content="summary_large_image" />
-  </head>
+  
+  <script>
+  (function(){
+    var V='papjoy-v19',K='papjoy-sw-version';
+    try{
+      if('serviceWorker'in navigator&&navigator.serviceWorker.controller){
+        if(localStorage.getItem(K)!==V){
+          localStorage.setItem(K,V);
+          navigator.serviceWorker.getRegistrations().then(function(list){
+            var ps=[];for(var i=0;i<list.length;i++){ps.push(list[i].unregister());}
+            return Promise.all(ps);
+          }).catch(function(){}).then(function(){location.reload();});
+        }
+      }else{
+        localStorage.setItem(K,V);
+      }
+    }catch(e){}
+  })();
+  </script>
+</head>
 <body data-page="account">
   <div id="global-error" class="global-error" style="display: none;"></div>
   <!-- Announcement / Status Bar -->

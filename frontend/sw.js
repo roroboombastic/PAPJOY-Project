@@ -1,4 +1,4 @@
-const CACHE = 'papjoy-v18';
+const CACHE = 'papjoy-v19';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -72,13 +72,13 @@ self.addEventListener('fetch', (event) => {
 
   if (url.pathname.match(/\.(css|js|svg|png|jpg|jpeg|webp|woff2?)$/)) {
     event.respondWith(
-      caches.match(request).then((cached) => {
-        return cached || fetch(request).then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(request, clone));
-          return response;
-        });
-      })
+      fetch(request).then((response) => {
+        const clone = response.clone();
+        caches.open(CACHE).then((cache) => cache.put(request, clone));
+        return response;
+      }).catch(() => caches.match(request).then((cached) => {
+        return cached || new Response('', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+      }))
     );
     return;
   }
