@@ -410,11 +410,50 @@
       return;
     }
 
+    if (isGooglePhotosUrl(url)) {
+      addGooglePhoto(url);
+      return;
+    }
+
     imageList.push(url);
     input.value = '';
     renderImages();
     updatePreview();
     isDirty = true;
+  }
+
+  function isGooglePhotosUrl(url) {
+    return /^https?:\/\/(photos\.app\.goo\.gl|photos\.google\.com|lh3\.googleusercontent\.com)\//i.test(url);
+  }
+
+  async function addGooglePhoto(url) {
+    const token = getAuthToken();
+    if (!token) {
+      if (typeof showToast === 'function') showToast('Please sign in as admin first', 'error');
+      return;
+    }
+    try {
+      if (typeof showToast === 'function') showToast('Importing photo from Google Photos...', 'info');
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/import-photo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ url })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (typeof showToast === 'function') showToast((data.error || 'Failed to import photo') + '. Make sure link sharing is ON for the photo.', 'error');
+        return;
+      }
+      if (typeof showToast === 'function') showToast('Photo imported from Google Photos', 'success');
+      const input = $('pe-image-url');
+      input.value = '';
+      imageList.push(data.url);
+      renderImages();
+      updatePreview();
+      isDirty = true;
+    } catch (err) {
+      if (typeof showToast === 'function') showToast('Import failed: ' + err.message, 'error');
+    }
   }
 
   function removeImage(index) {
@@ -445,7 +484,7 @@
 
     grid.innerHTML = imageList.map((url, i) => `
       <div class="editor-image-card">
-        <img src="${escapeHTML(resolveProductImageUrl(url))}" alt="Image ${i + 1}" onerror="this.src='${FALLBACK_IMG}'" />
+        <img src="${escapeHTML(resolveProductImageUrl(url))}" alt="Image ${i + 1}" onerror="handleProductImageError(this)" />
         <div class="editor-image-actions">
           <button type="button" onclick="window._peMoveImage(${i}, ${i - 1})" title="Move left" ${i === 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>
           <span class="editor-image-num">${i === 0 ? 'Primary' : i + 1}</span>

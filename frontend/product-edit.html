@@ -40,7 +40,7 @@
   
   <script>
   (function(){
-    var V='papjoy-v20',K='papjoy-sw-version';
+    var V='papjoy-v21',K='papjoy-sw-version';
     try{
       if('serviceWorker'in navigator&&navigator.serviceWorker.controller){
         if(localStorage.getItem(K)!==V){
@@ -214,7 +214,7 @@
             <!-- Images rendered by JS -->
           </div>
           <div class="editor-add-image">
-            <input type="url" id="pe-image-url" placeholder="Or paste an image URL: https://example.com/photo.jpg" />
+            <input type="url" id="pe-image-url" placeholder="Paste an image URL, or a Google Photos share link (Share > Create link)" />
             <button type="button" class="editor-btn editor-btn-secondary" id="btn-add-image"><i class="fas fa-plus"></i> Add URL</button>
           </div>
           <div class="editor-add-image" style="margin-top:10px">

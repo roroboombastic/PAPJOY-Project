@@ -1,6 +1,12 @@
 const { User, Product, Order, Category, Invoice, Shipment } = require('../models');
 const PDFDocument = require('pdfkit');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const { uploadToGridFS, isConnected } = require('../utils/gridfs');
 const logger = require('../utils/logger');
+
+const uploadsDir = path.join(__dirname, '../../uploads/products');
 
 function escapeRegex(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -26,6 +32,70 @@ async function uploadFiles(req, res) {
   } catch (err) {
     logger.error('Upload files failed', { error: err.message });
     res.status(500).json({ error: 'Failed to upload files' });
+  }
+}
+
+async function importPhoto(req, res) {
+  try {
+    const { url } = req.body || {};
+    if (!url || typeof url !== 'string') return res.status(400).json({ error: 'A URL is required' });
+    const share = url.trim();
+    if (!/^https?:\/\/(photos\.app\.goo\.gl|photos\.google\.com|lh3\.googleusercontent\.com)\//i.test(share)) {
+      return res.status(400).json({ error: 'Only Google Photos links are supported' });
+    }
+
+    let resolved;
+    try {
+      resolved = await fetch(share, { redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(30000) });
+    } catch (fetchErr) {
+      return res.status(502).json({ error: 'Could not reach Google Photos: ' + fetchErr.message });
+    }
+
+    let direct = '';
+    if (/lh3\.googleusercontent\.com/i.test(resolved.url)) {
+      direct = resolved.url;
+    } else if (resolved.ok && /text\/html/i.test(resolved.headers.get('content-type') || '')) {
+      const html = await resolved.text();
+      const m = html.match(/https:\/\/lh3\.googleusercontent\.com\/pw\/[A-Za-z0-9_-]{20,}/);
+      if (!m) {
+        return res.status(422).json({ error: 'Could not find an image in that Google Photos link. Make sure link sharing is ON for the photo (Share > Create link).' });
+      }
+      direct = m[0];
+    } else {
+      return res.status(422).json({ error: 'That Google Photos link did not resolve to a photo. Recreate the link with Share > Create link.' });
+    }
+
+    const full = direct.replace(/=w\d+(-h\d+)?(-c)?([,~].*)?$/, '') + '=w2048-h2048';
+    let img;
+    try {
+      img = await fetch(full, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(30000) });
+    } catch (dlErr) {
+      return res.status(502).json({ error: 'Failed to download the photo: ' + dlErr.message });
+    }
+    if (!img.ok) return res.status(502).json({ error: 'Failed to download the photo from Google Photos' });
+    const mime = (img.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();
+    if (!/^image\//.test(mime)) return res.status(502).json({ error: 'The Google Photos link did not return an image' });
+
+    const buf = Buffer.from(await img.arrayBuffer());
+    if (buf.length > 15 * 1024 * 1024) return res.status(422).json({ error: 'Imported photo is larger than 15 MB' });
+
+    const ext = { 'image/png': '.png', 'image/gif': '.gif', 'image/webp': '.webp', 'image/svg+xml': '.svg', 'image/avif': '.avif' }[mime] || '.jpg';
+    const name = `${crypto.randomBytes(8).toString('hex')}${ext}`;
+
+    if (isConnected()) {
+      await uploadToGridFS(`products/${name}`, buf, mime).catch(() => {});
+    }
+    try {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+      fs.writeFileSync(path.join(uploadsDir, name), buf);
+    } catch (diskErr) {
+      logger.warn('Disk write failed for imported photo', { name, error: diskErr.message });
+    }
+
+    res.status(201).json({ url: `/uploads/products/${name}`, mimeType: mime, bytes: buf.length });
+  } catch (err) {
+    logger.error('Import Google Photos failed', { error: err.message });
+    res.status(500).json({ error: 'Failed to import photo: ' + err.message });
   }
 }
 
@@ -655,6 +725,7 @@ async function getCategoryById(req, res) {
 
 module.exports = {
   uploadFiles,
+  importPhoto,
   getSummary,
   getProducts,
   getOrders,
