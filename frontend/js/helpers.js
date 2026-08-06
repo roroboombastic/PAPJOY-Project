@@ -31,40 +31,44 @@ async function fetchWithTimeout(resource, options = {}) {
   }
 }
 
-const IMAGE_RETRY_DELAYS = [2000, 5000, 10000];
+const IMAGE_RETRY_DELAYS = [1500, 4000, 8000];
 function handleProductImageError(img) {
   if (!img || typeof img.dataset === 'undefined') return;
   if (img.dataset.fb) {
     img.style.display = 'none';
     return;
   }
+  const orig = img.dataset.orig || img.src || '';
+  img.dataset.orig = orig;
+  const pathOnly = orig.replace(/^https?:\/\/[^/]+/i, '');
+  const isUploadPath = pathOnly.indexOf('/uploads/') === 0;
+  const isRenderOrigin = /onrender\.com/i.test(orig);
+
+  if (isUploadPath && !isRenderOrigin && !img.dataset.rendered) {
+    img.dataset.rendered = '1';
+    img.dataset.retry = '0';
+    setTimeout(() => {
+      if (!img.dataset.fb) {
+        img.src = 'https://papjoy-project.onrender.com' + pathOnly;
+      }
+    }, 400);
+    return;
+  }
+
   const attempt = (parseInt(img.dataset.retry || '0', 10) || 0) + 1;
   img.dataset.retry = String(attempt);
   if (attempt <= IMAGE_RETRY_DELAYS.length) {
-    const original = img.dataset.orig || img.src;
-    img.dataset.orig = original;
     const delay = IMAGE_RETRY_DELAYS[attempt - 1];
     setTimeout(() => {
       if (!img.dataset.fb) {
         img.src = '';
-        img.src = original;
+        img.src = orig;
       }
     }, delay);
   } else {
-    if (!img.dataset.fb && !img.dataset.rendered && img.dataset.orig && img.dataset.orig.indexOf('/uploads/') === 0 && !/onrender\.com/.test(img.dataset.orig)) {
-      img.dataset.rendered = '1';
-      img.dataset.retry = '0';
-      setTimeout(() => {
-        if (!img.dataset.fb) {
-          img.src = 'https://papjoy-project.onrender.com' + img.dataset.orig;
-        }
-      }, 500);
-    } else if (!img.dataset.fb) {
-      img.dataset.fb = '1';
-      img.src = (typeof getNextFallbackImage === 'function' ? getNextFallbackImage() : window.PRODUCT_FALLBACK_IMAGE) || '';
-    } else {
-      img.style.display = 'none';
-    }
+    img.dataset.fb = '1';
+    img.src = (typeof getNextFallbackImage === 'function' ? getNextFallbackImage() : window.PRODUCT_FALLBACK_IMAGE) || '';
+    if (!img.src) img.style.display = 'none';
   }
 }
 
