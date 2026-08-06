@@ -274,8 +274,9 @@ async function renderProductDetailPage() {
     { uk: 8, eu: 41 },
     { uk: 9, eu: 42 }
   ];
+  const realVariants = (product.variants || []).filter((v) => !(v && v.name === 'Standard' && !v.priceDelta && !v._id));
   const variantButtons = [
-    ...(product.variants || []).map((variant, index) => ({
+    ...realVariants.map((variant, index) => ({
       html: `
         <button class="variant-option${index === 0 ? ' active' : ''}" type="button" data-price-delta="${variant.priceDelta || 0}" data-variant="${escapeHTML(variant.name || 'Standard')}">
           ${escapeHTML(variant.name || 'Standard')}${variant.priceDelta ? ` +${formatCurrency(variant.priceDelta)}` : ''}
@@ -293,7 +294,7 @@ async function renderProductDetailPage() {
       priceDelta: 0
     }))
   ];
-  if (!(product.variants && product.variants.length) && variantButtons.length) {
+  if (!realVariants.length && variantButtons.length) {
     variantButtons[0].html = variantButtons[0].html.replace('class="variant-option size-option"', 'class="variant-option size-option active"');
   }
   const variantButtonsHtml = variantButtons.map((entry) => entry.html).join('');
