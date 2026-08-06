@@ -20,7 +20,7 @@ async function searchProducts(searchParams = {}) {
   });
 
   try {
-    const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/products/search?${queryParams.toString()}`, { timeout: 5000, signal });
+    const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/products/search?${queryParams.toString()}`, { timeout: 12000, signal });
     if (!response.ok) return { products: [], pagination: {} };
     return await response.json();
   } catch (error) {
@@ -33,7 +33,7 @@ async function searchProducts(searchParams = {}) {
 async function loadFilterOptions(category = '') {
   const queryParams = category ? `?category=${encodeURIComponent(category)}` : '';
   try {
-    const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/products/filters/options${queryParams}`, { timeout: 5000 });
+    const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/products/filters/options${queryParams}`, { timeout: 12000 });
     if (!response.ok) return { brands: [], sizes: [], colors: [], priceRange: { min: 0, max: 0 } };
     return await response.json();
   } catch (error) {
@@ -44,7 +44,7 @@ async function loadFilterOptions(category = '') {
 
 async function loadProductReviews(productId) {
   try {
-    const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/reviews/${productId}`, { timeout: 5000 });
+    const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/reviews/${productId}`, { timeout: 8000 });
     if (!response.ok) return { reviews: [], pagination: {} };
     return await response.json();
   } catch (error) {
@@ -55,7 +55,7 @@ async function loadProductReviews(productId) {
 
 async function loadRatingSummary(productId) {
   try {
-    const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/products/${productId}/rating-summary`, { timeout: 5000 });
+    const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/products/${productId}/rating-summary`, { timeout: 8000 });
     if (!response.ok) return { averageRating: 0, totalReviews: 0, breakdown: {} };
     return await response.json();
   } catch (error) {

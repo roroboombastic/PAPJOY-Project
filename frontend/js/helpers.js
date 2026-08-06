@@ -31,6 +31,31 @@ async function fetchWithTimeout(resource, options = {}) {
   }
 }
 
+const IMAGE_RETRY_DELAYS = [2000, 5000, 10000];
+function handleProductImageError(img) {
+  if (!img || typeof img.dataset === 'undefined') return;
+  if (img.dataset.fb) {
+    img.style.display = 'none';
+    return;
+  }
+  const attempt = (parseInt(img.dataset.retry || '0', 10) || 0) + 1;
+  img.dataset.retry = String(attempt);
+  if (attempt <= IMAGE_RETRY_DELAYS.length) {
+    const original = img.dataset.orig || img.src;
+    img.dataset.orig = original;
+    const delay = IMAGE_RETRY_DELAYS[attempt - 1];
+    setTimeout(() => {
+      if (!img.dataset.fb) {
+        img.src = '';
+        img.src = original;
+      }
+    }, delay);
+  } else {
+    img.dataset.fb = '1';
+    img.src = (typeof getNextFallbackImage === 'function' ? getNextFallbackImage() : window.PRODUCT_FALLBACK_IMAGE) || '';
+  }
+}
+
 function resolveProductImageUrl(url) {
   if (!url) return '';
   const str = String(url);
@@ -153,6 +178,7 @@ async function loadScript(src) {
 window.debounce = debounce;
 window.escapeHTML = escapeHTML;
 window.fetchWithTimeout = fetchWithTimeout;
+window.handleProductImageError = handleProductImageError;
 window.getProductImageUrls = getProductImageUrls;
 window.resolveProductImageUrl = resolveProductImageUrl;
 window.normalizeVariantName = normalizeVariantName;

@@ -150,7 +150,15 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+function warmBackend() {
+  try {
+    fetch(`${typeof API_BASE_URL === 'string' ? API_BASE_URL : ''}/health`, { method: 'GET', cache: 'no-store', mode: 'cors' }).catch(() => {});
+  } catch (e) {}
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
+  warmBackend();
+  setInterval(warmBackend, 480000);
   if (typeof restoreSessionFromStorage === 'function') await restoreSessionFromStorage();
   initAnnouncementBar();
   if (typeof createSidebar === 'function') createSidebar();

@@ -402,7 +402,7 @@ function renderCart() {
     li.innerHTML = `
       <div class="cart-item-meta">
         <div class="cart-item-avatar">
-          <img src="${item.image || item.product?.image || PRODUCT_FALLBACK_IMAGE}" alt="${escapeHTML(item.name)}" loading="lazy" onerror="if(!this.dataset.fb){this.dataset.fb='1';this.src=getNextFallbackImage();}else{this.style.display='none';}" />
+          <img src="${item.image || item.product?.image || PRODUCT_FALLBACK_IMAGE}" alt="${escapeHTML(item.name)}" loading="lazy" onerror="handleProductImageError(this)" />
         </div>
         <div class="cart-item-content">
           <h3>${escapeHTML(item.name)}</h3>
@@ -534,7 +534,7 @@ function renderSavedItems() {
     <li class="saved-item" data-saved-id="${safeId}" data-saved-variant="${safeVariant}">
       <div class="saved-item-meta">
         <div class="saved-item-avatar">
-          <img src="${item.image || item.product?.image || PRODUCT_FALLBACK_IMAGE}" alt="${escapeHTML(item.name)}" loading="lazy" onerror="if(!this.dataset.fb){this.dataset.fb='1';this.src=getNextFallbackImage();}else{this.style.display='none';}" />
+          <img src="${item.image || item.product?.image || PRODUCT_FALLBACK_IMAGE}" alt="${escapeHTML(item.name)}" loading="lazy" onerror="handleProductImageError(this)" />
         </div>
         <div class="saved-item-content">
           <h4>${escapeHTML(item.name)}</h4>

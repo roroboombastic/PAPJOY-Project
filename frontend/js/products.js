@@ -32,7 +32,7 @@ function createProductCardElement(product) {
 
   card.innerHTML = `
     <div class="product-image" data-quick-view="${productId}" role="button" tabindex="0" aria-label="Quick view ${product.name}">
-      <img src="${primaryImage}" alt="${product.name || 'Product'}" loading="lazy" onerror="if(!this.dataset.fb){this.dataset.fb='1';this.src=getNextFallbackImage();}else{this.style.display='none';}">
+      <img src="${primaryImage}" alt="${product.name || 'Product'}" loading="lazy" onerror="handleProductImageError(this)">
       ${product.isFeatured ? '<div class="badge featured">Featured</div>' : ''}
       ${lowStock ? '<div class="badge low-stock-badge">Low Stock</div>' : ''}
       ${outOfStock ? '<div class="badge out-of-stock-badge">Out of Stock</div>' : ''}
@@ -127,7 +127,7 @@ async function loadProducts() {
     }
 
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/products`, { timeout: 8000 });
+      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/products`, { timeout: 30000 });
       if (!response.ok) {
         throw new Error(`Product API returned ${response.status}`);
       }
@@ -305,11 +305,11 @@ async function renderProductDetailPage() {
   container.innerHTML = `
     <div class="product-detail-card">
       <div class="product-gallery">
-        <img id="detail-main-image" src="${activeImage}" alt="${escapeHTML(product.name || 'Product')}" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
+        <img id="detail-main-image" src="${activeImage}" alt="${escapeHTML(product.name || 'Product')}" onerror="handleProductImageError(this)" />
         <div class="gallery-thumbs">
           ${(detailImages.length ? detailImages : [product.image || PRODUCT_FALLBACK_IMAGE]).map((src, index) => `
             <button class="gallery-thumb${index === 0 ? ' active' : ''}" type="button" data-image="${src}">
-              <img src="${src}" alt="${escapeHTML(product.name || 'Product')} image ${index + 1}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
+              <img src="${src}" alt="${escapeHTML(product.name || 'Product')} image ${index + 1}" loading="lazy" onerror="handleProductImageError(this)" />
             </button>
           `).join('')}
         </div>
@@ -666,7 +666,7 @@ async function renderRecommendations(productId) {
         ${items.slice(0, 4).map((recProduct) => `
           <div class="recommendation-card">
             <a href="${getProductLink(recProduct)}">
-              <img src="${getProductImageUrls(recProduct)[0] || getNextFallbackImage()}" alt="${recProduct.name}" loading="lazy" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
+              <img src="${getProductImageUrls(recProduct)[0] || getNextFallbackImage()}" alt="${recProduct.name}" loading="lazy" onerror="handleProductImageError(this)" />
               <h4>${recProduct.name}</h4>
               <p>${formatCurrency(recProduct.price)}</p>
             </a>
@@ -852,7 +852,7 @@ async function fetchAutocomplete(query, dropdown) {
       const price = formatCurrency(product.price || 0);
       return `
         <a class="autocomplete-item" href="${link}">
-          <img src="${image}" alt="${product.name || 'Product'}" class="autocomplete-thumb" onerror="this.src='${PRODUCT_FALLBACK_IMAGE}'" />
+          <img src="${image}" alt="${product.name || 'Product'}" class="autocomplete-thumb" onerror="handleProductImageError(this)" />
           <div class="autocomplete-info">
             <span class="autocomplete-name">${escapeHTML(product.name || 'Product')}</span>
             <span class="autocomplete-price">${price}</span>
