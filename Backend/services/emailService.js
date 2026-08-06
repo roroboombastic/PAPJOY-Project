@@ -6,7 +6,8 @@ const {
   SMTP_USER,
   SMTP_PASS,
   SMTP_FROM_NAME,
-  SMTP_FROM_ADDRESS
+  SMTP_FROM_ADDRESS,
+  FRONTEND_URL
 } = require('../config');
 
 let transporter = null;
@@ -76,6 +77,32 @@ function htmlToText(html) {
     .trim();
 }
 
+function humanizeStatus(status) {
+  if (!status) return 'Updated';
+  return String(status)
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+function getTrackingLink(order) {
+  const site = FRONTEND_URL || '';
+  const orderRef = order.orderNumber || order._id || '';
+  return site && orderRef ? `${site.replace(/\/$/, '')}/tracking.html?order=${encodeURIComponent(orderRef)}` : '';
+}
+
+function getShipmentInfo(order) {
+  const s = order.shipment || {};
+  return {
+    trackingNumber: s.trackingNumber || order.trackingNumber || '',
+    carrier: s.carrier || order.carrier || '',
+    trackingUrl: s.trackingUrl || order.trackingUrl || '',
+    status: s.status || order.status || ''
+  };
+}
+
 function passwordResetTemplate(name, resetUrl) {
   return {
     subject: 'Reset your PAP-JOY password',
@@ -103,13 +130,13 @@ function orderConfirmationTemplate(order) {
   ).join('');
   const breakdownRows = [
     `<tr><td style="padding:4px 0;color:#666">Subtotal</td><td style="padding:4px 0;text-align:right;color:#666">${inr(order.subtotal)}</td></tr>`,
-    `<tr><td style="padding:4px 0;color:#666">GST</td><td style="padding:4px 0;text-align:right;color:#666">${inr(order.tax != null ? order.tax : order.gstTotal)}</td></tr>`,
     `<tr><td style="padding:4px 0;color:#666">Shipping</td><td style="padding:4px 0;text-align:right;color:#666">${order.shipping ? inr(order.shipping) : 'FREE'}</td></tr>`
   ];
   if (order.discount) {
     breakdownRows.push(`<tr><td style="padding:4px 0;color:#666">Discount</td><td style="padding:4px 0;text-align:right;color:#666">-${inr(order.discount)}</td></tr>`);
   }
   breakdownRows.push(`<tr><td style="padding:6px 0;font-weight:bold;border-top:1px solid #e0e0e0">Total</td><td style="padding:6px 0;text-align:right;font-weight:bold;border-top:1px solid #e0e0e0">${inr(order.total || order.amount)}</td></tr>`);
+  const trackLink = getTrackingLink(order);
 
   return {
     subject: `Order Confirmed - #${order.orderNumber || order._id}`,
@@ -120,7 +147,9 @@ function orderConfirmationTemplate(order) {
         <p>Your order <strong>#${order.orderNumber || order._id}</strong> has been placed successfully.</p>
         <table style="width:100%;border-collapse:collapse;margin:16px 0">${itemsHtml}</table>
         <table style="width:100%;border-collapse:collapse;margin:8px 0">${breakdownRows.join('')}</table>
-        <p>We'll notify you when it ships.</p>
+        <p style="font-size:12px;color:#666">All taxes are included in the prices above.</p>
+        <p>We'll email you at each step as your order is processed and shipped.</p>
+        ${trackLink ? `<p style="text-align:center;margin:24px 0"><a href="${trackLink}" style="display:inline-block;padding:12px 28px;background:#2d5a27;color:#fff;text-decoration:none;border-radius:6px;font-size:15px">Track Your Order</a></p>` : ''}
         <hr style="border:none;border-top:1px solid #e0e0e0;margin:24px 0">
         <p style="font-size:12px;color:#888">PAP-JOY · Premium footwear for every journey.</p>
       </div>`
@@ -143,14 +172,27 @@ function invoiceEmailTemplate(invoice, pdfUrl) {
 }
 
 function orderUpdateTemplate(order) {
+  const statusText = humanizeStatus(order.status);
+  const ship = getShipmentInfo(order);
+  const trackLink = getTrackingLink(order);
+  const trackingRows = [];
+  if (ship.trackingNumber) {
+    trackingRows.push(`<tr><td style="padding:4px 0;color:#666">Tracking Number</td><td style="padding:4px 0;text-align:right;color:#666"><strong>${ship.trackingNumber}</strong></td></tr>`);
+  }
+  if (ship.carrier) {
+    trackingRows.push(`<tr><td style="padding:4px 0;color:#666">Carrier</td><td style="padding:4px 0;text-align:right;color:#666">${ship.carrier}</td></tr>`);
+  }
+
   return {
-    subject: `Order Update - #${order.orderNumber || order._id}`,
+    subject: `Order Update - #${order.orderNumber || order._id} — ${statusText}`,
     html: `
       <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">
         <h2 style="color:#2d5a27">Order Update</h2>
         <p>Hi ${order.deliveryInfo?.name || order.shippingAddress?.name || 'there'},</p>
-        <p>Your order <strong>#${order.orderNumber || order._id}</strong> status has been updated to <strong>${order.status}</strong>.</p>
-        ${order.trackingNumber ? `<p>Tracking: <strong>${order.trackingNumber}</strong></p>` : ''}
+        <p>Your order <strong>#${order.orderNumber || order._id}</strong> is now <strong>${statusText}</strong>.</p>
+        ${trackingRows.length ? `<table style="width:100%;border-collapse:collapse;margin:12px 0">${trackingRows.join('')}</table>` : ''}
+        ${ship.trackingUrl ? `<p style="font-size:12px;color:#555">Carrier tracking: <a href="${ship.trackingUrl}" style="color:#2d5a27">${ship.trackingUrl}</a></p>` : ''}
+        ${trackLink ? `<p style="text-align:center;margin:24px 0"><a href="${trackLink}" style="display:inline-block;padding:12px 28px;background:#2d5a27;color:#fff;text-decoration:none;border-radius:6px;font-size:15px">Track Your Order</a></p>` : ''}
         <hr style="border:none;border-top:1px solid #e0e0e0;margin:24px 0">
         <p style="font-size:12px;color:#888">PAP-JOY · Premium footwear for every journey.</p>
       </div>`
