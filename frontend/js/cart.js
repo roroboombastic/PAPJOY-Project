@@ -214,6 +214,14 @@ function buyNow(productId, variantName = 'Standard', variantPrice = null) {
   addToCart(productId, variantName, variantPrice, true);
 }
 
+function checkout() {
+  if (cart.length === 0) {
+    showToast(translate('checkout.emptyCart'));
+    return;
+  }
+  window.location.href = 'checkout.html';
+}
+
 function removeFromCart(productId, variantName = 'Standard') {
   const item = cart.find((entry) => getItemIdentity(entry, entry.variant || 'Standard') === getItemIdentity({ id: productId, variant: variantName }, variantName));
   cart = cart.filter((entry) => getItemIdentity(entry, entry.variant || 'Standard') !== getItemIdentity({ id: productId, variant: variantName }, variantName));
