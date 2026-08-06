@@ -1301,39 +1301,7 @@ body.mobile-nav-open .mobile-nav-overlay {
   box-shadow: 0 28px 90px rgba(66, 83, 72, 0.12);
 }
 
-.quick-view-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: none;
-  background: var(--surface);
-  color: var(--text);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transform: translateY(-8px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
-  z-index: 2;
-}
-
-.product-card:hover .quick-view-btn,
-.product-card:focus-within .quick-view-btn {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.quick-view-btn:hover {
-  background: var(--accent);
-  color: #111;
-}
-
-.product-image[data-quick-view] {
+.product-card {
   cursor: pointer;
 }
 

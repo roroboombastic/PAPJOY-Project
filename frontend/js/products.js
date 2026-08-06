@@ -14,10 +14,17 @@ function createProductCardElement(product) {
   const card = document.createElement('div');
   card.className = 'product-card';
   card.onclick = (event) => {
-    if (event.target.closest('[data-quick-view]')) return;
     if (event.target.closest('button')) return;
+    if (event.target.closest('a')) return;
     window.location.href = getProductLink(product);
   };
+  card.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      if (event.target.closest('button') || event.target.closest('a')) return;
+      event.preventDefault();
+      window.location.href = getProductLink(product);
+    }
+  });
 
   const imageUrls = getProductImageUrls(product);
   const primaryImage = imageUrls[0] || product.image || getNextFallbackImage();
@@ -31,12 +38,11 @@ function createProductCardElement(product) {
   const stockLabel = outOfStock ? 'Out of Stock' : (lowStock ? 'Only ' + stockLevel + ' left' : '');
 
   card.innerHTML = `
-    <div class="product-image" data-quick-view="${productId}" role="button" tabindex="0" aria-label="Quick view ${product.name}">
+    <div class="product-image" role="link" tabindex="0" aria-label="View ${product.name}">
       <img src="${primaryImage}" alt="${product.name || 'Product'}" loading="lazy" onerror="handleProductImageError(this)">
       ${product.isFeatured ? '<div class="badge featured">Featured</div>' : ''}
       ${lowStock ? '<div class="badge low-stock-badge">Low Stock</div>' : ''}
       ${outOfStock ? '<div class="badge out-of-stock-badge">Out of Stock</div>' : ''}
-      <button class="quick-view-btn" data-quick-view="${productId}" title="Quick view"><i class="fas fa-eye"></i></button>
     </div>
     <div class="product-info">
       <div class="product-info-top">
