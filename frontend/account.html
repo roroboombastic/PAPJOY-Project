@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -43,7 +43,7 @@
   
   <script>
   (function(){
-    var V='papjoy-v19',K='papjoy-sw-version';
+    var V='papjoy-v20',K='papjoy-sw-version';
     try{
       if('serviceWorker'in navigator&&navigator.serviceWorker.controller){
         if(localStorage.getItem(K)!==V){
@@ -108,11 +108,11 @@
           <span class="account-stat-label">Orders</span>
         </div>
         <div class="account-stat">
-          <span class="account-stat-value" id="stat-total-spent">�</span>
+          <span class="account-stat-value" id="stat-total-spent">?</span>
           <span class="account-stat-label">Total Spent</span>
         </div>
         <div class="account-stat">
-          <span class="account-stat-value" id="stat-member-since">�</span>
+          <span class="account-stat-value" id="stat-member-since">?</span>
           <span class="account-stat-label">Member Since</span>
         </div>
       </div>
@@ -204,8 +204,8 @@
               <select id="pref-currency" class="pref-select">
                 <option value="INR">INR (?)</option>
                 <option value="USD">USD ($)</option>
-                <option value="EUR">EUR (�)</option>
-                <option value="GBP">GBP (�)</option>
+                <option value="EUR">EUR (?)</option>
+                <option value="GBP">GBP (?)</option>
               </select>
             </div>
             <div class="pref-item">
@@ -259,9 +259,9 @@
         <!-- Account Info Card -->
         <div class="sidebar-card">
           <h4><i class="fas fa-user"></i> Account Info</h4>
-          <p id="sidebar-name">Name: �</p>
-          <p id="sidebar-email">Email: �</p>
-          <p id="sidebar-phone">Phone: �</p>
+          <p id="sidebar-name">Name: ?</p>
+          <p id="sidebar-email">Email: ?</p>
+          <p id="sidebar-phone">Phone: ?</p>
           <button onclick="document.getElementById('edit-profile-btn').click()">Edit Account</button>
         </div>
 
