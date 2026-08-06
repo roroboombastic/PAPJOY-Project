@@ -266,11 +266,39 @@ async function renderProductDetailPage() {
 
   const detailImages = getProductImageUrls(product);
   const activeImage = detailImages[0] || product.image || PRODUCT_FALLBACK_IMAGE;
-  const variantButtons = (product.variants || []).map((variant, index) => `
-        <button class="variant-option${index === 0 ? ' active' : ''}" data-price-delta="${variant.priceDelta || 0}" data-variant="${variant.name || 'Standard'}">
-          ${variant.name || 'Standard'}${variant.priceDelta ? ` +${formatCurrency(variant.priceDelta)}` : ''}
-        </button>
-      `).join('');
+  const SIZE_OPTIONS = [
+    { uk: 4, eu: 37 },
+    { uk: 5, eu: 38 },
+    { uk: 6, eu: 39 },
+    { uk: 7, eu: 40 },
+    { uk: 8, eu: 41 },
+    { uk: 9, eu: 42 }
+  ];
+  const variantButtons = [
+    ...(product.variants || []).map((variant, index) => ({
+      html: `
+        <button class="variant-option${index === 0 ? ' active' : ''}" type="button" data-price-delta="${variant.priceDelta || 0}" data-variant="${escapeHTML(variant.name || 'Standard')}">
+          ${escapeHTML(variant.name || 'Standard')}${variant.priceDelta ? ` +${formatCurrency(variant.priceDelta)}` : ''}
+        </button>`,
+      name: variant.name || 'Standard',
+      priceDelta: variant.priceDelta || 0
+    })),
+    ...SIZE_OPTIONS.map((size) => ({
+      html: `
+        <button class="variant-option size-option" type="button" data-variant="UK ${size.uk} (EU ${size.eu})">
+          <span class="size-uk">UK ${size.uk}</span>
+          <span class="size-eu">EU ${size.eu}</span>
+        </button>`,
+      name: `UK ${size.uk} (EU ${size.eu})`,
+      priceDelta: 0
+    }))
+  ];
+  if (!(product.variants && product.variants.length) && variantButtons.length) {
+    variantButtons[0].html = variantButtons[0].html.replace('class="variant-option size-option"', 'class="variant-option size-option active"');
+  }
+  const variantButtonsHtml = variantButtons.map((entry) => entry.html).join('');
+  const defaultVariant = variantButtons.length ? variantButtons[0].name : 'Standard';
+  const defaultVariantPrice = product.price + (variantButtons.length ? variantButtons[0].priceDelta : 0);
   const detailsList = (product.details || []).map((detail) => `<li>${detail}</li>`).join('');
 
   container.innerHTML = `
@@ -291,8 +319,8 @@ async function renderProductDetailPage() {
         <p class="detail-subtitle">${escapeHTML(product.subtitle || '')}</p>
         <p class="detail-description">${escapeHTML(product.description || '')}</p>
         <div class="product-variants">
-          <p class="variant-label">Choose variant <button type="button" class="size-guide-btn" data-size-guide><i class="fas fa-ruler"></i> Size Guide</button></p>
-          <div class="variant-list">${variantButtons}</div>
+          <p class="variant-label">Select size <button type="button" class="size-guide-btn" data-size-guide><i class="fas fa-ruler"></i> Size Guide</button></p>
+          <div class="variant-list">${variantButtonsHtml}</div>
         </div>
         <ul class="detail-features">${detailsList}</ul>
         <div class="stock-indicator in-stock" id="detail-stock-indicator">
@@ -326,7 +354,7 @@ async function renderProductDetailPage() {
     }
   };
 
-  updateDetailActions(product.variants?.[0]?.name || 'Standard', product.price + (product.variants?.[0]?.priceDelta || 0));
+  updateDetailActions(defaultVariant, defaultVariantPrice);
 
   // Stock indicator
   var stockEl = container.querySelector('#detail-stock-indicator');
