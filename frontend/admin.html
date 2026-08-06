@@ -42,7 +42,7 @@
   
   <script>
   (function(){
-    var V='papjoy-v25',K='papjoy-sw-version';
+    var V='papjoy-v26',K='papjoy-sw-version';
     try{
       if('serviceWorker'in navigator&&navigator.serviceWorker.controller){
         if(localStorage.getItem(K)!==V){
@@ -74,22 +74,22 @@
       </div>
       <nav class="admin-nav">
         <button class="admin-nav-item active" data-page="dashboard">
-          Ã°Å¸â€œÅ  Dashboard
+          ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…Â  Dashboard
         </button>
         <button class="admin-nav-item" data-page="products">
-          Ã°Å¸â€œÂ¦ Products
+          ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¦ Products
         </button>
         <button class="admin-nav-item" data-page="orders">
-          Ã°Å¸â€œâ€¹ Orders
+          ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ Orders
         </button>
         <button class="admin-nav-item" data-page="users">
-          Ã°Å¸â€˜Â¥ Users
+          ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¥ Users
         </button>
         <button class="admin-nav-item" data-page="analytics">
-          Ã°Å¸â€œË† Analytics
+          ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‹â€  Analytics
         </button>
         <button class="admin-nav-item" data-page="categories">
-          Ã°Å¸ÂÂ·Ã¯Â¸Â Categories
+          ÃƒÂ°Ã…Â¸Ã‚ÂÃ‚Â·ÃƒÂ¯Ã‚Â¸Ã‚Â Categories
         </button>
       </nav>
       <div class="admin-user-info">
@@ -105,28 +105,28 @@
         <h1>Dashboard</h1>
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-icon">Ã°Å¸â€™Â°</div>
+            <div class="stat-icon">ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â°</div>
             <div class="stat-content">
               <div class="stat-label">Total Revenue</div>
-              <div class="stat-value" id="stat-revenue">Ã¢â€šÂ¹0</div>
+              <div class="stat-value" id="stat-revenue">ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹0</div>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">Ã°Å¸â€œÂ¦</div>
+            <div class="stat-icon">ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¦</div>
             <div class="stat-content">
               <div class="stat-label">Total Orders</div>
               <div class="stat-value" id="stat-orders">0</div>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">Ã°Å¸â€ºÂÃ¯Â¸Â</div>
+            <div class="stat-icon">ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂºÃ‚ÂÃƒÂ¯Ã‚Â¸Ã‚Â</div>
             <div class="stat-content">
               <div class="stat-label">Total Products</div>
               <div class="stat-value" id="stat-products">0</div>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">Ã°Å¸â€˜Â¥</div>
+            <div class="stat-icon">ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¥</div>
             <div class="stat-content">
               <div class="stat-label">Total Users</div>
               <div class="stat-value" id="stat-users">0</div>
@@ -169,7 +169,7 @@
       <section id="products-page" class="admin-page">
         <div class="admin-header">
           <h2>Products Management</h2>
-          <button class="btn btn-primary" onclick="window.location.href='product-edit.html'">Ã¢Å¾â€¢ Add Product</button>
+          <button class="btn btn-primary" onclick="window.location.href='product-edit.html'">ÃƒÂ¢Ã…Â¾Ã¢â‚¬Â¢ Add Product</button>
         </div>
 
         <!-- Search & Filters -->
@@ -345,7 +345,7 @@
       <section id="categories-page" class="admin-page">
         <div class="admin-header">
           <h2>Categories Management</h2>
-          <button class="btn btn-primary" onclick="showCategoryForm()">Ã¢Å¾â€¢ Add Category</button>
+          <button class="btn btn-primary" onclick="showCategoryForm()">ÃƒÂ¢Ã…Â¾Ã¢â‚¬Â¢ Add Category</button>
         </div>
 
         <!-- Categories Table -->
@@ -445,7 +445,7 @@
             <input type="number" id="product-stock" min="0" />
           </div>
           <div class="form-group">
-            <label>Shipping Charge (Ã¢â€šÂ¹)</label>
+            <label>Shipping Charge (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)</label>
             <input type="number" id="product-shipping" min="0" step="0.01" />
           </div>
         </div>

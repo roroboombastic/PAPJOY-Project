@@ -348,7 +348,7 @@ function renderAccountWishlist() {
     return `
       <div class="wishlist-card" data-wishlist-id="${safeId}" data-wishlist-variant="${safeVariant}">
         <div class="wishlist-card-meta">
-          <img src="${itemImage}" alt="${item.name || 'Saved item'}" loading="lazy" class="wishlist-card-image" onerror="handleProductImageError(this)" />
+          <img src="${itemImage}" alt="${item.name || 'Saved item'}" class="wishlist-card-image" onerror="handleProductImageError(this)" />
           <div class="wishlist-card-details">
             <strong>${item.name || item.title || 'Saved item'}</strong>
             ${item.category ? `<p>${item.category}</p>` : ''}

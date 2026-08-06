@@ -39,7 +39,7 @@ function createProductCardElement(product) {
 
   card.innerHTML = `
     <div class="product-image" role="link" tabindex="0" aria-label="View ${product.name}">
-      <img src="${primaryImage}" alt="${product.name || 'Product'}" loading="lazy" onerror="handleProductImageError(this)">
+      <img src="${primaryImage}" alt="${product.name || 'Product'}" onerror="handleProductImageError(this)">
       ${product.isFeatured ? '<div class="badge featured">Featured</div>' : ''}
       ${lowStock ? '<div class="badge low-stock-badge">Low Stock</div>' : ''}
       ${outOfStock ? '<div class="badge out-of-stock-badge">Out of Stock</div>' : ''}
@@ -316,7 +316,7 @@ async function renderProductDetailPage() {
         <div class="gallery-thumbs">
           ${(detailImages.length ? detailImages : [product.image || PRODUCT_FALLBACK_IMAGE]).map((src, index) => `
             <button class="gallery-thumb${index === 0 ? ' active' : ''}" type="button" data-image="${src}">
-              <img src="${src}" alt="${escapeHTML(product.name || 'Product')} image ${index + 1}" loading="lazy" onerror="handleProductImageError(this)" />
+              <img src="${src}" alt="${escapeHTML(product.name || 'Product')} image ${index + 1}" onerror="handleProductImageError(this)" />
             </button>
           `).join('')}
         </div>
@@ -676,7 +676,7 @@ async function renderRecommendations(productId) {
         ${items.slice(0, 4).map((recProduct) => `
           <div class="recommendation-card">
             <a href="${getProductLink(recProduct)}">
-              <img src="${getProductImageUrls(recProduct)[0] || getNextFallbackImage()}" alt="${recProduct.name}" loading="lazy" onerror="handleProductImageError(this)" />
+              <img src="${getProductImageUrls(recProduct)[0] || getNextFallbackImage()}" alt="${recProduct.name}" onerror="handleProductImageError(this)" />
               <h4>${recProduct.name}</h4>
               <p>${formatCurrency(recProduct.price)}</p>
             </a>
