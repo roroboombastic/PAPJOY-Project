@@ -352,6 +352,7 @@ function createMobileThemeToggle() {
   }
 
   function closePopover() {
+    if (!popoverOpen) return;
     popoverOpen = false;
     popover.classList.remove('active');
     btn.classList.remove('active');

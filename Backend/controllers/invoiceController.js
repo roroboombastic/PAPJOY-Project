@@ -93,7 +93,7 @@ async function generateInvoice(orderId) {
         quantity: item.quantity,
         unitPrice: item.unitPrice ?? item.price ?? 0,
         price: item.price ?? item.unitPrice ?? 0,
-        gstRate: item.gstRate || GST_PERCENT
+        gstRate: item.gstRate ?? GST_PERCENT
       })),
       shipping: order.shipping,
       discount: order.discount,
@@ -330,7 +330,7 @@ async function downloadInvoicePDF(req, res) {
       pdf.text(String(item.variant || 'Standard').slice(0, 18), col.variant, y, { width: 78 });
       pdf.text(String(item.quantity), col.qty, y);
       pdf.text(`₹${roundMoney(item.unitPrice || 0).toLocaleString('en-IN')}`, col.unit, y, { width: 74, align: 'right' });
-      pdf.text(`${item.gstRate || GST_PERCENT}%`, col.gst, y, { width: 40, align: 'right' });
+      pdf.text(`${item.gstRate ?? GST_PERCENT}%`, col.gst, y, { width: 40, align: 'right' });
       pdf.text(`₹${roundMoney(item.total || 0).toLocaleString('en-IN')}`, col.amount, y, { width: 66, align: 'right' });
       y += 18;
     }
@@ -346,16 +346,18 @@ async function downloadInvoicePDF(req, res) {
     pdf.text(`Subtotal`, summaryLeft, y, { width: 120 });
     pdf.text(`₹${roundMoney(invoice.subtotal).toLocaleString('en-IN')}`, 470, y, { width: 86, align: 'right' });
     y += 16;
-    pdf.text(`CGST (${gstHalfRate}%)`, summaryLeft, y, { width: 120 });
-    pdf.text(`₹${roundMoney(invoice.cgstTotal).toLocaleString('en-IN')}`, 470, y, { width: 86, align: 'right' });
-    y += 16;
-    pdf.text(`SGST (${gstHalfRate}%)`, summaryLeft, y, { width: 120 });
-    pdf.text(`₹${roundMoney(invoice.sgstTotal).toLocaleString('en-IN')}`, 470, y, { width: 86, align: 'right' });
-    y += 16;
-    if (roundMoney(invoice.igstTotal) > 0) {
-      pdf.text(`IGST`, summaryLeft, y, { width: 120 });
-      pdf.text(`₹${roundMoney(invoice.igstTotal).toLocaleString('en-IN')}`, 470, y, { width: 86, align: 'right' });
+    if (roundMoney(invoice.taxTotal || invoice.cgstTotal + invoice.sgstTotal + invoice.igstTotal) > 0) {
+      pdf.text(`CGST (${gstHalfRate}%)`, summaryLeft, y, { width: 120 });
+      pdf.text(`₹${roundMoney(invoice.cgstTotal).toLocaleString('en-IN')}`, 470, y, { width: 86, align: 'right' });
       y += 16;
+      pdf.text(`SGST (${gstHalfRate}%)`, summaryLeft, y, { width: 120 });
+      pdf.text(`₹${roundMoney(invoice.sgstTotal).toLocaleString('en-IN')}`, 470, y, { width: 86, align: 'right' });
+      y += 16;
+      if (roundMoney(invoice.igstTotal) > 0) {
+        pdf.text(`IGST`, summaryLeft, y, { width: 120 });
+        pdf.text(`₹${roundMoney(invoice.igstTotal).toLocaleString('en-IN')}`, 470, y, { width: 86, align: 'right' });
+        y += 16;
+      }
     }
     pdf.text(`Shipping`, summaryLeft, y, { width: 120 });
     pdf.text(roundMoney(invoice.shippingCharges) > 0 ? `₹${roundMoney(invoice.shippingCharges).toLocaleString('en-IN')}` : 'FREE', 470, y, { width: 86, align: 'right' });
@@ -367,7 +369,7 @@ async function downloadInvoicePDF(req, res) {
     pdf.text(`Grand Total`, summaryLeft, y + 2, { width: 120 });
     pdf.text(`₹${roundMoney(invoice.total).toLocaleString('en-IN')}`, 470, y + 2, { width: 86, align: 'right' });
 
-    pdf.fontSize(9).font('Helvetica').text(`GST Collected: ₹${roundMoney(invoice.taxTotal).toLocaleString('en-IN')}`, 36, 510);
+    pdf.fontSize(9).font('Helvetica').text(`All taxes included in the prices above.`, 36, 510);
 
     pdf.fontSize(10).font('Helvetica-Bold').text('Payment Details', 36, 540);
     pdf.fontSize(9).font('Helvetica')

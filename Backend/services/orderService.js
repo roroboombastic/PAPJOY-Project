@@ -57,7 +57,7 @@ async function buildOrderLineItems(items = [], deliveryInfo = {}) {
       price,
       unitPrice: price,
       total: itemTotal,
-      gstRate: Number(product?.gstPercentage || item.gstRate || 18),
+      gstRate: 0,
       shippingCharge: Number(product?.shippingCharge ?? item.shippingCharge ?? 0),
       cgst: 0,
       sgst: 0,

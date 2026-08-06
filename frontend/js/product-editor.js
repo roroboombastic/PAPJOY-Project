@@ -115,7 +115,6 @@
     $('pe-price').value = p.price || '';
     $('pe-compare-price').value = p.comparePrice || '';
     $('pe-cost-price').value = p.costPrice || '';
-    $('pe-gst').value = p.gstPercentage ?? 18;
     $('pe-shipping').value = p.shippingCharge ?? 0;
     $('pe-sku').value = p.sku || '';
     $('pe-barcode').value = p.barcode || '';
@@ -645,7 +644,6 @@
       price: price || 0,
       comparePrice: Number($('pe-compare-price').value) || 0,
       costPrice: Number($('pe-cost-price').value) || 0,
-      gstPercentage: Number($('pe-gst').value) || 18,
       shippingCharge: Number($('pe-shipping').value) || 0,
       categoryId: categoryId || undefined,
       brand: $('pe-brand').value.trim(),

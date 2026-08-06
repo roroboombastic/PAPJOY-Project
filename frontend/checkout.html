@@ -42,7 +42,7 @@
   
   <script>
   (function(){
-    var V='papjoy-v21',K='papjoy-sw-version';
+    var V='papjoy-v22',K='papjoy-sw-version';
     try{
       if('serviceWorker'in navigator&&navigator.serviceWorker.controller){
         if(localStorage.getItem(K)!==V){
@@ -65,7 +65,7 @@
   <div id="announcement-bar" class="announcement-bar">
     <div class="announcement-bar-inner">
       <span class="announcement-icon"><i class="fas fa-shipping-fast"></i></span>
-      <span class="announcement-text">Transparent GST billing on every order</span>
+      <span class="announcement-text">All prices include all taxes</span>
       <span class="announcement-separator">|</span>
       <span class="announcement-icon"><i class="fas fa-undo-alt"></i></span>
       <span class="announcement-text">Easy 7-day returns</span>
@@ -96,7 +96,6 @@
           <div class="checkout-row"><span data-i18n="checkout.subtotal">Subtotal</span><strong id="checkout-subtotal">&#8377;0</strong></div>
           <div class="checkout-row"><span data-i18n="checkout.shipping">Shipping</span><strong id="checkout-shipping">FREE</strong></div>
           <div class="checkout-row" id="checkout-discount-row" style="display:none;"><span>Promo discount</span><strong id="checkout-discount">0</strong></div>
-          <div class="checkout-row"><span data-i18n="checkout.tax">Tax (GST)</span><strong id="checkout-tax">&#8377;0</strong></div>
           <div class="checkout-row total-row"><span data-i18n="checkout.total">Total</span><strong id="checkout-total">&#8377;0</strong></div>
         </div>
       </section>

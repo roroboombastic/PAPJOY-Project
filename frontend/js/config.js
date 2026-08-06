@@ -15,7 +15,7 @@ const PRODUCT_FALLBACK_IMAGE = PRODUCT_PLACEHOLDER_SVG;
 function getNextFallbackImage() {
   return PRODUCT_PLACEHOLDER_SVG;
 }
-const GST_RATE = 0.18;
+const GST_RATE = 0;
 
 function getDefaultApiBaseUrl() {
   if (typeof window === 'undefined') return 'http://127.0.0.1:3000';

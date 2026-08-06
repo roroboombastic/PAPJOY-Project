@@ -47,6 +47,7 @@ function createProductCardElement(product) {
       <p class="product-subtitle">${product.subtitle || (product.description || '').slice(0, 80) + '...'}</p>
       ${stockLabel ? '<div class="stock-indicator ' + stockStatus + '"><span class="dot"></span>' + stockLabel + '</div>' : ''}
       <div class="price">${formatCurrency(product.price || 0)}</div>
+      <div class="tax-included">All taxes included</div>
       <div class="product-actions">
         <button class="btn btn-primary add-to-cart-btn" type="button" data-product-id="${productId}" ${outOfStock ? 'disabled' : ''}>
           <i class="fas fa-cart-plus"></i> ${outOfStock ? 'Out of Stock' : 'Add to Cart'}
@@ -329,7 +330,10 @@ async function renderProductDetailPage() {
           <span class="stock-text">In Stock</span>
         </div>
         <div class="detail-meta">
-          <span id="detail-price">${formatCurrency(product.price || 0)}</span>
+          <div class="detail-price-wrap">
+            <span id="detail-price">${formatCurrency(product.price || 0)}</span>
+            <span class="tax-included">All taxes included</span>
+          </div>
           <button id="detail-add-button" type="button">${translate('product.addToCart')}</button>
           <button id="detail-buy-button" type="button" class="buy-now-button">Buy now</button>
           <button class="wishlist-heart detail-wishlist-heart" type="button" data-product-id="${product.id || product._id}" title="Add to wishlist" aria-label="Add to wishlist"><i class="${isInWishlist(product.id || product._id) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>

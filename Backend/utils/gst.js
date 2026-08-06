@@ -58,7 +58,7 @@ function calculateTax({ amount = 0, billingState = '', sellerState = '', gstPerc
   const normalizedBilling = normalizeState(billingState);
   const normalizedSeller = normalizeState(sellerState || GST_STATE);
   const interstate = normalizedBilling && normalizedSeller ? normalizedBilling !== normalizedSeller : false;
-  const totalTaxRate = Number(gstPercent || GST_PERCENT) / 100;
+  const totalTaxRate = Number(gstPercent ?? GST_PERCENT) / 100;
   const taxAmount = roundMoney(Number(amount || 0) * totalTaxRate);
   const igstAmount = interstate ? taxAmount : 0;
   const half = interstate ? 0 : Math.round(taxAmount / 2);
@@ -70,7 +70,7 @@ function calculateTax({ amount = 0, billingState = '', sellerState = '', gstPerc
     sgst,
     igst: igstAmount,
     total: roundMoney(Number(amount || 0) + taxAmount),
-    gstRate: Number(gstPercent || GST_PERCENT)
+    gstRate: Number(gstPercent ?? GST_PERCENT)
   };
 }
 
@@ -121,7 +121,7 @@ function calculateOrderTotals({
     taxTotal: gstTotal,
     gstTotal,
     total,
-    gstPercent: Number(gstPercent || GST_PERCENT)
+    gstPercent: Number(gstPercent ?? GST_PERCENT)
   };
 }
 

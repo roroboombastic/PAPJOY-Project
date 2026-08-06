@@ -299,7 +299,6 @@ function getCartTotals() {
 function updateCartSummary() {
   const subtotalEl = document.getElementById('subtotal');
   const shippingEl = document.getElementById('shipping');
-  const taxEl = document.getElementById('tax');
   const totalEl = document.getElementById('total');
   const countEl = document.getElementById('cart-count');
   const discountEl = document.getElementById('discount-amount');
@@ -309,11 +308,6 @@ function updateCartSummary() {
   if (countEl) countEl.textContent = totals.count;
   if (subtotalEl) subtotalEl.textContent = formatCurrency(totals.subtotal);
   if (shippingEl) shippingEl.textContent = totals.shipping === 0 ? translate('cart.free') : formatCurrency(totals.shipping);
-  if (taxEl) taxEl.textContent = formatCurrency(totals.tax);
-  const cgstEl = document.getElementById('checkout-cgst');
-  const sgstEl = document.getElementById('checkout-sgst');
-  if (cgstEl) cgstEl.textContent = formatCurrency(totals.cgst || 0);
-  if (sgstEl) sgstEl.textContent = formatCurrency(totals.sgst || 0);
   if (totalEl) totalEl.textContent = formatCurrency(totals.total);
 
   if (discountRow) {
@@ -342,7 +336,6 @@ function updateCartSummary() {
 function updateCheckoutSummary() {
   const subtotalEl = document.getElementById('checkout-subtotal');
   const shippingEl = document.getElementById('checkout-shipping');
-  const taxEl = document.getElementById('checkout-tax');
   const totalEl = document.getElementById('checkout-total');
   const countEl = document.getElementById('checkout-count');
   const totals = getCartTotals();
@@ -350,11 +343,6 @@ function updateCheckoutSummary() {
   if (countEl) countEl.textContent = totals.count;
   if (subtotalEl) subtotalEl.textContent = formatCurrency(totals.subtotal);
   if (shippingEl) shippingEl.textContent = totals.shipping === 0 ? translate('cart.free') : formatCurrency(totals.shipping);
-  if (taxEl) taxEl.textContent = formatCurrency(totals.tax);
-  const cgstEl = document.getElementById('cgst');
-  const sgstEl = document.getElementById('sgst');
-  if (cgstEl) cgstEl.textContent = formatCurrency(totals.cgst || 0);
-  if (sgstEl) sgstEl.textContent = formatCurrency(totals.sgst || 0);
   if (totalEl) totalEl.textContent = formatCurrency(totals.total);
 
   const discountRow = document.getElementById('checkout-discount-row');

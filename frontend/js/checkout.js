@@ -559,7 +559,6 @@ async function renderInvoicePreviewPage() {
         <td>${escapeHTML(item.productName || item.name || 'Item')}</td>
         <td>${item.quantity || 1}</td>
         <td>${formatINR(item.unitPrice || item.price || 0)}</td>
-        <td>${item.gstRate != null ? item.gstRate + '%' : '--'}</td>
         <td>${formatINR(item.total || 0)}</td>
       </tr>
     `).join('');
@@ -575,13 +574,13 @@ async function renderInvoicePreviewPage() {
         <div class="invoice-block"><h3>Billing</h3><p>${escapeHTML(invoiceData.billingAddress?.street || '')}</p><p>${escapeHTML(invoiceData.billingAddress?.city || '')} ${escapeHTML(invoiceData.billingAddress?.state || '')}</p><p>${escapeHTML(invoiceData.billingAddress?.zipCode || '')} ${escapeHTML(invoiceData.billingAddress?.country || '')}</p></div>
         <div class="invoice-block"><h3>Seller</h3><p>${escapeHTML(invoiceData.companyName || 'PAP-JOY')}</p><p>${escapeHTML(invoiceData.companyGSTIN || '')}</p></div>
       </section>
-      <table class="invoice-table"><thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>GST</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table>
+      <table class="invoice-table"><thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table>
       <div class="invoice-total">
         <div>Subtotal: ${formatINR(invoiceData.subtotal || 0)}</div>
-        <div>GST: ${formatINR(invoiceData.taxTotal || invoiceData.tax || 0)}</div>
         <div>Shipping: ${formatINR(invoiceData.shippingCharges || invoiceData.shipping || 0)}</div>
         <div>Discount: ${formatINR(invoiceData.discount || 0)}</div>
         <strong>Total: ${formatINR(invoiceData.total || 0)}</strong>
+        <small>All taxes included</small>
       </div>
     `;
     previewMessage.textContent = '';

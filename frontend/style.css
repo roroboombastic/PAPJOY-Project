@@ -1515,6 +1515,24 @@ body.mobile-nav-open .mobile-nav-overlay {
   color: var(--accent);
 }
 
+.tax-included {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-muted, #777);
+  margin-top: 2px;
+}
+
+.detail-price-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.detail-price-wrap .tax-included {
+  font-size: 0.8rem;
+}
+
 .product-actions {
   display: flex;
   flex-wrap: wrap;
