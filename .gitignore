@@ -18,6 +18,8 @@ Backend/mongodb*/
 
 # Uploaded files
 uploads/
+!frontend/uploads/
+!frontend/uploads/products/
 
 node_modules/
 .env

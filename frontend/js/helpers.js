@@ -51,18 +51,34 @@ function handleProductImageError(img) {
       }
     }, delay);
   } else {
-    img.dataset.fb = '1';
-    img.src = (typeof getNextFallbackImage === 'function' ? getNextFallbackImage() : window.PRODUCT_FALLBACK_IMAGE) || '';
+    if (!img.dataset.fb && !img.dataset.rendered && img.dataset.orig && img.dataset.orig.indexOf('/uploads/') === 0 && !/onrender\.com/.test(img.dataset.orig)) {
+      img.dataset.rendered = '1';
+      img.dataset.retry = '0';
+      setTimeout(() => {
+        if (!img.dataset.fb) {
+          img.src = 'https://papjoy-project.onrender.com' + img.dataset.orig;
+        }
+      }, 500);
+    } else if (!img.dataset.fb) {
+      img.dataset.fb = '1';
+      img.src = (typeof getNextFallbackImage === 'function' ? getNextFallbackImage() : window.PRODUCT_FALLBACK_IMAGE) || '';
+    } else {
+      img.style.display = 'none';
+    }
   }
 }
 
 function resolveProductImageUrl(url) {
   if (!url) return '';
   const str = String(url);
-  if (/^(https?:|data:|blob:)/i.test(str)) return str;
-  if (str.startsWith('/') && typeof window.API_BASE_URL === 'string' && window.API_BASE_URL) {
-    return window.API_BASE_URL.replace(/\/+$/, '') + str;
+  if (/^(data:|blob:)/i.test(str)) return str;
+  if (/^https?:\/\//i.test(str)) {
+    if (/^https:\/\/papjoy-project\.onrender\.com\/uploads\//i.test(str)) {
+      return str.replace(/^https:\/\/papjoy-project\.onrender\.com/i, '');
+    }
+    return str;
   }
+  if (str.startsWith('/')) return str;
   return str;
 }
 
