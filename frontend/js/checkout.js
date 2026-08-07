@@ -251,23 +251,87 @@ async function startCODCheckout() {
   }
 }
 
+function updateCheckoutPayState() {
+  const empty = cart.length === 0;
+  document.querySelectorAll('.pay-now-btn').forEach((btn) => {
+    btn.disabled = empty;
+    btn.title = empty ? 'Add items to your cart to proceed' : '';
+  });
+  if (empty) {
+    setCheckoutMessage('Your cart is empty. Add items to proceed.', true);
+  }
+}
+
+function refreshCheckoutItems() {
+  renderCheckoutItems();
+  updateCartSummary();
+  updateCheckoutSummary();
+  updateCODAmount();
+  updateCheckoutPayState();
+}
+
 function renderCheckoutItems() {
   const container = document.getElementById('checkout-items');
   if (!container) return;
   container.innerHTML = '';
   if (cart.length === 0) {
-    container.innerHTML = `<div class="checkout-item">${translate('cart.empty')}</div>`;
+    container.innerHTML = `<div class="checkout-item checkout-empty">${translate('cart.empty')}</div>`;
+    updateCheckoutPayState();
     return;
   }
   cart.forEach((item) => {
+    const safeId = encodeURIComponent(String(item.id || ''));
+    const safeVariant = encodeURIComponent(String(item.variant || 'Standard'));
     const itemRow = document.createElement('div');
     itemRow.className = 'checkout-item';
+    itemRow.dataset.cartId = safeId;
+    itemRow.dataset.cartVariant = safeVariant;
     itemRow.innerHTML = `
-      <span>${escapeHTML(item.name)} x ${item.quantity}</span>
-      <span>${formatINR(item.price * item.quantity)}</span>
+      <div class="cart-item-avatar checkout-thumb">
+        <img src="${item.image || item.product?.image || PRODUCT_FALLBACK_IMAGE}" alt="${escapeHTML(item.name)}" onerror="handleProductImageError(this)" />
+      </div>
+      <div class="cart-item-content checkout-item-content">
+        <h3>${escapeHTML(item.name)}</h3>
+        ${item.variant ? `<p class="cart-variant">${escapeHTML(item.variant)}</p>` : ''}
+        <p class="cart-item-price">${formatINR(item.price)} ${item.quantity > 1 ? 'each' : ''}</p>
+      </div>
+      <div class="item-controls checkout-item-controls">
+        <button class="cart-qty-btn" data-checkout-action="decr" aria-label="Decrease quantity">-</button>
+        <span>${item.quantity}</span>
+        <button class="cart-qty-btn" data-checkout-action="incr" aria-label="Increase quantity">+</button>
+        <button class="remove-button cart-remove-btn" data-checkout-action="remove" title="Remove">${translate('item.remove')}</button>
+      </div>
+      <div class="checkout-item-line">
+        <strong>${formatINR(item.price * item.quantity)}</strong>
+      </div>
     `;
     container.appendChild(itemRow);
   });
+
+  if (container._checkoutListener) {
+    container.removeEventListener('click', container._checkoutListener);
+  }
+  const handler = (e) => {
+    const row = e.target.closest('.checkout-item');
+    if (!row) return;
+    const actionEl = e.target.closest('[data-checkout-action]');
+    if (!actionEl) return;
+    const id = decodeURIComponent(row.dataset.cartId || '');
+    const variant = decodeURIComponent(row.dataset.cartVariant || 'Standard');
+    const action = actionEl.dataset.checkoutAction;
+    if (action === 'incr') {
+      changeQuantity(id, 1, variant);
+    } else if (action === 'decr') {
+      changeQuantity(id, -1, variant);
+    } else if (action === 'remove') {
+      removeFromCart(id, variant);
+    }
+    refreshCheckoutItems();
+  };
+  container.addEventListener('click', handler);
+  container._checkoutListener = handler;
+
+  updateCheckoutPayState();
 }
 
 async function renderCheckoutPage() {
@@ -521,6 +585,17 @@ async function renderThankYouPage() {
   }
 }
 
+function buildInvoiceAddressLine(address = {}) {
+  if (!address || typeof address !== 'object') return 'N/A';
+  const parts = [address.street, address.addressLine1, address.city, address.state, address.zipCode || address.postalCode, address.country];
+  const line = parts.filter(Boolean).join(', ');
+  return line || 'N/A';
+}
+
+function moneyRound(value) {
+  return Math.round(Number(value) || 0);
+}
+
 async function renderInvoicePreviewPage() {
   const params = getQueryParams();
   const orderId = params.orderId;
@@ -554,34 +629,62 @@ async function renderInvoicePreviewPage() {
     }
     const invoice = await response.json();
     const invoiceData = invoice.invoice || invoice;
-    const rows = (invoiceData.items || []).map((item) => `
+    const items = invoiceData.items || [];
+    const gstRate = items.length && items[0].gstRate ? items[0].gstRate : 18;
+    const gstHalf = (Number(gstRate) || 18) / 2;
+    const rows = items.map((item) => `
       <tr>
         <td>${escapeHTML(item.productName || item.name || 'Item')}</td>
+        <td>${escapeHTML(item.variant || 'Standard')}</td>
         <td>${item.quantity || 1}</td>
         <td>${formatINR(item.unitPrice || item.price || 0)}</td>
+        <td>${item.gstRate ?? gstRate}%</td>
         <td>${formatINR(item.total || 0)}</td>
       </tr>
     `).join('');
+    const taxTotal = moneyRound(invoiceData.taxTotal || invoiceData.cgstTotal + invoiceData.sgstTotal + invoiceData.igstTotal);
+    const invoiceDate = new Date(invoiceData.invoiceDate || invoiceData.createdAt || Date.now());
+    previewTitle.textContent = `Tax Invoice`;
     previewContainer.innerHTML = `
+      <div class="invoice-head">
+        <div class="invoice-head-brand">
+          <img src="/favicon.svg" alt="PAP-JOY" class="invoice-logo" />
+          <div>
+            <h2>PAP-JOY</h2>
+            <p>Premium footwear and accessories</p>
+          </div>
+        </div>
+        <div class="invoice-head-meta">
+          <span class="invoice-tag">Tax Invoice</span>
+          <p><strong>Invoice #</strong> ${escapeHTML(invoiceData.invoiceNumber || 'N/A')}</p>
+          <p><strong>Invoice Date</strong> ${invoiceDate.toLocaleDateString()}</p>
+          <p><strong>GSTIN</strong> ${escapeHTML(invoiceData.gstin || '09CZDPK9498Q1Z2')}</p>
+        </div>
+      </div>
       <div class="invoice-summary">
-        <div><strong>Invoice #</strong> ${escapeHTML(invoiceData.invoiceNumber || invoiceData.orderNumber || '')}</div>
-        <div><strong>Status</strong> ${escapeHTML(invoiceData.status || 'issued')}</div>
-        <div><strong>Payment</strong> ${escapeHTML(invoiceData.paymentStatus || 'pending')}</div>
-        <div><strong>Total</strong> ${formatINR(invoiceData.total || 0)}</div>
+        <div><strong>Order</strong><br />${escapeHTML(invoiceData.orderNumber || invoiceData.orderId || 'N/A')}</div>
+        <div><strong>Order Date</strong><br />${invoiceDate.toLocaleString()}</div>
+        <div><strong>Payment</strong><br />${escapeHTML((invoiceData.paymentMethod || 'cod').toUpperCase())}</div>
+        <div><strong>Status</strong><br />${escapeHTML(invoiceData.status || 'issued')}</div>
       </div>
       <section class="invoice-details">
-        <div class="invoice-block"><h3>Customer</h3><p>${escapeHTML(invoiceData.customerName || '')}</p><p>${escapeHTML(invoiceData.customerEmail || '')}</p><p>${escapeHTML(invoiceData.customerPhone || '')}</p></div>
-        <div class="invoice-block"><h3>Billing</h3><p>${escapeHTML(invoiceData.billingAddress?.street || '')}</p><p>${escapeHTML(invoiceData.billingAddress?.city || '')} ${escapeHTML(invoiceData.billingAddress?.state || '')}</p><p>${escapeHTML(invoiceData.billingAddress?.zipCode || '')} ${escapeHTML(invoiceData.billingAddress?.country || '')}</p></div>
-        <div class="invoice-block"><h3>Seller</h3><p>${escapeHTML(invoiceData.companyName || 'PAP-JOY')}</p><p>${escapeHTML(invoiceData.companyGSTIN || '')}</p></div>
+        <div class="invoice-block"><h3>Seller</h3><p>PAP-JOY</p><p>GSTIN: 09CZDPK9498Q1Z2</p><p>State: Delhi</p><p>Support: papp.joyy@gmail.com</p></div>
+        <div class="invoice-block"><h3>Bill To</h3><p>${escapeHTML(invoiceData.customerName || '')}</p><p>${escapeHTML(invoiceData.customerEmail || '')}</p><p>${escapeHTML(invoiceData.customerPhone || '')}</p><p>${escapeHTML(buildInvoiceAddressLine(invoiceData.billingAddress))}</p></div>
+        <div class="invoice-block"><h3>Ship To</h3><p>${escapeHTML(invoiceData.customerName || '')}</p><p>${escapeHTML(buildInvoiceAddressLine(invoiceData.shippingAddress || invoiceData.billingAddress))}</p></div>
       </section>
-      <table class="invoice-table"><thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table>
-      <div class="invoice-total">
-        <div>Subtotal: ${formatINR(invoiceData.subtotal || 0)}</div>
-        <div>Shipping: ${formatINR(invoiceData.shippingCharges || invoiceData.shipping || 0)}</div>
-        <div>Discount: ${formatINR(invoiceData.discount || 0)}</div>
-        <strong>Total: ${formatINR(invoiceData.total || 0)}</strong>
-        <small>All taxes included</small>
+      <table class="invoice-table"><thead><tr><th>Product</th><th>Variant</th><th>Qty</th><th>Unit Price</th><th>GST</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="invoice-totals">
+        <div class="invoice-totals-rows">
+          <div><span>Subtotal</span><strong>${formatINR(invoiceData.subtotal || 0)}</strong></div>
+          ${taxTotal > 0 ? `<div><span>CGST (${gstHalf}%)</span><strong>${formatINR(invoiceData.cgstTotal || 0)}</strong></div>` : ''}
+          ${taxTotal > 0 ? `<div><span>SGST (${gstHalf}%)</span><strong>${formatINR(invoiceData.sgstTotal || 0)}</strong></div>` : ''}
+          ${moneyRound(invoiceData.igstTotal) > 0 ? `<div><span>IGST</span><strong>${formatINR(invoiceData.igstTotal)}</strong></div>` : ''}
+          <div><span>Shipping</span><strong>${moneyRound(invoiceData.shippingCharges || 0) > 0 ? formatINR(invoiceData.shippingCharges) : 'FREE'}</strong></div>
+          <div><span>Discount</span><strong>-${formatINR(invoiceData.discount || 0)}</strong></div>
+          <div class="invoice-grand-total"><span>Grand Total</span><strong>${formatINR(invoiceData.total || 0)}</strong></div>
+        </div>
       </div>
+      <p class="invoice-footnote">All taxes included in the prices above. ${escapeHTML(invoiceData.notes || '')}</p>
     `;
     previewMessage.textContent = '';
   } catch (error) {

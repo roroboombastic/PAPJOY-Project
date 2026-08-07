@@ -157,16 +157,46 @@ function orderConfirmationTemplate(order) {
 }
 
 function invoiceEmailTemplate(invoice, pdfUrl) {
+  const inr = (n) => '₹' + (Number(n) || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+  const itemsHtml = (invoice.items || []).map(item =>
+    `<tr><td style="padding:6px 0;color:#333">${item.productName || item.name} ${item.variant && item.variant !== 'Standard' ? `(${item.variant})` : ''} × ${item.quantity}</td><td style="padding:6px 0;text-align:right;color:#333">${inr(item.total)}</td></tr>`
+  ).join('');
+  const breakdownRows = [
+    `<tr><td style="padding:4px 0;color:#666">Subtotal</td><td style="padding:4px 0;text-align:right;color:#666">${inr(invoice.subtotal)}</td></tr>`
+  ];
+  if (invoice.cgstTotal || invoice.sgstTotal) {
+    breakdownRows.push(`<tr><td style="padding:4px 0;color:#666">CGST &amp; SGST</td><td style="padding:4px 0;text-align:right;color:#666">${inr((invoice.cgstTotal || 0) + (invoice.sgstTotal || 0))}</td></tr>`);
+  }
+  if (invoice.igstTotal) {
+    breakdownRows.push(`<tr><td style="padding:4px 0;color:#666">IGST</td><td style="padding:4px 0;text-align:right;color:#666">${inr(invoice.igstTotal)}</td></tr>`);
+  }
+  breakdownRows.push(`<tr><td style="padding:4px 0;color:#666">Shipping</td><td style="padding:4px 0;text-align:right;color:#666">${invoice.shippingCharges ? inr(invoice.shippingCharges) : 'FREE'}</td></tr>`);
+  if (invoice.discount) {
+    breakdownRows.push(`<tr><td style="padding:4px 0;color:#666">Discount</td><td style="padding:4px 0;text-align:right;color:#666">-${inr(invoice.discount)}</td></tr>`);
+  }
+  breakdownRows.push(`<tr><td style="padding:6px 0;font-weight:bold;border-top:1px solid #e0e0e0">Grand Total</td><td style="padding:6px 0;text-align:right;font-weight:bold;border-top:1px solid #e0e0e0">${inr(invoice.total)}</td></tr>`);
+
   return {
     subject: `Invoice #${invoice.invoiceNumber} for your PAP-JOY order`,
     html: `
       <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">
-        <h2 style="color:#2d5a27">Invoice #${invoice.invoiceNumber}</h2>
-        <p>Hi ${invoice.customerName || 'there'},</p>
-        <p>Your invoice for order <strong>#${invoice.orderNumber || invoice.orderId}</strong> is ready.</p>
-        ${pdfUrl ? `<p style="text-align:center;margin:24px 0"><a href="${pdfUrl}" style="display:inline-block;padding:12px 28px;background:#2d5a27;color:#fff;text-decoration:none;border-radius:6px;font-size:15px">Download Invoice (PDF)</a></p>` : ''}
-        <hr style="border:none;border-top:1px solid #e0e0e0;margin:24px 0">
-        <p style="font-size:12px;color:#888">PAP-JOY · Premium footwear for every journey.</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#1f4b3f;color:#fff;border-radius:8px 8px 0 0">
+          <div style="font-size:18px;font-weight:bold">PAP-JOY</div>
+          <div style="font-size:12px;opacity:0.9">Tax Invoice</div>
+        </div>
+        <div style="border:1px solid #e0e0e0;border-top:none;padding:20px">
+          <h2 style="color:#1f4b3f;margin:0 0 4px">Invoice #${invoice.invoiceNumber}</h2>
+          <p style="margin:0 0 4px;color:#666;font-size:13px">Invoice Date: ${new Date(invoice.invoiceDate || Date.now()).toLocaleDateString()}</p>
+          <p style="margin:0 0 16px;color:#666;font-size:13px">GSTIN: ${invoice.notes ? String(invoice.notes).split('|')[1]?.trim() || '' : ''}</p>
+          <p>Hi ${invoice.customerName || 'there'},</p>
+          <p>Your invoice for order <strong>#${invoice.orderNumber || invoice.orderId}</strong> is ready. All taxes are included in the prices below.</p>
+          ${itemsHtml ? `<table style="width:100%;border-collapse:collapse;margin:16px 0">${itemsHtml}</table>` : ''}
+          <table style="width:100%;border-collapse:collapse;margin:8px 0">${breakdownRows.join('')}</table>
+          ${pdfUrl ? `<p style="text-align:center;margin:24px 0"><a href="${pdfUrl}" style="display:inline-block;padding:12px 28px;background:#1f4b3f;color:#fff;text-decoration:none;border-radius:6px;font-size:15px">Download Invoice (PDF)</a></p>` : ''}
+        </div>
+        <div style="background:#f4f6f4;border:1px solid #e0e0e0;border-top:none;border-radius:0 0 8px 8px;padding:12px 20px">
+          <p style="margin:0;font-size:12px;color:#888">PAP-JOY · Premium footwear for every journey · Support: papp.joyy@gmail.com</p>
+        </div>
       </div>`
   };
 }
