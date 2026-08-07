@@ -4788,6 +4788,43 @@ textarea {
   color: #fff;
 }
 
+.admin-nav-item.admin-store-link {
+  margin-top: auto;
+  text-decoration: none;
+  color: rgba(255,255,255,0.75);
+}
+
+.admin-nav-item.admin-store-link:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+}
+
+.admin-user-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-store {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255,255,255,0.8);
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.btn-store:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
 .admin-main {
   flex: 1;
   margin-left: 240px;
@@ -5259,6 +5296,17 @@ textarea {
   .admin-mobile-title {
     font-family: 'Playfair Display', serif;
     font-size: 1rem;
+    flex: 1;
+  }
+  .admin-mobile-store {
+    color: #fff;
+    font-size: 1rem;
+    padding: 6px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+  }
+  .admin-mobile-store:hover {
+    background: rgba(255,255,255,0.12);
   }
   .admin-sidebar.mobile-open {
     display: flex;

@@ -648,7 +648,7 @@ async function renderInvoicePreviewPage() {
     previewContainer.innerHTML = `
       <div class="invoice-head">
         <div class="invoice-head-brand">
-          <img src="/favicon.svg" alt="PAP-JOY" class="invoice-logo" />
+          <img src="/logo.png" alt="PAP-JOY" class="invoice-logo" />
           <div>
             <h2>PAP-JOY</h2>
             <p>Premium footwear and accessories</p>

@@ -17,7 +17,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Admin dashboard for managing products, orders, users, and analytics." />
   <meta name="theme-color" content="#0a0a0a" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" href="/logo.png" />
   <title>PAP-JOY | Admin Dashboard</title>
   <script>
     // Configure API base URL for production
@@ -37,12 +37,12 @@
   <meta property="og:description" content="Admin dashboard for managing products, orders, users, and analytics." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="PAP-JOY" />
-  <meta property="og:image" content="https://papjoy.com/favicon.svg" />
+  <meta property="og:image" content="https://papjoy.com/logo.png" />
   <meta name="twitter:card" content="summary_large_image" />
   
   <script>
   (function(){
-    var V='papjoy-v28',K='papjoy-sw-version';
+    var V='papjoy-v30',K='papjoy-sw-version';
     try{
       if('serviceWorker'in navigator&&navigator.serviceWorker.controller){
         if(localStorage.getItem(K)!==V){
@@ -65,6 +65,7 @@
       <i class="fas fa-bars"></i>
     </button>
     <span class="admin-mobile-title">PAP-JOY Admin</span>
+    <a href="index.html" class="admin-mobile-store" title="Back to store homepage"><i class="fas fa-store"></i></a>
   </div>
   <div class="admin-container">
     <!-- Sidebar Navigation -->
@@ -91,10 +92,16 @@
         <button class="admin-nav-item" data-page="categories">
           🏷️ Categories
         </button>
+        <a href="index.html" class="admin-nav-item admin-store-link" title="Back to store homepage">
+          🌐 View Store
+        </a>
       </nav>
       <div class="admin-user-info">
         <div id="admin-user-name">Admin</div>
-        <button class="btn-logout" onclick="logoutAdmin()">Logout</button>
+        <div class="admin-user-actions">
+          <a href="index.html" class="btn-store" title="Back to store homepage"><i class="fas fa-store"></i></a>
+          <button class="btn-logout" onclick="logoutAdmin()">Logout</button>
+        </div>
       </div>
     </aside>
 

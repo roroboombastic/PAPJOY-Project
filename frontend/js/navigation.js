@@ -5,6 +5,39 @@ let notificationPermissionRequested = false;
 let notificationListenersBound = false;
 let sseRetryDelay = 1000;
 
+function isStoreAdmin() {
+  const user = getCurrentUser();
+  return !!(user && (user.role === 'admin' || user.role === 'super_admin'));
+}
+
+function updateAdminLink() {
+  const nav = document.querySelector('.sidebar-nav');
+  if (!nav) return;
+  let link = document.getElementById('admin-nav-link');
+
+  if (!isStoreAdmin()) {
+    if (link) link.style.display = 'none';
+    return;
+  }
+
+  if (!link) {
+    link = document.createElement('a');
+    link.id = 'admin-nav-link';
+    link.href = 'admin.html';
+    link.className = 'nav-link';
+    link.setAttribute('data-no-transition', '');
+    link.innerHTML = '<i class="fas fa-cog"></i><span>Admin</span>';
+    const signInLink = nav.querySelector('a[href="signin.html"]');
+    if (signInLink) {
+      nav.insertBefore(link, signInLink);
+    } else {
+      nav.appendChild(link);
+    }
+  }
+  link.style.display = '';
+  link.classList.toggle('active', (window.location.pathname.split('/').pop() || 'index.html') === 'admin.html');
+}
+
 function updateUserLinks() {
   const user = getCurrentUser();
   const links = Array.from(document.querySelectorAll('.site-nav a, .sidebar-nav a'));
@@ -26,6 +59,7 @@ function updateUserLinks() {
       }
     }
   });
+  updateAdminLink();
 }
 
 function toggleMobileSidebar(forceClose = false) {
@@ -95,7 +129,7 @@ function createSidebar() {
 
   sidebar.innerHTML = `
     <div class="sidebar-top">
-      <div class="sidebar-brand"><a href="index.html"><img src="/favicon.svg" alt="PAP-JOY" class="logo-img" /><span class="logo-text">PAP-JOY</span></a></div>
+      <div class="sidebar-brand"><a href="index.html"><img src="/logo.png" alt="PAP-JOY" class="logo-img" /><span class="logo-text">PAP-JOY</span></a></div>
       <nav class="sidebar-nav">
         <a href="index.html" class="nav-link${isActiveNavPage('index.html') ? ' active' : ''}"${isActiveNavPage('index.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-home"></i><span>Home</span></a>
         <a href="product.html" class="nav-link${isActiveNavPage('product.html') ? ' active' : ''}"${isActiveNavPage('product.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-store"></i><span>Shop</span></a>
@@ -189,6 +223,7 @@ function createSidebar() {
   }
 
   updateCartCount();
+  updateAdminLink();
 }
 
 
@@ -612,7 +647,7 @@ function showBrowserNotification(notification) {
     try {
       new Notification(notification.title || 'PAP-JOY', {
         body: notification.message || '',
-        icon: '/favicon.svg',
+        icon: '/logo.png',
         tag: notification._id || `papjoy-${Date.now()}`,
         renotify: true,
       });
@@ -642,6 +677,8 @@ function getTimeAgo(dateString) {
 window.sidebarCreated = sidebarCreated;
 window.navResizeHandler = navResizeHandler;
 window.updateUserLinks = updateUserLinks;
+window.updateAdminLink = updateAdminLink;
+window.isStoreAdmin = isStoreAdmin;
 window.toggleMobileSidebar = toggleMobileSidebar;
 window.closeMobileSidebar = closeMobileSidebar;
 window.getActivePageName = getActivePageName;
