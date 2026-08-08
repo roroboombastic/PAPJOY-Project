@@ -369,13 +369,16 @@ async function handleWebhook(req, res) {
 
     const query = orderNumber ? { orderNumber } : (awbCode ? { 'shiprocket.awbCode': awbCode } : null);
     if (!query) {
-      return res.status(400).json({ error: 'No order reference in webhook payload' });
+      // Shiprocket requires a 200 response to save/keep a webhook URL active,
+      // so unknown/no-reference payloads are acknowledged instead of rejected.
+      logger.warn('Shiprocket webhook with no order reference', { orderNumber, awbCode });
+      return res.json({ success: true, received: false });
     }
 
     const order = await Order.findOne(query);
     if (!order) {
       logger.warn('Shiprocket webhook for unknown order', { orderNumber, awbCode });
-      return res.status(404).json({ error: 'Order not found' });
+      return res.json({ success: true, received: false });
     }
 
     order.shiprocket = order.shiprocket || {};
