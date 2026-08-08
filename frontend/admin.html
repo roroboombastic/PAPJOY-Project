@@ -18,6 +18,7 @@
   <meta name="description" content="Admin dashboard for managing products, orders, users, and analytics." />
   <meta name="theme-color" content="#0a0a0a" />
   <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
   <title>PAP-JOY | Admin Dashboard</title>
   <script>
     // Configure API base URL for production
@@ -42,7 +43,7 @@
   
   <script>
   (function(){
-    var V='papjoy-v30',K='papjoy-sw-version';
+    var V='papjoy-v32',K='papjoy-sw-version';
     try{
       if('serviceWorker'in navigator&&navigator.serviceWorker.controller){
         if(localStorage.getItem(K)!==V){
@@ -382,6 +383,31 @@
       <span class="modal-close" onclick="closeOrderModal()">&times;</span>
       <h2>Order Details</h2>
       <div id="order-details"><p class="text-center">Loading order details...</p></div>
+      <div id="order-payment-collect" class="order-payment-collect" style="display:none;">
+        <h3 class="order-form-title">Collect Payment at Delivery</h3>
+        <p class="order-payment-hint">Generate a UPI QR for the delivery partner to show the customer. Once paid, mark the order as collected.</p>
+        <div class="order-payment-actions">
+          <button type="button" class="btn btn-primary" id="collect-qr-btn" onclick="generateCollectionQR()"><i class="fas fa-qrcode"></i> Generate UPI QR</button>
+          <button type="button" class="btn btn-success" id="mark-collected-btn" onclick="markOrderCollected()" style="display:none;"><i class="fas fa-check"></i> Mark as Paid</button>
+        </div>
+        <div id="collection-qr-display" style="display:none;">
+          <img id="collection-qr-image" alt="UPI payment QR" />
+          <p class="order-payment-hint">Ask the customer to scan this QR with any UPI app (GPay / PhonePe / Paytm). The payment will be tagged to the order number.</p>
+        </div>
+        <div id="collection-qr-message"></div>
+      </div>
+      <div id="order-shiprocket" class="order-payment-collect" style="display:none;">
+        <h3 class="order-form-title">Shiprocket Fulfillment</h3>
+        <p class="order-payment-hint">Send this order to Shiprocket to book a courier, print a label, and get live tracking.</p>
+        <div class="order-payment-actions">
+          <button type="button" class="btn btn-primary" id="shiprocket-ship-btn" onclick="shiprocketShipOrder()"><i class="fas fa-truck"></i> Ship to Shiprocket</button>
+          <button type="button" class="btn btn-primary" id="shiprocket-pickup-btn" onclick="shiprocketGeneratePickup()" style="display:none;"><i class="fas fa-warehouse"></i> Generate Pickup</button>
+          <button type="button" class="btn btn-primary" id="shiprocket-awb-btn" onclick="shiprocketAssignAWB()" style="display:none;"><i class="fas fa-barcode"></i> Assign AWB</button>
+          <button type="button" class="btn btn-primary" id="shiprocket-label-btn" onclick="shiprocketGenerateLabel()" style="display:none;"><i class="fas fa-print"></i> Generate Label</button>
+          <button type="button" class="btn btn-secondary" id="shiprocket-track-btn" onclick="shiprocketTrackOrder()" style="display:none;"><i class="fas fa-search"></i> Refresh Tracking</button>
+        </div>
+        <div id="shiprocket-status"></div>
+      </div>
       <form id="order-form" onsubmit="updateOrderStatus(event)">
         <h3 class="order-form-title">Update Order Status</h3>
         <input type="hidden" id="order-id" />
@@ -454,6 +480,24 @@
           <div class="form-group">
             <label>Shipping Charge (₹)</label>
             <input type="number" id="product-shipping" min="0" step="0.01" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Weight (kg)</label>
+            <input type="number" id="product-weight" min="0" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label>Length (cm)</label>
+            <input type="number" id="product-length" min="0" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label>Breadth (cm)</label>
+            <input type="number" id="product-breadth" min="0" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label>Height (cm)</label>
+            <input type="number" id="product-height" min="0" step="0.01" />
           </div>
         </div>
         <div class="form-row">

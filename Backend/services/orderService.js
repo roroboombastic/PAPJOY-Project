@@ -2,6 +2,8 @@ const { Order, Product, Notification, Cart, Shipment, User } = require('../model
 const logger = require('../utils/logger');
 const { calculateOrderTotals, GST_STATE } = require('../utils/gst');
 const emailService = require('./emailService');
+const config = require('../config');
+const shiprocketService = require('./shiprocketService');
 const { ADMIN_EMAILS } = require('../config');
 let sseManager;
 try { sseManager = require('../utils/sse').sseManager; } catch (_) { /* SSE optional */ }
@@ -59,6 +61,11 @@ async function buildOrderLineItems(items = [], deliveryInfo = {}) {
       total: itemTotal,
       gstRate: 0,
       shippingCharge: Number(product?.shippingCharge ?? item.shippingCharge ?? 0),
+      weight: Number(product?.weight ?? item.weight ?? 0),
+      length: Number(product?.length ?? item.length ?? 0),
+      breadth: Number(product?.breadth ?? item.breadth ?? 0),
+      height: Number(product?.height ?? item.height ?? 0),
+      hsnCode: product?.hsnCode || item.hsnCode || '',
       cgst: 0,
       sgst: 0,
       igst: 0
@@ -190,6 +197,22 @@ async function restoreInventoryForOrder(order) {
   }
 }
 
+async function resolveShippingCost({ computedShipping, deliveryPostcode, cod = false, items = [] }) {
+  if (!config.shiprocket.liveRates || !deliveryPostcode || !shiprocketService.isConfigured()) {
+    return computedShipping;
+  }
+  try {
+    const live = await shiprocketService.estimateShipping({ deliveryPostcode, cod, items });
+    if (live != null && live >= 0) {
+      logger.info('Live Shiprocket shipping applied', { deliveryPostcode, amount: live, fallback: computedShipping });
+      return live;
+    }
+  } catch (err) {
+    logger.warn('Live Shiprocket shipping unavailable, using product shipping charges', { error: err.message, deliveryPostcode });
+  }
+  return computedShipping;
+}
+
 async function createOrderFromData({
   userId = null,
   items = [],
@@ -209,15 +232,20 @@ async function createOrderFromData({
   }
 
   const computedShipping = lineItems.reduce((sum, item) => sum + Number(item.shippingCharge || 0) * item.quantity, 0);
+  const shippingCost = await resolveShippingCost({
+    computedShipping,
+    deliveryPostcode: deliveryInfo?.postalCode || deliveryInfo?.postal,
+    cod: paymentMethod === 'cod',
+    items: lineItems
+  });
   const orderTotals = calculateOrderTotals({
     items: lineItems,
-    shipping: computedShipping,
+    shipping: shippingCost,
     discount,
     billingState: deliveryInfo?.state,
     sellerState: GST_STATE
   });
   const subtotal = orderTotals.subtotal;
-  const shippingCost = orderTotals.shipping;
   const discountValue = orderTotals.discount;
   const taxAmount = orderTotals.taxTotal;
   const total = orderTotals.total;

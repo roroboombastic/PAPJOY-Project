@@ -15,6 +15,9 @@ router.post('/upi/qr', optionalAuth, paymentController.createUPIQR);
 
 router.post('/refund', auth, verifyAdmin, paymentController.initiateRefund);
 
+router.post('/orders/:orderId/collection-qr', auth, verifyAdmin, paymentController.createOrderCollectionQR);
+router.post('/orders/:orderId/mark-collected', auth, verifyAdmin, paymentController.markOrderCollected);
+
 router.post('/webhook/razorpay', paymentController.razorpayWebhook);
 
 module.exports = router;

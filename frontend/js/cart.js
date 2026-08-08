@@ -23,6 +23,11 @@ function getCheckoutItems() {
     category: item.category,
     subtitle: item.subtitle,
     shippingCharge: item.shippingCharge || 0,
+    weight: item.weight || 0,
+    length: item.length || 0,
+    breadth: item.breadth || 0,
+    height: item.height || 0,
+    hsnCode: item.hsnCode || '',
   }));
 }
 
@@ -38,7 +43,12 @@ function normalizeServerCartItem(item) {
     quantity: Number(item.quantity || 1),
     category: product.category || (product.categoryId && product.categoryId.name) || item.category || '',
     subtitle: product.shortDescription || product.subtitle || item.subtitle || '',
-    shippingCharge: Number(product.shippingCharge || item.shippingCharge || 0)
+    shippingCharge: Number(product.shippingCharge || item.shippingCharge || 0),
+    weight: Number(product.weight || item.weight || 0),
+    length: Number(product.length || item.length || 0),
+    breadth: Number(product.breadth || item.breadth || 0),
+    height: Number(product.height || item.height || 0),
+    hsnCode: product.hsnCode || item.hsnCode || ''
   };
 }
 
@@ -183,6 +193,11 @@ function addToCart(productId, variantName = 'Standard', variantPrice = null, red
       category: product.category,
       subtitle: product.subtitle,
       shippingCharge: Number(product.shippingCharge) || 0,
+      weight: Number(product.weight) || 0,
+      length: Number(product.length) || 0,
+      breadth: Number(product.breadth) || 0,
+      height: Number(product.height) || 0,
+      hsnCode: product.hsnCode || '',
     });
   }
 

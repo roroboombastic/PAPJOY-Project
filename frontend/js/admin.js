@@ -184,6 +184,10 @@ async function saveProduct(event) {
     brand: document.getElementById('product-brand')?.value,
     inventory: { quantity: Number(document.getElementById('product-stock')?.value || 0) },
     shippingCharge: Number(document.getElementById('product-shipping')?.value || 0),
+    weight: Number(document.getElementById('product-weight')?.value || 0),
+    length: Number(document.getElementById('product-length')?.value || 0),
+    breadth: Number(document.getElementById('product-breadth')?.value || 0),
+    height: Number(document.getElementById('product-height')?.value || 0),
     isActive: document.getElementById('product-active')?.checked || false
   };
 
@@ -235,6 +239,10 @@ async function editProduct(productId) {
     document.getElementById('product-brand').value = product.brand || '';
     document.getElementById('product-stock').value = product.inventory?.quantity || 0;
     document.getElementById('product-shipping').value = product.shippingCharge || 0;
+    document.getElementById('product-weight').value = product.weight || 0;
+    document.getElementById('product-length').value = product.length || 0;
+    document.getElementById('product-breadth').value = product.breadth || 0;
+    document.getElementById('product-height').value = product.height || 0;
     document.getElementById('product-active').checked = Boolean(product.isActive);
 
     const imageUrlInput = document.getElementById('product-image-url');
@@ -594,6 +602,19 @@ async function showOrderModal(orderId, currentStatus) {
     const order = await response.json();
     if (detailsEl) detailsEl.innerHTML = renderOrderDetails(order);
 
+    const collectSection = document.getElementById('order-payment-collect');
+    if (collectSection) {
+      const isCod = order.paymentMethod === 'cod';
+      const unpaid = order.paymentStatus !== 'paid';
+      collectSection.style.display = (isCod && unpaid) ? 'block' : 'none';
+    }
+    const qrDisplay = document.getElementById('collection-qr-display');
+    if (qrDisplay) qrDisplay.style.display = 'none';
+    const collectedBtn = document.getElementById('mark-collected-btn');
+    if (collectedBtn) collectedBtn.style.display = 'none';
+    const qrMsg = document.getElementById('collection-qr-message');
+    if (qrMsg) qrMsg.textContent = '';
+
     const statusEl = document.getElementById('order-status-update');
     if (statusEl && order.status) statusEl.value = order.status;
     const trackingNumber = document.getElementById('order-tracking-number');
@@ -602,9 +623,171 @@ async function showOrderModal(orderId, currentStatus) {
     if (trackingNumber && order.shipment?.trackingNumber) trackingNumber.value = order.shipment.trackingNumber;
     if (carrier && order.shipment?.carrier) carrier.value = order.shipment.carrier;
     if (trackingUrl && order.shipment?.trackingUrl) trackingUrl.value = order.shipment.trackingUrl;
+
+    resetShiprocketSection(order);
   } catch (error) {
     console.error('Admin order detail error:', error);
     if (detailsEl) detailsEl.innerHTML = '<p class="text-center">Failed to load order details.</p>';
+  }
+}
+
+function setShiprocketBusy(message) {
+  const status = document.getElementById('shiprocket-status');
+  if (status) { status.textContent = message || ''; status.style.color = 'var(--text-muted)'; }
+}
+
+function setShiprocketError(message) {
+  const status = document.getElementById('shiprocket-status');
+  if (status) { status.textContent = message || ''; status.style.color = 'var(--danger)'; }
+}
+
+function setShiprocketSuccess(message) {
+  const status = document.getElementById('shiprocket-status');
+  if (status) { status.textContent = message || ''; status.style.color = 'var(--success, #2f7d32)'; }
+}
+
+function resetShiprocketSection(order) {
+  const section = document.getElementById('order-shiprocket');
+  if (!section) return;
+
+  const shipBtn = document.getElementById('shiprocket-ship-btn');
+  const pickupBtn = document.getElementById('shiprocket-pickup-btn');
+  const awbBtn = document.getElementById('shiprocket-awb-btn');
+  const labelBtn = document.getElementById('shiprocket-label-btn');
+  const trackBtn = document.getElementById('shiprocket-track-btn');
+  const status = document.getElementById('shiprocket-status');
+  if (status) status.textContent = '';
+
+  const sr = order.shiprocket || {};
+  const hasShipment = Boolean(sr.shipmentId);
+  const hasAwb = Boolean(sr.awbCode);
+
+  if (shipBtn) shipBtn.style.display = hasShipment ? 'none' : 'inline-flex';
+  if (pickupBtn) pickupBtn.style.display = hasShipment && !hasAwb ? 'inline-flex' : 'none';
+  if (awbBtn) awbBtn.style.display = hasShipment && !hasAwb ? 'inline-flex' : 'none';
+  if (labelBtn) labelBtn.style.display = hasShipment && hasAwb ? 'inline-flex' : 'none';
+  if (trackBtn) trackBtn.style.display = hasShipment ? 'inline-flex' : 'none';
+
+  if (sr.shipmentId) {
+    const parts = [`Shipment ID: ${sr.shipmentId}`];
+    if (sr.awbCode) parts.push(`AWB: ${sr.awbCode}`);
+    if (sr.courierName) parts.push(`Courier: ${sr.courierName}`);
+    if (sr.pickupStatus) parts.push(`Pickup: ${sr.pickupStatus}`);
+    setShiprocketSuccess(parts.join(' · '));
+  }
+
+  fetch(`${API_BASE_URL}/api/v1/shiprocket/status`, { headers: { Authorization: `Bearer ${getAuthToken()}` } })
+    .then(res => res.json())
+    .then((data) => {
+      section.style.display = data.configured ? 'block' : 'none';
+      if (!data.configured) {
+        if (status) { status.textContent = 'Shiprocket is not configured yet. Add SHIPROCKET_API_EMAIL/PASSWORD to enable fulfillment.'; status.style.color = 'var(--text-muted)'; }
+      }
+    })
+    .catch(() => { section.style.display = 'none'; });
+}
+
+async function shiprocketRequest(path, options = {}) {
+  const token = getAuthToken();
+  if (!token) return null;
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: { ...(options.headers || {}), Authorization: `Bearer ${token}` }
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || 'Shiprocket request failed');
+  }
+  return response.json();
+}
+
+async function shiprocketShipOrder() {
+  const orderId = document.getElementById('order-id')?.value;
+  if (!orderId) return;
+  setShiprocketBusy('Sending order to Shiprocket...');
+  try {
+    const data = await shiprocketRequest(`/api/v1/shiprocket/orders/${orderId}/ship`, { method: 'POST' });
+    resetShiprocketSection(data.order);
+    setShiprocketSuccess(`Shiprocket order created. Shipment ID: ${data.shiprocket?.shipment_id || data.order?.shiprocket?.shipmentId}. Now generate a pickup.`);
+    if (typeof showToast === 'function') showToast('Order sent to Shiprocket');
+  } catch (err) {
+    setShiprocketError(err.message);
+    if (typeof showToast === 'function') showToast(err.message);
+  }
+}
+
+async function shiprocketGeneratePickup() {
+  const orderId = document.getElementById('order-id')?.value;
+  if (!orderId) return;
+  setShiprocketBusy('Generating pickup...');
+  try {
+    const data = await shiprocketRequest(`/api/v1/shiprocket/orders/${orderId}/pickup`, { method: 'POST' });
+    resetShiprocketSection(data.order);
+    const scheduled = data.order?.shiprocket?.pickupScheduledDate || data.shiprocket?.pickup_scheduled_date || '';
+    setShiprocketSuccess(`Pickup scheduled${scheduled ? ` for ${new Date(scheduled).toLocaleDateString()}` : ''}. Now assign AWB.`);
+  } catch (err) {
+    setShiprocketError(err.message);
+    if (typeof showToast === 'function') showToast(err.message);
+  }
+}
+
+async function shiprocketAssignAWB() {
+  const orderId = document.getElementById('order-id')?.value;
+  if (!orderId) return;
+  setShiprocketBusy('Assigning AWB (picking best courier)...');
+  try {
+    const data = await shiprocketRequest(`/api/v1/shiprocket/orders/${orderId}/awb`, { method: 'POST' });
+    resetShiprocketSection(data.order);
+    setShiprocketSuccess(`AWB ${data.awbCode || ''} assigned${data.order?.shiprocket?.courierName ? ` via ${data.order.shiprocket.courierName}` : ''}. Now generate the label.`);
+    const url = data.trackingUrl;
+    if (url && typeof window.open === 'function') {
+      setShiprocketSuccess(`AWB ${data.awbCode || ''} assigned. Tracking: ${url}`);
+    }
+    const trk = document.getElementById('order-tracking-number');
+    if (trk && data.awbCode) trk.value = data.awbCode;
+  } catch (err) {
+    setShiprocketError(err.message);
+    if (typeof showToast === 'function') showToast(err.message);
+  }
+}
+
+async function shiprocketGenerateLabel() {
+  const orderId = document.getElementById('order-id')?.value;
+  if (!orderId) return;
+  setShiprocketBusy('Generating shipping label...');
+  try {
+    const data = await shiprocketRequest(`/api/v1/shiprocket/orders/${orderId}/label`, { method: 'POST' });
+    resetShiprocketSection(data.order);
+    const labelUrl = data.labelUrl || data.shiprocket?.label_url || '';
+    setShiprocketSuccess(labelUrl ? `Label generated. <a href="${labelUrl}" target="_blank" rel="noopener">Open label</a>` : 'Label generated.');
+    if (labelUrl && typeof window.open === 'function') window.open(labelUrl, '_blank');
+  } catch (err) {
+    setShiprocketError(err.message);
+    if (typeof showToast === 'function') showToast(err.message);
+  }
+}
+
+async function shiprocketTrackOrder() {
+  const orderId = document.getElementById('order-id')?.value;
+  if (!orderId) return;
+  setShiprocketBusy('Fetching live tracking...');
+  try {
+    const data = await shiprocketRequest(`/api/v1/shiprocket/orders/${orderId}/track`);
+    const events = data.events || [];
+    const last = events[events.length - 1];
+    const message = [data.trackStatus && `Status: ${data.trackStatus}`, data.etd && `ETD: ${data.etd}`, last && `Latest: ${last.message}`].filter(Boolean).join(' · ');
+    setShiprocketSuccess(message || 'Tracking refreshed.');
+    const statusSelect = document.getElementById('order-status-update');
+    if (statusSelect && data.trackStatus) {
+      const raw = String(data.trackStatus).toLowerCase().replace(/\s+/g, '_');
+      const aliases = { in_transit: 'shipped', out_for_delivery: 'out_for_delivery', 'out_for_delivery_': 'out_for_delivery', manifested: 'packed', picked_up: 'shipped', 'rto_attempted': 'returned', 'rto': 'returned', 'cancelled': 'cancelled', 'undelivered': 'returned' };
+      const mapped = aliases[raw] || raw;
+      const valid = ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled', 'returned', 'refunded'];
+      if (valid.includes(mapped)) statusSelect.value = mapped;
+    }
+  } catch (err) {
+    setShiprocketError(err.message);
+    if (typeof showToast === 'function') showToast(err.message);
   }
 }
 
@@ -715,6 +898,84 @@ async function updateOrderStatus(event) {
   } catch (error) {
     console.error('Order status update error:', error);
     if (typeof showToast === 'function') showToast('Failed to update order status');
+  }
+}
+
+async function generateCollectionQR() {
+  const token = getAuthToken();
+  if (!token) return;
+
+  const orderId = document.getElementById('order-id')?.value;
+  if (!orderId) return;
+
+  const qrBtn = document.getElementById('collect-qr-btn');
+  const msgEl = document.getElementById('collection-qr-message');
+  const display = document.getElementById('collection-qr-display');
+  if (qrBtn) qrBtn.disabled = true;
+  if (msgEl) { msgEl.textContent = 'Generating QR...'; msgEl.style.color = 'var(--text-muted)'; }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/v1/payments/orders/${orderId}/collection-qr`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to generate QR');
+    }
+
+    const data = await response.json();
+
+    if (msgEl) { msgEl.textContent = ''; }
+    if (display) {
+      const img = document.getElementById('collection-qr-image');
+      if (img) img.src = data.qrImage;
+      display.style.display = 'block';
+    }
+    const collectedBtn = document.getElementById('mark-collected-btn');
+    if (collectedBtn) collectedBtn.style.display = 'inline-flex';
+    if (typeof showToast === 'function') showToast('UPI QR generated. Show it to the delivery partner.');
+  } catch (error) {
+    console.error('Generate collection QR error:', error);
+    if (msgEl) { msgEl.textContent = error.message || 'Failed to generate QR'; msgEl.style.color = 'var(--danger)'; }
+    if (typeof showToast === 'function') showToast(error.message || 'Failed to generate QR');
+  } finally {
+    if (qrBtn) qrBtn.disabled = false;
+  }
+}
+
+async function markOrderCollected() {
+  const token = getAuthToken();
+  if (!token) return;
+
+  const orderId = document.getElementById('order-id')?.value;
+  if (!orderId) return;
+
+  if (!confirm('Confirm that the customer paid at delivery? This marks the order as PAID.')) return;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/v1/payments/orders/${orderId}/mark-collected`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ note: 'Payment collected at delivery via UPI QR' })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to mark order as collected');
+    }
+
+    const data = await response.json();
+    const collect = document.getElementById('order-payment-collect');
+    if (collect) collect.style.display = 'none';
+    if (typeof showToast === 'function') showToast('Order marked as paid');
+    closeOrderModal();
+    loadAdminOrders();
+    if (data.order?._id && typeof showOrderModal === 'function') showOrderModal(data.order._id, data.order.status);
+  } catch (error) {
+    console.error('Mark order collected error:', error);
+    if (typeof showToast === 'function') showToast(error.message || 'Failed to mark order as collected');
   }
 }
 
@@ -892,6 +1153,13 @@ window.loadAdminCategories = loadAdminCategories;
 window.showOrderModal = showOrderModal;
 window.closeOrderModal = closeOrderModal;
 window.updateOrderStatus = updateOrderStatus;
+window.generateCollectionQR = generateCollectionQR;
+window.markOrderCollected = markOrderCollected;
+window.shiprocketShipOrder = shiprocketShipOrder;
+window.shiprocketGeneratePickup = shiprocketGeneratePickup;
+window.shiprocketAssignAWB = shiprocketAssignAWB;
+window.shiprocketGenerateLabel = shiprocketGenerateLabel;
+window.shiprocketTrackOrder = shiprocketTrackOrder;
 window.showCategoryForm = showCategoryForm;
 window.closeCategoryModal = closeCategoryModal;
 window.saveCategory = saveCategory;

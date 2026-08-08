@@ -1,0 +1,317 @@
+const config = require('../config');
+const logger = require('../utils/logger');
+
+let cachedToken = null;
+let tokenExpiry = 0;
+const TOKEN_TTL_MS = 9 * 24 * 60 * 60 * 1000; // refresh well before Shiprocket's ~10 day expiry
+
+function looksConfigured(value) {
+  if (typeof value !== 'string') return Boolean(value);
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return false;
+  const placeholderMarkers = ['dummy', 'test', 'your_', 'your-', 'placeholder', 'changeme', 'replace_me', 'example'];
+  return !placeholderMarkers.some((marker) => normalized.includes(marker));
+}
+
+function isConfigured() {
+  return looksConfigured(config.shiprocket.email) && looksConfigured(config.shiprocket.password);
+}
+
+async function login() {
+  if (!isConfigured()) {
+    const error = new Error('Shiprocket is not configured. Add SHIPROCKET_API_EMAIL and SHIPROCKET_API_PASSWORD to your environment.');
+    error.code = 'SHIPROCKET_NOT_CONFIGURED';
+    throw error;
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+
+  try {
+    const response = await fetch(`${config.shiprocket.baseUrl}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: config.shiprocket.email,
+        password: config.shiprocket.password
+      }),
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      const error = new Error(`Shiprocket login failed (${response.status}): ${text.slice(0, 300)}`);
+      error.code = 'SHIPROCKET_AUTH_FAILED';
+      throw error;
+    }
+
+    const data = await response.json();
+    if (!data.token) {
+      const error = new Error('Shiprocket login returned no token. Check your API user email/password.');
+      error.code = 'SHIPROCKET_AUTH_FAILED';
+      throw error;
+    }
+
+    cachedToken = data.token;
+    tokenExpiry = Date.now() + TOKEN_TTL_MS;
+    logger.info('Shiprocket token refreshed', { expiresInDays: Math.round(TOKEN_TTL_MS / (24 * 60 * 60 * 1000)) });
+    return cachedToken;
+  } catch (err) {
+    if (err.code) throw err;
+    const error = new Error(`Could not reach Shiprocket: ${err.message}`);
+    error.code = 'SHIPROCKET_NETWORK';
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function getToken() {
+  if (cachedToken && Date.now() < tokenExpiry) return cachedToken;
+  return login();
+}
+
+async function apiRequest(path, { method = 'GET', body } = {}) {
+  const token = await getToken();
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+
+  try {
+    const response = await fetch(`${config.shiprocket.baseUrl}${path}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal
+    });
+
+    let data = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        cachedToken = null;
+        tokenExpiry = 0;
+        const token = await login();
+        return apiRequest(path, { method, body, _token: token });
+      }
+      const message = (data && (data.message || data.error)) || `Shiprocket request failed (${response.status})`;
+      const error = new Error(message);
+      error.code = data && data.error_code ? data.error_code : 'SHIPROCKET_API_ERROR';
+      error.status = response.status;
+      error.details = data;
+      throw error;
+    }
+
+    return data;
+  } catch (err) {
+    if (err.code) throw err;
+    const error = new Error(`Could not reach Shiprocket: ${err.message}`);
+    error.code = 'SHIPROCKET_NETWORK';
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function ensureNumeric(value, fallback = 0) {
+  const num = Number(value);
+  return Number.isFinite(num) && num > 0 ? num : fallback;
+}
+
+function buildShiprocketAddress(address = {}) {
+  return {
+    name: address.name || '',
+    address: address.street || address.address || '',
+    city: address.city || '',
+    state: address.state || '',
+    country: address.country || 'India',
+    pin_code: address.zipCode || address.pincode || address.postalCode || '',
+    phone: address.phone || '',
+    email: address.email || ''
+  };
+}
+
+async function getPickupLocations() {
+  const data = await apiRequest('/settings/company/pickup-location');
+  const locations = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+  return locations;
+}
+
+async function checkServiceability({ pickupPostcode, deliveryPostcode, cod = false, weight = 0.5, length = 0, breadth = 0, height = 0, declaredValue = 0 }) {
+  return apiRequest('/courier/serviceability/', {
+    method: 'POST',
+    body: {
+      pickup_postcode: pickupPostcode,
+      delivery_postcode: deliveryPostcode,
+      cod: cod,
+      weight: ensureNumeric(weight, 0.5),
+      length: ensureNumeric(length),
+      breadth: ensureNumeric(breadth),
+      height: ensureNumeric(height),
+      declared_value: ensureNumeric(declaredValue)
+    }
+  });
+}
+
+function aggregateDimensions(items = []) {
+  let weight = 0.5;
+  let length = 1;
+  let breadth = 1;
+  let height = 1;
+  const validItems = (items || []).filter(it => it && Number(it.weight) > 0);
+  if (validItems.length) {
+    weight = validItems.reduce((sum, it) => sum + Number(it.weight) * Math.max(1, Number(it.quantity) || 1), 0);
+    length = Math.max(...validItems.map(it => Number(it.length) || 1));
+    breadth = Math.max(...validItems.map(it => Number(it.breadth) || 1));
+    height = Math.max(...validItems.map(it => Number(it.height) || 1));
+  }
+  return { weight, length, breadth, height };
+}
+
+async function estimateShipping({ deliveryPostcode, cod = false, items = [] }) {
+  if (!isConfigured() || !config.shiprocket.pickupPincode || !deliveryPostcode) {
+    return null;
+  }
+  const { weight, length, breadth, height } = aggregateDimensions(items);
+  const declaredValue = (items || []).reduce(
+    (sum, it) => sum + Number(it.price || 0) * Math.max(1, Number(it.quantity) || 1),
+    0
+  );
+  const data = await checkServiceability({
+    pickupPostcode: config.shiprocket.pickupPincode,
+    deliveryPostcode,
+    cod: Boolean(cod),
+    weight,
+    length,
+    breadth,
+    height,
+    declaredValue
+  });
+  const rates = Array.isArray(data.data)
+    ? data.data
+        .map(courier => Number(courier.rate) || 0)
+        .filter(rate => rate > 0)
+        .sort((a, b) => a - b)
+    : [];
+  if (!rates.length) return null;
+  return Math.round(rates[0]);
+}
+
+function buildOrderPayload({ order, pickupLocation = null }) {
+  const shippingAddress = buildShiprocketAddress(order.shippingAddress || order.billingAddress || {});
+  const billingAddress = buildShiprocketAddress(order.billingAddress || order.shippingAddress || {});
+  const cod = (order.paymentMethod || 'cod') === 'cod';
+
+  const items = (order.items || []).map(item => {
+    const unitWeight = ensureNumeric(item.weight, 0.5);
+    const unitLength = ensureNumeric(item.length);
+    const unitBreadth = ensureNumeric(item.breadth);
+    const unitHeight = ensureNumeric(item.height);
+    return {
+      name: item.name || 'Item',
+      sku: item.sku || item.productId?.toString?.() || `SKU-${String(item.productId || '').slice(-8)}`,
+      units: Math.max(1, Number(item.quantity) || 1),
+      selling_price: Number(item.price) || 0,
+      discount: 0,
+      tax: (item.cgst || 0) + (item.sgst || 0) + (item.igst || 0),
+      hsn: item.hsnCode || '',
+      weight: unitWeight,
+      length: unitLength,
+      breadth: unitBreadth,
+      height: unitHeight
+    };
+  });
+
+  const totalWeight = items.reduce((sum, it) => sum + it.weight * it.units, 0) || 0.5;
+
+  return {
+    order_id: order.orderNumber,
+    order_date: new Date(order.createdAt || Date.now()).toISOString(),
+    pickup_location: pickupLocation || config.shiprocket.pickupPincode,
+    channel_id: '',
+    comment: order.notes || '',
+    billing_customer_name: billingAddress.name,
+    billing_last_name: '',
+    billing_address: billingAddress.address,
+    billing_city: billingAddress.city,
+    billing_pincode: billingAddress.pin_code,
+    billing_state: billingAddress.state,
+    billing_country: billingAddress.country,
+    billing_email: billingAddress.email,
+    billing_phone: billingAddress.phone,
+    shipping_is_billing: false,
+    shipping_customer_name: shippingAddress.name,
+    shipping_last_name: '',
+    shipping_address: shippingAddress.address,
+    shipping_city: shippingAddress.city,
+    shipping_pincode: shippingAddress.pin_code,
+    shipping_state: shippingAddress.state,
+    shipping_country: shippingAddress.country,
+    shipping_email: shippingAddress.email,
+    shipping_phone: shippingAddress.phone,
+    order_items: items,
+    payment_method: cod ? 'COD' : 'Prepaid',
+    shipping_charges: Number(order.shipping) || 0,
+    giftwrap_charges: 0,
+    transaction_charges: 0,
+    total_discount: Number(order.discount) || 0,
+    sub_total: Number(order.subtotal) || 0,
+    length: Math.max(...items.map(it => it.length), 1),
+    breadth: Math.max(...items.map(it => it.breadth), 1),
+    height: Math.max(...items.map(it => it.height), 1),
+    weight: totalWeight
+  };
+}
+
+async function createOrderForPapjoyOrder({ order, pickupLocation = null }) {
+  const payload = buildOrderPayload({ order, pickupLocation });
+  const data = await apiRequest('/orders/create/adhoc', { method: 'POST', body: payload });
+  return data;
+}
+
+async function generatePickup({ shipmentId, pickupDate }) {
+  const body = {
+    shipment_id: String(shipmentId),
+    pickup_location: config.shiprocket.pickupPincode
+  };
+  if (pickupDate) body.fixed_pickup_date = pickupDate;
+  return apiRequest('/courier/generate/pickup', { method: 'POST', body });
+}
+
+async function assignAWB({ shipmentId, courierId }) {
+  const body = { shipment_id: String(shipmentId) };
+  if (courierId) body.courier_id = String(courierId);
+  return apiRequest('/courier/assign/awb', { method: 'POST', body });
+}
+
+async function generateLabel({ shipmentId }) {
+  return apiRequest('/courier/generate/label', { method: 'POST', body: { shipment_id: String(shipmentId) } });
+}
+
+async function trackShipment({ awbCode }) {
+  return apiRequest(`/courier/track/awb/${encodeURIComponent(awbCode)}`);
+}
+
+module.exports = {
+  isConfigured,
+  login,
+  getToken,
+  apiRequest,
+  getPickupLocations,
+  checkServiceability,
+  estimateShipping,
+  createOrderForPapjoyOrder,
+  buildOrderPayload,
+  generatePickup,
+  assignAWB,
+  generateLabel,
+  trackShipment
+};

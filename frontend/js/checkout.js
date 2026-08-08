@@ -32,6 +32,58 @@ function setCheckoutMessage(message, isError = false) {
   messageEl.style.display = message ? 'flex' : 'none';
 }
 
+async function fetchLiveShippingRate() {
+  try {
+    const postal = document.getElementById('delivery-postal')?.value?.trim();
+    const items = getCheckoutItems().map((item) => ({
+      weight: Number(item.weight) || 0,
+      length: Number(item.length) || 0,
+      breadth: Number(item.breadth) || 0,
+      height: Number(item.height) || 0,
+      quantity: Number(item.quantity) || 1,
+      price: Number(item.price) || 0
+    }));
+    if (!postal || items.length === 0) return null;
+
+    const response = await fetch(apiUrl('/api/v1/shiprocket/rates'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        deliveryPostcode: postal,
+        cod: document.querySelector('.payment-tab.active')?.dataset.method === 'cod',
+        items,
+        declaredValue: getCartTotals().subtotal || 0
+      })
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.cheapest || null;
+  } catch (error) {
+    console.warn('Live shipping rate unavailable:', error);
+    return null;
+  }
+}
+
+async function updateLiveShipping() {
+  const shippingEl = document.getElementById('checkout-shipping');
+  const shippingNote = document.getElementById('shipping-note');
+  if (!shippingEl) return;
+
+  const rate = await fetchLiveShippingRate();
+  if (rate && rate.rate > 0) {
+    window.__liveShippingRate = rate.rate;
+    const totals = getCartTotals();
+    const shippingOverride = Math.round(rate.rate);
+    shippingEl.textContent = formatINR(shippingOverride);
+    const totalEl = document.getElementById('checkout-total');
+    if (totalEl) totalEl.textContent = formatINR(totals.subtotal + shippingOverride + totals.tax - totals.discount);
+    if (shippingNote) shippingNote.textContent = `Live shipping via Shiprocket (${rate.courierName || 'courier'}, ~${rate.estimatedDelivery || 'N/A'} days): ₹${formatINR(shippingOverride)}`;
+  } else {
+    window.__liveShippingRate = null;
+    updateCheckoutSummary();
+  }
+}
+
 function getDeliveryInfo() {
   return {
     fullName: document.getElementById('delivery-fullname')?.value.trim() || '',
@@ -102,10 +154,11 @@ async function createOrderBackend(paymentMethod, extras = {}) {
 
   const deliveryInfo = getDeliveryInfo();
   const totals = getCartTotals();
+  const liveShipping = window.__liveShippingRate != null ? Math.round(window.__liveShippingRate) : totals.shipping;
   const orderData = {
     items: getCheckoutItems(),
     paymentMethod,
-    shipping: totals.shipping + (extras.shippingFee || 0),
+    shipping: liveShipping + (extras.shippingFee || 0),
     discount: totals.discount,
     tax: totals.tax,
     deliveryInfo,
@@ -341,6 +394,16 @@ async function renderCheckoutPage() {
 
   await loadPaymentConfig();
 
+  const postalInput = document.getElementById('delivery-postal');
+  if (postalInput) {
+    postalInput.removeEventListener('change', updateLiveShipping);
+    postalInput.addEventListener('change', updateLiveShipping);
+    postalInput.removeEventListener('blur', updateLiveShipping);
+    postalInput.addEventListener('blur', updateLiveShipping);
+  }
+  window.__liveShippingRate = null;
+  updateLiveShipping();
+
   const gpsButton = document.getElementById('fill-delivery-address-btn');
   if (gpsButton) {
     gpsButton.removeEventListener('click', fillDeliveryAddressWithGPS);
@@ -438,6 +501,7 @@ async function fillDeliveryAddressWithGPS() {
     document.getElementById('delivery-postal').value = address.postcode || '';
     document.getElementById('delivery-country').value = address.country || 'India';
     setCheckoutMessage('Address autofill complete. Please verify the fields.');
+    updateLiveShipping();
   } catch (error) {
     console.error('GPS autofill failed:', error);
     setCheckoutMessage('Unable to autofill address. Please enter it manually.', true);
@@ -825,6 +889,7 @@ async function renderSignUpPage() {
 
 window.checkout = checkout;
 window.setCheckoutMessage = setCheckoutMessage;
+window.updateLiveShipping = updateLiveShipping;
 window.getCheckoutItems = getCheckoutItems;
 window.startCardCheckout = startCardCheckout;
 window.startCODCheckout = startCODCheckout;

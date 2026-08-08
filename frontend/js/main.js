@@ -162,6 +162,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (typeof restoreSessionFromStorage === 'function') await restoreSessionFromStorage();
   initAnnouncementBar();
   if (typeof createSidebar === 'function') createSidebar();
+  if (typeof createFooterQuickLinks === 'function') createFooterQuickLinks();
   if (typeof createLocaleSwitcher === 'function') createLocaleSwitcher();
   if (typeof updateUserLinks === 'function') updateUserLinks();
   if (typeof translatePage === 'function') translatePage();

@@ -17,6 +17,7 @@ const invoiceRoutes = require('./invoices');
 const shipmentRoutes = require('./shipments');
 const couponRoutes = require('./coupons');
 const sseRoutes = require('./sse');
+const shiprocketRoutes = require('./shiprocket');
 
 const router = express.Router();
 
@@ -37,5 +38,6 @@ router.use('/invoices', invoiceRoutes);
 router.use('/shipments', shipmentRoutes);
 router.use('/coupons', couponRoutes);
 router.use('/stream', sseRoutes);
+router.use('/shiprocket', shiprocketRoutes);
 
 module.exports = router;

@@ -1,9 +1,11 @@
-const CACHE = 'papjoy-v30';
+const CACHE = 'papjoy-v32';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/style.css',
   '/logo.png',
+  '/icon-192.png',
+  '/icon-512.png',
   '/favicon.svg',
   '/offline.html',
   '/js/config.js',

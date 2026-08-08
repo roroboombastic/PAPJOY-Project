@@ -67,7 +67,7 @@ function parseFormDataJson(req, res, next) {
   ['isActive', 'isFeatured'].forEach(key => {
     if (typeof req.body[key] === 'string') req.body[key] = req.body[key] === 'true';
   });
-  ['price', 'comparePrice', 'costPrice', 'gstPercentage'].forEach(key => {
+  ['price', 'comparePrice', 'costPrice', 'gstPercentage', 'weight', 'length', 'breadth', 'height'].forEach(key => {
     if (typeof req.body[key] === 'string') req.body[key] = Number(req.body[key]);
   });
   next();

@@ -91,6 +91,53 @@ function renderTrackingTimeline(tracking) {
   `;
 }
 
+async function loadRecentOrders() {
+  const container = document.getElementById('tracking-recent-orders');
+  const listEl = document.getElementById('tracking-recent-list');
+  const emailInput = document.getElementById('tracking-email');
+  const orderIdInput = document.getElementById('order-id');
+  if (!container || !listEl) return;
+
+  const user = getCurrentUser();
+  const token = getAuthToken();
+  if (!user || !token) return;
+
+  try {
+    const response = await fetch(apiUrl('/api/v1/orders'), {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!response.ok) return;
+    const json = await response.json();
+    const orders = Array.isArray(json) ? json : (json.orders || []);
+    if (!orders.length) return;
+
+    container.style.display = 'block';
+    listEl.innerHTML = orders.slice(0, 6).map((order) => {
+      const number = order.orderNumber || order._id || '';
+      const date = order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+      const status = (order.status || 'pending').replace(/_/g, ' ');
+      return `
+        <button type="button" class="tracking-recent-item" data-order-number="${escapeHTML(number)}">
+          <span class="tracking-recent-id">#${escapeHTML(number)}</span>
+          <span class="tracking-recent-meta">${escapeHTML(date)} · ${escapeHTML(status)}</span>
+          <i class="fas fa-chevron-right"></i>
+        </button>`;
+    }).join('');
+
+    listEl.querySelectorAll('.tracking-recent-item').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const number = btn.dataset.orderNumber;
+        if (orderIdInput) orderIdInput.value = number;
+        if (emailInput && !emailInput.value && user?.email) emailInput.value = user.email;
+        const form = document.getElementById('tracking-form');
+        if (form) form.requestSubmit?.() ?? form.dispatchEvent(new Event('submit', { cancelable: true }));
+      });
+    });
+  } catch (err) {
+    console.warn('Failed to load recent orders for tracking:', err);
+  }
+}
+
 function initTrackingPage() {
   const trackingForm = document.getElementById('tracking-form');
   const orderIdInput = document.getElementById('order-id');
@@ -103,6 +150,8 @@ function initTrackingPage() {
   if (user?.email && emailInput && !emailInput.value) {
     emailInput.value = user.email;
   }
+
+  loadRecentOrders();
 
   if (params.order) {
     orderIdInput.value = params.order;
@@ -612,6 +661,7 @@ window.loadOrderTracking = loadOrderTracking;
 window.renderTrackingTimeline = renderTrackingTimeline;
 window.trackingInterval = trackingInterval;
 window.initTrackingPage = initTrackingPage;
+window.loadRecentOrders = loadRecentOrders;
 window.findOrder = findOrder;
 window.displayTrackingResults = displayTrackingResults;
 window.updateTimelineStatus = updateTimelineStatus;

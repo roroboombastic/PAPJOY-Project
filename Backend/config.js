@@ -54,6 +54,12 @@ const RAZORPAY_SECRET = RAZORPAY_KEY_SECRET;
 const RAZORPAY_CURRENCY = process.env.RAZORPAY_CURRENCY || 'INR';
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const SHIPROCKET_API_EMAIL = process.env.SHIPROCKET_API_EMAIL || '';
+const SHIPROCKET_API_PASSWORD = process.env.SHIPROCKET_API_PASSWORD || '';
+const SHIPROCKET_BASE_URL = process.env.SHIPROCKET_BASE_URL || 'https://apiv2.shiprocket.in/v1/external';
+const SHIPROCKET_PICKUP_PINCODE = process.env.SHIPROCKET_PICKUP_PINCODE || '';
+const SHIPROCKET_WEBHOOK_SECRET = process.env.SHIPROCKET_WEBHOOK_SECRET || '';
+const SHIPROCKET_ENABLE_LIVE_RATES = process.env.SHIPROCKET_ENABLE_LIVE_RATES === 'true';
 const SMTP_HOST = process.env.SMTP_HOST || '';
 const SMTP_PORT = Number(process.env.SMTP_PORT) || 587;
 const SMTP_USER = process.env.SMTP_USER || '';
@@ -247,6 +253,16 @@ const config = {
   // ========== GOOGLE OAUTH ==========
   google: {
     clientId: getEnv('GOOGLE_CLIENT_ID', '')
+  },
+
+  // ========== SHIPROCKET ==========
+  shiprocket: {
+    email: getEnv('SHIPROCKET_API_EMAIL', ''),
+    password: getEnv('SHIPROCKET_API_PASSWORD', ''),
+    baseUrl: getEnv('SHIPROCKET_BASE_URL', 'https://apiv2.shiprocket.in/v1/external'),
+    pickupPincode: getEnv('SHIPROCKET_PICKUP_PINCODE', ''),
+    webhookSecret: getEnv('SHIPROCKET_WEBHOOK_SECRET', ''),
+    liveRates: process.env.SHIPROCKET_ENABLE_LIVE_RATES === 'true'
   }
 };
 
@@ -347,6 +363,12 @@ module.exports = {
   RAZORPAY_CURRENCY,
   STRIPE_SECRET_KEY,
   GOOGLE_CLIENT_ID,
+  SHIPROCKET_API_EMAIL,
+  SHIPROCKET_API_PASSWORD,
+  SHIPROCKET_BASE_URL,
+  SHIPROCKET_PICKUP_PINCODE,
+  SHIPROCKET_WEBHOOK_SECRET,
+  SHIPROCKET_ENABLE_LIVE_RATES,
   ADMIN_EMAILS,
   SMTP_HOST,
   SMTP_PORT,

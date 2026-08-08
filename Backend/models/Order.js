@@ -9,6 +9,11 @@ const orderItemSchema = new mongoose.Schema({
   total: { type: Number, required: true, min: 0 },
   gstRate: { type: Number, default: 18 },
   shippingCharge: { type: Number, default: 0 },
+  weight: { type: Number, default: 0 },
+  length: { type: Number, default: 0 },
+  breadth: { type: Number, default: 0 },
+  height: { type: Number, default: 0 },
+  hsnCode: String,
   cgst: { type: Number, default: 0 },
   sgst: { type: Number, default: 0 },
   igst: { type: Number, default: 0 }
@@ -83,6 +88,19 @@ const orderSchema = new mongoose.Schema({
     initiatedAt: Date
   },
   shipment: shipmentSchema,
+  shiprocket: {
+    shipmentId: String,
+    awbCode: String,
+    courierName: String,
+    labelUrl: String,
+    manifestUrl: String,
+    pickupStatus: String,
+    pickupScheduledDate: Date,
+    courierId: String,
+    error: String,
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: Date
+  },
   notes: String,
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }

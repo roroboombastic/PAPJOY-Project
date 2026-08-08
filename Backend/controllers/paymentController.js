@@ -279,6 +279,163 @@ async function createUPIQR(req, res) {
   }
 }
 
+async function createOrderCollectionQR(req, res) {
+  try {
+    const { orderId } = req.params;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    if (order.paymentMethod !== 'cod') {
+      return res.status(400).json({ error: 'Collection QR is only available for COD orders' });
+    }
+
+    if (order.paymentStatus === 'paid') {
+      return res.status(400).json({ error: 'This order is already marked as paid' });
+    }
+
+    if (!order.total || Number(order.total) <= 0) {
+      return res.status(400).json({ error: 'Cannot collect payment for a zero-value order' });
+    }
+
+    const merchantVpa = 'papjoy@upi';
+    const amountStr = Number(order.total).toFixed(2);
+    const txnNote = `Order ${order.orderNumber}`;
+
+    const upiString = `upi://pay?pa=${encodeURIComponent(merchantVpa)}&pn=${encodeURIComponent(BUSINESS_NAME)}&am=${amountStr}&cu=INR&tn=${encodeURIComponent(txnNote)}`;
+
+    const qrDataUrl = await QRCode.toDataURL(upiString, {
+      width: 320,
+      margin: 2,
+      color: { dark: '#1f4b3f', light: '#ffffff' },
+      errorCorrectionLevel: 'M'
+    });
+
+    let razorpayOrder = null;
+    if (isRazorpayConfigured()) {
+      try {
+        const razorpay = getRazorpayClient();
+        razorpayOrder = await razorpay.orders.create({
+          amount: Math.round(Number(order.total) * 100),
+          currency: RAZORPAY_CURRENCY || 'INR',
+          receipt: `collect_${order.orderNumber}`,
+          notes: { method: 'delivery_collection', orderId: order._id.toString(), orderNumber: order.orderNumber },
+          payment_capture: 1
+        });
+      } catch (rpErr) {
+        logger.warn('Could not create Razorpay order for delivery collection QR', { error: rpErr.message, orderId: order._id });
+      }
+    }
+
+    order.paymentDetails = order.paymentDetails || {};
+    order.paymentDetails.collectionQr = {
+      qrImage: qrDataUrl,
+      upiString,
+      amount: order.total,
+      orderNumber: order.orderNumber,
+      razorpayOrderId: razorpayOrder?.id || null,
+      createdAt: new Date()
+    };
+    await order.save();
+
+    logger.info('Delivery collection QR generated', { orderId: order._id, orderNumber: order.orderNumber, amount: order.total });
+
+    res.json({
+      success: true,
+      qrImage: qrDataUrl,
+      upiString,
+      amount: order.total,
+      currency: 'INR',
+      orderNumber: order.orderNumber,
+      razorpayOrderId: order.paymentDetails.collectionQr.razorpayOrderId,
+      pollUrl: razorpayOrder ? `/api/v1/payments/razorpay/status/${razorpayOrder.id}` : null
+    });
+  } catch (err) {
+    logger.error('Create order collection QR failed', { error: err.message });
+    res.status(500).json({ error: err.message || 'Failed to generate collection QR' });
+  }
+}
+
+async function markOrderCollected(req, res) {
+  try {
+    const { orderId } = req.params;
+    const { razorpayPaymentId, note } = req.body || {};
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    if (order.paymentMethod !== 'cod') {
+      return res.status(400).json({ error: 'Only COD orders can be marked as collected' });
+    }
+
+    if (order.paymentStatus === 'paid') {
+      return res.status(200).json({ success: true, order, alreadyPaid: true });
+    }
+
+    order.paymentStatus = 'paid';
+    order.paymentDetails = order.paymentDetails || {};
+    order.paymentDetails.method = 'upi';
+    order.paymentDetails.capturedAt = new Date();
+    if (razorpayPaymentId) order.paymentDetails.razorpayPaymentId = razorpayPaymentId;
+
+    order.shipment = order.shipment || {};
+    order.shipment.events = order.shipment.events || [];
+    order.shipment.events.push({
+      timestamp: new Date(),
+      status: order.status || 'out_for_delivery',
+      message: note || 'Payment collected at delivery via UPI QR',
+      location: ''
+    });
+
+    await order.save();
+
+    await Invoice.findOneAndUpdate(
+      { orderId: order._id },
+      { paymentStatus: 'paid' }
+    ).catch(err => {
+      logger.error('Failed to update invoice after delivery collection', { error: err.message });
+    });
+
+    if (order.userId) {
+      const notification = await Notification.create({
+        userId: order.userId,
+        orderId: order._id,
+        type: 'payment',
+        channel: 'app',
+        title: 'Payment received',
+        message: `Payment for order ${order.orderNumber} was collected at delivery.`,
+        data: { orderId: order._id, orderNumber: order.orderNumber }
+      }).catch(() => null);
+
+      if (notification && sseManager) {
+        sseManager.sendToUser(order.userId, {
+          type: 'notification',
+          notification: {
+            _id: notification._id,
+            title: notification.title,
+            message: notification.message,
+            type: notification.type,
+            orderId: notification.orderId,
+            isRead: false,
+            createdAt: notification.createdAt,
+          }
+        }, 'notification');
+      }
+    }
+
+    logger.info('COD order marked as collected', { orderId: order._id, orderNumber: order.orderNumber });
+
+    res.json({ success: true, order });
+  } catch (err) {
+    logger.error('Mark order collected failed', { error: err.message });
+    res.status(500).json({ error: err.message || 'Failed to mark order as collected' });
+  }
+}
+
 async function initiateRefund(req, res) {
   try {
     const { orderId, amount, reason } = req.body;
@@ -470,6 +627,8 @@ module.exports = {
   verifyRazorpayPayment,
   getRazorpayPaymentStatus,
   createUPIQR,
+  createOrderCollectionQR,
+  markOrderCollected,
   initiateRefund,
   razorpayWebhook
 };

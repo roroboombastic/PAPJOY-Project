@@ -15,6 +15,11 @@ const productCreateSchema = Joi.object({
   hsnCode: Joi.string().max(20).allow('', null).optional(),
   sacCode: Joi.string().max(20).allow('', null).optional(),
   gstPercentage: Joi.number().min(0).max(100).optional(),
+  shippingCharge: Joi.number().min(0).optional(),
+  weight: Joi.number().min(0).optional(),
+  length: Joi.number().min(0).optional(),
+  breadth: Joi.number().min(0).optional(),
+  height: Joi.number().min(0).optional(),
   inventory: Joi.object({
     quantity: Joi.number().min(0).optional(),
     lowStockThreshold: Joi.number().min(0).optional(),
@@ -64,6 +69,10 @@ const productUpdateSchema = Joi.object({
   sacCode: Joi.string().max(20).allow('', null).optional(),
   gstPercentage: Joi.number().min(0).max(100).optional(),
   shippingCharge: Joi.number().min(0).optional(),
+  weight: Joi.number().min(0).optional(),
+  length: Joi.number().min(0).optional(),
+  breadth: Joi.number().min(0).optional(),
+  height: Joi.number().min(0).optional(),
   inventory: Joi.object({
     quantity: Joi.number().min(0).optional(),
     lowStockThreshold: Joi.number().min(0).optional(),

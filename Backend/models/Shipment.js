@@ -34,6 +34,14 @@ const shipmentSchema = new mongoose.Schema({
     latitude: Number,
     longitude: Number
   },
+  shiprocket: {
+    shipmentId: String,
+    awbCode: String,
+    courierName: String,
+    labelUrl: String,
+    manifestUrl: String,
+    courierId: String
+  },
   status: { type: String, enum: ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'returned', 'refunded', 'cancelled'], default: 'pending' },
   events: [shipmentEventSchema],
   createdAt: { type: Date, default: Date.now },

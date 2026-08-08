@@ -16,6 +16,7 @@
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
   <title>PAP-JOY | Track Your Order</title>
   <script>
     if (window.location.hostname === 'papjoy-project.vercel.app' || window.location.hostname === 'papjoy.com' || window.location.hostname === 'www.papjoy.com') {
@@ -124,7 +125,7 @@
   
   <script>
   (function(){
-    var V='papjoy-v30',K='papjoy-sw-version';
+    var V='papjoy-v32',K='papjoy-sw-version';
     try{
       if('serviceWorker'in navigator&&navigator.serviceWorker.controller){
         if(localStorage.getItem(K)!==V){
@@ -189,6 +190,10 @@
           <button type="submit" class="checkout-button">Track Order</button>
         </form>
         <div id="tracking-message" class="auth-message"></div>
+        <div id="tracking-recent-orders" style="display:none;">
+          <h4>Your Recent Orders</h4>
+          <div id="tracking-recent-list" class="tracking-recent-list"></div>
+        </div>
       </div>
     </div>
 

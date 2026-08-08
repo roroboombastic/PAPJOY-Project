@@ -107,6 +107,30 @@ function isActiveNavPage(href) {
   return current === pageName;
 }
 
+function createFooterQuickLinks() {
+  if (document.getElementById('footer-quick-links')) return;
+
+  const footer = document.querySelector('.site-footer');
+  if (!footer) return;
+  const grid = footer.querySelector('.footer-grid');
+  if (!grid) return;
+
+  const block = document.createElement('div');
+  block.id = 'footer-quick-links';
+  block.className = 'footer-quick-links';
+  block.innerHTML = `
+    <h4>Quick Links</h4>
+    <div class="footer-links">
+      <a href="index.html" data-no-transition>Home</a>
+      <a href="product.html" data-no-transition>Shop</a>
+      <a href="tracking.html" data-no-transition><i class="fas fa-truck"></i> Track Order</a>
+      <a href="account.html" data-no-transition>Account</a>
+      <a href="cart.html" data-no-transition>Cart</a>
+    </div>
+  `;
+  grid.appendChild(block);
+}
+
 function createSidebar() {
   if (sidebarCreated) return;
   if (document.querySelector('.admin-sidebar') || document.querySelector('.admin-container')) return;
@@ -684,6 +708,7 @@ window.closeMobileSidebar = closeMobileSidebar;
 window.getActivePageName = getActivePageName;
 window.isActiveNavPage = isActiveNavPage;
 window.createSidebar = createSidebar;
+window.createFooterQuickLinks = createFooterQuickLinks;
 window.createLocaleSwitcher = createLocaleSwitcher;
 window.initThemeToggle = initThemeToggle;
 window.createMobileThemeToggle = createMobileThemeToggle;
