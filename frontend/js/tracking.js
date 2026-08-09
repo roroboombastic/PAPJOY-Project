@@ -231,6 +231,34 @@ async function findOrder(orderId, email) {
   return null;
 }
 
+async function cancelOrderFromTracking(orderId) {
+  if (!orderId) return;
+  if (!confirm('Are you sure you want to cancel this order? This cannot be undone.')) return;
+
+  const token = getAuthToken();
+  if (!token) {
+    showToast('Please sign in to cancel orders.', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/v1/orders/${encodeURIComponent(orderId)}/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to cancel order');
+    }
+    showToast('Order cancelled successfully.', 'success');
+    const form = document.getElementById('tracking-form');
+    if (form) form.requestSubmit?.() ?? form.dispatchEvent(new Event('submit', { cancelable: true }));
+  } catch (error) {
+    console.error('Cancel order failed:', error);
+    showToast(`Cancel failed: ${error.message}`, 'error');
+  }
+}
+
 function displayTrackingResults(order) {
   const resultsDiv = document.getElementById('tracking-results');
   const orderNumber = document.getElementById('order-number');
@@ -261,6 +289,12 @@ function displayTrackingResults(order) {
     window.currentTrackingOrder = order;
     invoiceButton.onclick = () => downloadOrderInvoice(order.id);
     invoiceActions.style.display = 'flex';
+  }
+
+  const cancelButton = document.getElementById('tracking-cancel-button');
+  if (cancelButton && ['pending', 'confirmed'].includes((order.status || '').toLowerCase()) && getAuthToken()) {
+    cancelButton.style.display = 'inline-block';
+    cancelButton.onclick = () => cancelOrderFromTracking(order.id);
   }
 
   resultsDiv.style.display = 'block';

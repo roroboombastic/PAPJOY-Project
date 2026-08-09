@@ -1402,11 +1402,52 @@ body.mobile-nav-open .mobile-nav-overlay {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.35s ease;
+  opacity: 0;
+  transition: transform 0.35s ease, opacity 0.4s ease;
+}
+
+.product-image img.img-loaded {
+  opacity: 1;
+}
+
+.product-image:not(.img-has-image)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: card-shimmer 1.4s infinite;
+}
+
+.product-image.img-has-image::before {
+  animation: none;
+  display: none;
+}
+
+@keyframes card-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .product-card:hover .product-image img {
   transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  .product-image {
+    min-height: 0;
+    aspect-ratio: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .product-image {
+    aspect-ratio: 1;
+  }
 }
 
 .badge {
@@ -2315,6 +2356,20 @@ label {
 
 .secondary-button,
 .view-all {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.checkout-button.danger {
+  background: linear-gradient(135deg, var(--danger), #a82735);
+  color: #fff;
+}
+
+.checkout-button.danger:hover {
+  box-shadow: 0 6px 20px rgba(220, 53, 69, 0.3);
+}
+
+.checkout-button.secondary {
   background: var(--surface-soft);
   color: var(--text);
 }

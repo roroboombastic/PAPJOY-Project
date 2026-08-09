@@ -19,7 +19,7 @@ async function initGoogleSignIn(buttonId, rememberCheckboxId) {
     window.google.accounts.id.initialize({
       client_id: clientId,
       callback: async (response) => {
-        const remember = document.getElementById(rememberCheckboxId)?.checked;
+        const remember = document.getElementById(rememberCheckboxId)?.checked ?? true;
         try {
           const { response: tokenResponse, data } = await apiFetch('/api/v1/auth/google', {
             method: 'POST',
@@ -267,10 +267,7 @@ async function restoreSessionFromStorage() {
     try {
       const latestProfile = await syncUserProfile();
       if (!latestProfile) {
-        const newToken = await refreshAccessToken();
-        if (!newToken) {
-          signOut();
-        }
+        await refreshAccessToken();
       }
     } catch (error) {
       console.warn('Failed to sync profile on restore:', error);
@@ -302,7 +299,7 @@ async function login(event) {
 
   const email = document.getElementById('email')?.value?.trim();
   const password = document.getElementById('password')?.value;
-  const remember = document.getElementById('remember')?.checked || false;
+  const remember = document.getElementById('remember')?.checked ?? true;
 
   if (!email || !password) {
     if (messageEl) { messageEl.textContent = 'Please fill in all fields.'; messageEl.style.color = '#ff8b94'; }
@@ -352,7 +349,7 @@ async function register(event) {
   const phone = document.getElementById('signup-phone')?.value?.trim();
   const password = document.getElementById('signup-password')?.value;
   const confirmPassword = document.getElementById('confirm-password')?.value;
-  const remember = document.getElementById('remember-signup')?.checked || false;
+  const remember = document.getElementById('remember-signup')?.checked ?? true;
   const marketing = document.getElementById('marketing')?.checked || false;
   const terms = document.getElementById('terms')?.checked || false;
 

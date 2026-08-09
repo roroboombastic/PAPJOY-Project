@@ -47,7 +47,7 @@ function createProductCardElement(product) {
 
   card.innerHTML = `
     <div class="product-image${isOutOfStock ? ' out-of-stock' : ''}" role="link" tabindex="0" aria-label="View ${safeName}">
-      <img src="${primaryImage}" alt="${safeName}" loading="lazy" decoding="async" onerror="handleProductImageError(this)">
+      <img src="${primaryImage}" alt="${safeName}" decoding="async" onload="revealProductImage(this)" onerror="handleProductImageError(this)">
       ${product.isFeatured ? '<div class="badge featured">Featured</div>' : ''}
       ${stockChip}
     </div>

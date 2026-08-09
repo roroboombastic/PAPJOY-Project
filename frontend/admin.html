@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -43,7 +43,7 @@
   
   <script>
   (function(){
-    var V='papjoy-v37',K='papjoy-sw-version';
+    var V='papjoy-v38',K='papjoy-sw-version';
     try{
       if('serviceWorker'in navigator&&navigator.serviceWorker.controller){
         if(localStorage.getItem(K)!==V){
@@ -76,25 +76,25 @@
       </div>
       <nav class="admin-nav">
         <button class="admin-nav-item active" data-page="dashboard">
-          📊 Dashboard
+          ðŸ“Š Dashboard
         </button>
         <button class="admin-nav-item" data-page="products">
-          📦 Products
+          ðŸ“¦ Products
         </button>
         <button class="admin-nav-item" data-page="orders">
-          📋 Orders
+          ðŸ“‹ Orders
         </button>
         <button class="admin-nav-item" data-page="users">
-          👥 Users
+          ðŸ‘¥ Users
         </button>
         <button class="admin-nav-item" data-page="analytics">
-          📈 Analytics
+          ðŸ“ˆ Analytics
         </button>
         <button class="admin-nav-item" data-page="categories">
-          🏷️ Categories
+          ðŸ·ï¸ Categories
         </button>
         <a href="index.html" class="admin-nav-item admin-store-link" title="Back to store homepage">
-          🌐 View Store
+          ðŸŒ View Store
         </a>
       </nav>
       <div class="admin-user-info">
@@ -113,28 +113,28 @@
         <h1>Dashboard</h1>
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-icon">💰</div>
+            <div class="stat-icon">ðŸ’°</div>
             <div class="stat-content">
               <div class="stat-label">Total Revenue</div>
-              <div class="stat-value" id="stat-revenue">₹0</div>
+              <div class="stat-value" id="stat-revenue">â‚¹0</div>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">📦</div>
+            <div class="stat-icon">ðŸ“¦</div>
             <div class="stat-content">
               <div class="stat-label">Total Orders</div>
               <div class="stat-value" id="stat-orders">0</div>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">🛍️</div>
+            <div class="stat-icon">ðŸ›ï¸</div>
             <div class="stat-content">
               <div class="stat-label">Total Products</div>
               <div class="stat-value" id="stat-products">0</div>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">👥</div>
+            <div class="stat-icon">ðŸ‘¥</div>
             <div class="stat-content">
               <div class="stat-label">Total Users</div>
               <div class="stat-value" id="stat-users">0</div>
@@ -177,7 +177,7 @@
       <section id="products-page" class="admin-page">
         <div class="admin-header">
           <h2>Products Management</h2>
-          <button class="btn btn-primary" onclick="window.location.href='product-edit.html'">➕ Add Product</button>
+          <button class="btn btn-primary" onclick="window.location.href='product-edit.html'">âž• Add Product</button>
         </div>
 
         <!-- Search & Filters -->
@@ -353,7 +353,7 @@
       <section id="categories-page" class="admin-page">
         <div class="admin-header">
           <h2>Categories Management</h2>
-          <button class="btn btn-primary" onclick="showCategoryForm()">➕ Add Category</button>
+          <button class="btn btn-primary" onclick="showCategoryForm()">âž• Add Category</button>
         </div>
 
         <!-- Categories Table -->
@@ -479,7 +479,7 @@
             <input type="number" id="product-stock" min="0" />
           </div>
           <div class="form-group">
-            <label>Shipping Charge (₹)</label>
+            <label>Shipping Charge (â‚¹)</label>
             <input type="number" id="product-shipping" min="0" step="0.01" />
           </div>
         </div>

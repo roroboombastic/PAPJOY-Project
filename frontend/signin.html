@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -42,7 +42,7 @@
   
   <script>
   (function(){
-    var V='papjoy-v37',K='papjoy-sw-version';
+    var V='papjoy-v38',K='papjoy-sw-version';
     try{
       if('serviceWorker'in navigator&&navigator.serviceWorker.controller){
         if(localStorage.getItem(K)!==V){
@@ -123,7 +123,7 @@
               </div>
             </div>
             <div class="checkbox-group">
-              <input type="checkbox" id="remember" name="remember" />
+              <input type="checkbox" id="remember" name="remember" checked />
               <label for="remember">Keep me signed in</label>
             </div>
             <button type="submit" class="checkout-button">Continue</button>
@@ -189,7 +189,7 @@
               <label for="marketing">Send me exclusive offers and updates</label>
             </div>
             <div class="checkbox-group">
-              <input type="checkbox" id="remember-signup" name="remember" />
+              <input type="checkbox" id="remember-signup" name="remember" checked />
               <label for="remember-signup">Keep me signed in on this device</label>
             </div>
             <button type="submit" class="checkout-button">Create account</button>

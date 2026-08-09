@@ -68,8 +68,16 @@ function handleProductImageError(img) {
   } else {
     img.dataset.fb = '1';
     img.src = (typeof getNextFallbackImage === 'function' ? getNextFallbackImage() : window.PRODUCT_FALLBACK_IMAGE) || '';
+    if (typeof revealProductImage === 'function') revealProductImage(img);
     if (!img.src) img.style.display = 'none';
   }
+}
+
+function revealProductImage(img) {
+  if (!img) return;
+  img.classList.add('img-loaded');
+  const container = img.closest ? img.closest('.product-image') : null;
+  if (container) container.classList.add('img-has-image');
 }
 
 function resolveProductImageUrl(url) {
@@ -203,6 +211,7 @@ window.debounce = debounce;
 window.escapeHTML = escapeHTML;
 window.fetchWithTimeout = fetchWithTimeout;
 window.handleProductImageError = handleProductImageError;
+window.revealProductImage = revealProductImage;
 window.getProductImageUrls = getProductImageUrls;
 window.resolveProductImageUrl = resolveProductImageUrl;
 window.normalizeVariantName = normalizeVariantName;

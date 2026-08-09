@@ -87,4 +87,47 @@ function updateLocaleSwitcher() {
 }
 window.updateLocaleSwitcher = updateLocaleSwitcher;
 
+async function downloadOrderInvoice(orderId) {
+  if (!orderId) {
+    showToast('Invalid order ID', 'error');
+    return;
+  }
+  const token = getAuthToken();
+  const guestEmail = window.currentTrackingOrder?.email || getQueryParams().email || '';
+  if (!token && !guestEmail) {
+    showToast('Please sign in to download invoice', 'error');
+    return;
+  }
+
+  try {
+    showToast('Downloading invoice...', 'info');
+    const url = new URL(`${API_BASE_URL}/api/v1/invoices/${orderId}/download`);
+    if (!token && guestEmail) url.searchParams.set('email', guestEmail);
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Failed to download invoice (${response.status})`);
+    }
+
+    const blob = await response.blob();
+    const objectUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = `invoice-${orderId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(objectUrl);
+    showToast('Invoice downloaded successfully', 'success');
+  } catch (error) {
+    console.error('Invoice download failed:', error);
+    showToast(`Failed to download invoice: ${error.message}`, 'error');
+  }
+}
+window.downloadOrderInvoice = downloadOrderInvoice;
+
 

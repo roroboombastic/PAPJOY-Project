@@ -91,7 +91,6 @@ async function refreshAccessToken() {
       return data.token;
     } catch (error) {
       console.error('Token refresh failed:', error);
-      signOut();
       return null;
     }
   })();
