@@ -159,11 +159,15 @@ function normalizeProduct(product) {
 }
 
 function getInventoryStatus(product) {
-  const quantity = product.inventory?.quantity || 0;
-  const threshold = product.inventory?.lowStockThreshold || 10;
-  if (quantity === 0) return { status: 'Out of Stock', class: 'out-of-stock', color: '#d32f2f' };
-  if (quantity <= threshold) return { status: `Limited: ${quantity} left`, class: 'low-stock', color: '#f57c00' };
-  return { status: 'In Stock', class: 'in-stock', color: '#388e3c' };
+  const quantity = Number(product.inventory?.quantity);
+  const threshold = Number(product.inventory?.lowStockThreshold) || 10;
+  if (quantity <= 0) {
+    return { status: 'Out of Stock', class: 'out-of-stock', color: 'var(--danger)', label: 'Out of Stock', qty: 0, outOfStock: true, lowStock: false, inStock: false };
+  }
+  if (quantity <= threshold) {
+    return { status: `Only ${quantity} left`, class: 'low-stock', color: 'var(--warning)', label: `Only ${quantity} left`, qty: quantity, outOfStock: false, lowStock: true, inStock: false };
+  }
+  return { status: 'In Stock', class: 'in-stock', color: 'var(--success)', label: '', qty: quantity, outOfStock: false, lowStock: false, inStock: true };
 }
 
 function getProductLink(product) {

@@ -5,6 +5,7 @@ const { isRazorpayConfigured, getRazorpayInstance } = require('../utils/paymentC
 const { createOrderFromData, sendOrderEmails } = require('../services/orderService');
 const { Order, Invoice, Notification } = require('../models');
 const invoiceController = require('./invoiceController');
+const notificationService = require('../services/notificationService');
 const logger = require('../utils/logger');
 let sseManager;
 try { sseManager = require('../utils/sse').sseManager; } catch (_) { /* SSE optional */ }
@@ -169,6 +170,10 @@ async function verifyRazorpayPayment(req, res) {
 
     sendOrderEmails(order, req.userId).catch((err) => {
       logger.error('Order email notification failed', { error: err.message, orderId: order._id });
+    });
+
+    notificationService.notifyOrderPlaced(order).catch((err) => {
+      logger.error('Order placed notification failed', { error: err.message, orderId: order._id });
     });
 
     logger.info('Razorpay payment verified and order created', {
@@ -408,7 +413,7 @@ async function markOrderCollected(req, res) {
         channel: 'app',
         title: 'Payment received',
         message: `Payment for order ${order.orderNumber} was collected at delivery.`,
-        data: { orderId: order._id, orderNumber: order.orderNumber }
+        data: { orderId: order._id, orderNumber: order.orderNumber, link: `/tracking.html?orderNumber=${encodeURIComponent(order.orderNumber)}` }
       }).catch(() => null);
 
       if (notification && sseManager) {
@@ -556,7 +561,7 @@ async function razorpayWebhook(req, res) {
             channel: 'app',
             title: 'Payment confirmed',
             message: `Payment for order ${order.orderNumber} has been confirmed.`,
-            data: { orderId: order._id, orderNumber: order.orderNumber }
+            data: { orderId: order._id, orderNumber: order.orderNumber, link: `/tracking.html?orderNumber=${encodeURIComponent(order.orderNumber)}` }
           }).catch(() => null);
 
           if (notification) {

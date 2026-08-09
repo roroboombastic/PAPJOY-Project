@@ -5,7 +5,8 @@ let remoteCartLoaded = false;
 let syncCartTimer = null;
 let syncCartPromise = null;
 let appliedPromoCode = localStorage.getItem('papjoy-promo') || '';
-let validatedDiscount = JSON.parse(localStorage.getItem('papjoy-discount') || 'null');
+let validatedDiscount = null;
+try { validatedDiscount = JSON.parse(localStorage.getItem('papjoy-discount') || 'null'); } catch (e) { validatedDiscount = null; }
 
 function saveCart() {
   localStorage.setItem('papjoy-cart', JSON.stringify(cart));
@@ -349,7 +350,7 @@ function updateCartSummary() {
     } else if (totals.shipping === 0) {
       shippingNote.textContent = 'This order ships for FREE.';
     } else {
-      shippingNote.textContent = `Shipping charges apply based on the items in your cart (₹${formatCurrency(totals.shipping)}).`;
+      shippingNote.textContent = `Shipping charges apply based on the items in your cart (${formatCurrency(totals.shipping)}).`;
     }
   }
 
@@ -402,7 +403,6 @@ function renderCart() {
     return;
   }
 
-  container._cartItemId = null;
   cart.forEach((item) => {
     const safeId = encodeURIComponent(String(item.id || ''));
     const safeVariant = encodeURIComponent(String(item.variant || 'Standard'));

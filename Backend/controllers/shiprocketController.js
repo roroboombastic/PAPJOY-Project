@@ -8,6 +8,10 @@ function isConfigured() {
   return shiprocketService.isConfigured();
 }
 
+function getConfigStatus() {
+  return shiprocketService.getConfigStatus();
+}
+
 function requireConfigured() {
   if (!isConfigured()) {
     const error = new Error('Shiprocket is not configured. Add SHIPROCKET_API_EMAIL and SHIPROCKET_API_PASSWORD to your environment.');
@@ -418,7 +422,7 @@ async function handleWebhook(req, res) {
           channel: 'app',
           title: 'Shipment update',
           message: (events[events.length - 1]?.message || `Shipment status: ${trackStatus || 'updated'}`).slice(0, 180),
-          data: { orderId: order._id, orderNumber: order.orderNumber }
+          data: { orderId: order._id, orderNumber: order.orderNumber, link: `/tracking.html?orderNumber=${encodeURIComponent(order.orderNumber)}` }
         }).catch(() => null);
         if (notification) {
           sseManager.sendToUser(order.userId, {
@@ -444,8 +448,108 @@ async function handleWebhook(req, res) {
   }
 }
 
+async function cancelOrder(req, res) {
+  try {
+    requireConfigured();
+
+    const { id } = req.params;
+    const { reason } = req.body || {};
+    const order = await Order.findById(id);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    if (order.status === 'cancelled') {
+      return res.status(400).json({ error: 'Order is already cancelled' });
+    }
+    if (order.status === 'delivered' || order.status === 'refunded') {
+      return res.status(400).json({ error: `Cannot cancel an order with status "${order.status}".` });
+    }
+
+    const shipmentId = order.shiprocket?.shipmentId;
+    let shiprocketResult = null;
+    if (shipmentId) {
+      try {
+        shiprocketResult = await shiprocketService.cancelOrder({ shipmentId });
+      } catch (srErr) {
+        logger.warn('Shiprocket cancel failed, continuing local cancel', { orderNumber: order.orderNumber, error: srErr.message });
+        shiprocketResult = { error: srErr.message };
+      }
+    }
+
+    order.status = 'cancelled';
+    order.shipment = order.shipment || {};
+    order.shipment.status = 'cancelled';
+    order.shipment.events = order.shipment.events || [];
+    order.shipment.events.push({
+      timestamp: new Date(),
+      status: 'cancelled',
+      message: reason ? `Order cancelled: ${reason}` : 'Order cancelled',
+      location: ''
+    });
+    await order.save();
+
+    try {
+      const { restoreInventoryForOrder } = require('../services/orderService');
+      await restoreInventoryForOrder(order);
+    } catch (invErr) {
+      logger.error('Inventory restore failed after Shiprocket cancel', { error: invErr.message, orderId: order._id });
+    }
+
+    await Shipment.findOneAndUpdate(
+      { orderId: order._id },
+      {
+        $set: { status: 'cancelled', 'shiprocket.cancelledAt': new Date() },
+        $push: { events: { timestamp: new Date(), status: 'cancelled', message: reason || 'Order cancelled', location: '' } }
+      },
+      { new: true }
+    ).catch(() => null);
+
+    if (order.userId) {
+      const notification = await Notification.create({
+        userId: order.userId,
+        orderId: order._id,
+        type: 'order',
+        channel: 'app',
+        title: 'Order cancelled',
+        message: `Your order ${order.orderNumber} has been cancelled.${reason ? ` Reason: ${reason}` : ''}`,
+        data: { orderId: order._id, orderNumber: order.orderNumber }
+      }).catch(() => null);
+      if (notification) {
+        sseManager.sendToUser(order.userId, {
+          type: 'notification',
+          notification: {
+            _id: notification._id,
+            title: notification.title,
+            message: notification.message,
+            type: notification.type,
+            orderId: notification.orderId,
+            isRead: false,
+            createdAt: notification.createdAt
+          }
+        }, 'notification');
+      }
+    }
+
+    sseManager.sendToOrder(order.orderNumber, {
+      type: 'status',
+      orderNumber: order.orderNumber,
+      status: 'cancelled',
+      carrier: order.shipment.carrier || order.shiprocket?.courierName || 'Shiprocket',
+      trackingNumber: order.shipment.trackingNumber || order.shiprocket?.awbCode || '',
+      events: (order.shipment.events || []).slice(-10)
+    }, 'tracking');
+
+    logger.info('Order cancelled via Shiprocket flow', { orderNumber: order.orderNumber, shipmentId, shiprocketOk: !(shiprocketResult?.error) });
+
+    res.json({ success: true, order, shiprocket: shiprocketResult });
+  } catch (err) {
+    logger.error('Cancel order (Shiprocket) failed', { error: err.message });
+    res.status(err.status || 500).json({ error: err.message });
+  }
+}
+
 module.exports = {
   isConfigured,
+  getConfigStatus,
   getPickupLocations,
   getRates,
   createShiprocketOrder,
@@ -453,5 +557,6 @@ module.exports = {
   assignAWB,
   generateLabel,
   trackOrder,
-  handleWebhook
+  handleWebhook,
+  cancelOrder
 };

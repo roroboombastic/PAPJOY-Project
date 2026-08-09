@@ -6,7 +6,7 @@ const router = express.Router();
 
 // Public / checkout
 router.get('/status', (req, res) => {
-  res.json({ configured: shiprocketController.isConfigured() });
+  res.json(shiprocketController.getConfigStatus());
 });
 router.post('/rates', shiprocketController.getRates);
 
@@ -17,5 +17,6 @@ router.post('/orders/:id/pickup', auth, verifyAdmin, shiprocketController.genera
 router.post('/orders/:id/awb', auth, verifyAdmin, shiprocketController.assignAWB);
 router.post('/orders/:id/label', auth, verifyAdmin, shiprocketController.generateLabel);
 router.get('/orders/:id/track', auth, verifyAdmin, shiprocketController.trackOrder);
+router.post('/orders/:id/cancel', auth, verifyAdmin, shiprocketController.cancelOrder);
 
 module.exports = router;

@@ -1,0 +1,93 @@
+:root {
+  --bg: #0f1a13;
+  --surface: #16241b;
+  --surface-soft: #1c2d21;
+  --accent: #5c7c63;
+  --accent-soft: #223528;
+  --text: #eef3ee;
+  --text-muted: #9db0a0;
+  --border: #2a3d2f;
+  --danger: #c96a5f;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  width: 340px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 13px;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.app-logo { width: 32px; height: 32px; border-radius: 8px; }
+
+.app-title { flex: 1; min-width: 0; }
+.app-title h1 { font-size: 15px; font-weight: 700; letter-spacing: 0.5px; }
+.app-title p { font-size: 11px; color: var(--text-muted); }
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn:disabled { opacity: 0.55; cursor: default; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #6d8f75; }
+.btn-block { width: 100%; margin-top: 10px; }
+.btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+.btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
+.btn-small { padding: 4px 8px; font-size: 11px; }
+
+.auth-section { padding: 16px 14px; }
+
+.muted { color: var(--text-muted); font-size: 12px; }
+.small { font-size: 11px; }
+.center { text-align: center; }
+
+label { display: block; margin: 10px 0 4px; font-size: 11px; color: var(--text-muted); }
+
+input[type="email"], input[type="password"] {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 13px;
+}
+input:focus { outline: none; border-color: var(--accent); }
+
+.error { color: var(--danger); font-size: 12px; margin-top: 8px; }
+.hidden { display: none; }
+
+.signed-in { padding: 12px 14px; }
+
+.user-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.user-name { font-weight: 600; font-size: 13px; }
+
+.notif-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+
+.notification-list { list-style: none; max-height: 300px; overflow-y: auto; }
+.notification-list li { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; background: var(--surface); cursor: pointer; }
+.notification-list li:hover { border-color: var(--accent); }
+.notification-list li.unread { border-left: 3px solid var(--accent); }
+.notification-list .n-title { font-weight: 600; font-size: 12px; }
+.notification-list .n-msg { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
+.notification-list .n-time { color: var(--text-muted); font-size: 10px; margin-top: 4px; }
+.notification-list li.empty { cursor: default; border-style: dashed; color: var(--text-muted); text-align: center; }
+.notification-list li.empty:hover { border-color: var(--border); }
+
+.app-footer { padding: 8px 14px; border-top: 1px solid var(--border); color: var(--text-muted); }

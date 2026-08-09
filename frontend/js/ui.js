@@ -1,9 +1,9 @@
 // ================== UI FUNCTIONS ==================
 
-function showEmptyState() {
-  const grid = document.querySelector('.product-grid');
-  if (!grid) return;
-  grid.innerHTML = `<div class="empty-state"><i class="fas fa-box-open"></i><p>No products available</p></div>`;
+function showEmptyState(grid) {
+  const target = grid || document.querySelector('.product-grid');
+  if (!target) return;
+  target.innerHTML = `<div class="empty-state"><i class="fas fa-box-open"></i><p>No products available</p></div>`;
 }
 window.showEmptyState = showEmptyState;
 

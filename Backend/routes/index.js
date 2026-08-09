@@ -33,6 +33,7 @@ router.use('/notifications', notificationRoutes);
 router.use('/recommendations', recommendationRoutes);
 router.use('/history', historyRoutes);
 router.use('/webhook-status', webhookRoutes);
+router.use('/courier', webhookRoutes);
 router.use('/admin', adminRoutes);
 router.use('/invoices', invoiceRoutes);
 router.use('/shipments', shipmentRoutes);

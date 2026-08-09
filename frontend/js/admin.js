@@ -655,18 +655,21 @@ function resetShiprocketSection(order) {
   const awbBtn = document.getElementById('shiprocket-awb-btn');
   const labelBtn = document.getElementById('shiprocket-label-btn');
   const trackBtn = document.getElementById('shiprocket-track-btn');
+  const cancelBtn = document.getElementById('shiprocket-cancel-btn');
   const status = document.getElementById('shiprocket-status');
   if (status) status.textContent = '';
 
   const sr = order.shiprocket || {};
   const hasShipment = Boolean(sr.shipmentId);
   const hasAwb = Boolean(sr.awbCode);
+  const isCancelled = order.status === 'cancelled' || order.shipment?.status === 'cancelled';
 
   if (shipBtn) shipBtn.style.display = hasShipment ? 'none' : 'inline-flex';
   if (pickupBtn) pickupBtn.style.display = hasShipment && !hasAwb ? 'inline-flex' : 'none';
   if (awbBtn) awbBtn.style.display = hasShipment && !hasAwb ? 'inline-flex' : 'none';
   if (labelBtn) labelBtn.style.display = hasShipment && hasAwb ? 'inline-flex' : 'none';
   if (trackBtn) trackBtn.style.display = hasShipment ? 'inline-flex' : 'none';
+  if (cancelBtn) cancelBtn.style.display = isCancelled ? 'none' : 'inline-flex';
 
   if (sr.shipmentId) {
     const parts = [`Shipment ID: ${sr.shipmentId}`];
@@ -785,6 +788,26 @@ async function shiprocketTrackOrder() {
       const valid = ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled', 'returned', 'refunded'];
       if (valid.includes(mapped)) statusSelect.value = mapped;
     }
+  } catch (err) {
+    setShiprocketError(err.message);
+    if (typeof showToast === 'function') showToast(err.message);
+  }
+}
+
+async function shiprocketCancelOrder() {
+  const orderId = document.getElementById('order-id')?.value;
+  if (!orderId) return;
+  const confirmed = window.confirm && confirm('Cancel this order? If it was already sent to Shiprocket, the shipment will be cancelled there too. Inventory will be restored.');
+  if (!confirmed) return;
+  setShiprocketBusy('Cancelling order...');
+  try {
+    const reason = window.prompt ? prompt('Reason for cancellation (optional):') : '';
+    const data = await shiprocketRequest(`/api/v1/shiprocket/orders/${orderId}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason: reason || '' }) });
+    resetShiprocketSection(data.order);
+    setShiprocketSuccess('Order cancelled. Inventory restored.');
+    const statusSelect = document.getElementById('order-status-update');
+    if (statusSelect) statusSelect.value = 'cancelled';
+    if (typeof showToast === 'function') showToast('Order cancelled');
   } catch (err) {
     setShiprocketError(err.message);
     if (typeof showToast === 'function') showToast(err.message);
@@ -1160,6 +1183,7 @@ window.shiprocketGeneratePickup = shiprocketGeneratePickup;
 window.shiprocketAssignAWB = shiprocketAssignAWB;
 window.shiprocketGenerateLabel = shiprocketGenerateLabel;
 window.shiprocketTrackOrder = shiprocketTrackOrder;
+window.shiprocketCancelOrder = shiprocketCancelOrder;
 window.showCategoryForm = showCategoryForm;
 window.closeCategoryModal = closeCategoryModal;
 window.saveCategory = saveCategory;

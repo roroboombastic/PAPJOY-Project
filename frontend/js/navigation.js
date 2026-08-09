@@ -485,6 +485,30 @@ async function loadNotifications() {
       }
     });
 
+    list.addEventListener('click', async (e) => {
+      const item = e.target.closest('.notification-item');
+      if (!item) return;
+      const id = item.dataset.id;
+      const link = item.dataset.link;
+      const currentUser = getCurrentUser();
+      if (id && currentUser && item.classList.contains('unread')) {
+        try {
+          await fetch(`${API_BASE_URL}/api/v1/notifications/${id}/read`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${currentUser.token || ''}` } });
+          item.classList.remove('unread');
+          const badge = document.getElementById('notification-badge');
+          if (badge) {
+            const currentCount = parseInt(badge.textContent || '0', 10);
+            const newCount = Math.max(0, currentCount - 1);
+            badge.textContent = newCount;
+            if (newCount <= 0) badge.style.display = 'none';
+          }
+        } catch (_) {}
+      }
+      if (link) {
+        window.location.href = link;
+      }
+    });
+
     if (markAllBtn) {
       markAllBtn.addEventListener('click', async () => {
         const currentUser = getCurrentUser();
@@ -531,13 +555,17 @@ async function loadNotifications() {
     }
 
     list.innerHTML = notifications.map(n => {
-      const iconMap = { order: 'fa-box', promo: 'fa-tag', info: 'fa-info-circle', success: 'fa-check-circle', payment: 'fa-credit-card', delivery: 'fa-truck', system: 'fa-cog' };
+      const iconMap = { order: 'fa-box', promo: 'fa-tag', promotion: 'fa-tag', info: 'fa-info-circle', success: 'fa-check-circle', payment: 'fa-credit-card', delivery: 'fa-truck', system: 'fa-cog' };
       const icon = iconMap[n.type] || 'fa-bell';
       const timeAgo = n.createdAt ? getTimeAgo(n.createdAt) : '';
-      return `<div class="notification-item ${n.isRead ? '' : 'unread'}" data-id="${n._id || ''}">
+      const link = (n.data && n.data.link) ? n.data.link : '';
+      return `<div class="notification-item ${n.isRead ? '' : 'unread'}" data-id="${n._id || ''}" data-link="${escapeHTML(link)}">
         <i class="fas ${icon}"></i>
-        <div class="notification-text">${escapeHTML(n.message || n.text || '')}</div>
-        <div class="notification-time">${timeAgo}</div>
+        <div class="notification-body">
+          ${n.title ? `<div class="notification-title">${escapeHTML(n.title)}</div>` : ''}
+          <div class="notification-text">${escapeHTML(n.message || n.text || '')}</div>
+          <div class="notification-time">${timeAgo}</div>
+        </div>
       </div>`;
     }).join('');
   } catch (err) {
@@ -577,16 +605,21 @@ function connectNotificationSSE(user) {
         const emptyMsg = list.querySelector('p.text-center');
         if (emptyMsg) emptyMsg.remove();
 
-        const iconMap = { order: 'fa-box', promo: 'fa-tag', info: 'fa-info-circle', success: 'fa-check-circle', payment: 'fa-credit-card', delivery: 'fa-truck', system: 'fa-cog' };
+        const iconMap = { order: 'fa-box', promo: 'fa-tag', promotion: 'fa-tag', info: 'fa-info-circle', success: 'fa-check-circle', payment: 'fa-credit-card', delivery: 'fa-truck', system: 'fa-cog' };
         const icon = iconMap[notification.type] || 'fa-bell';
+        const link = (notification.data && notification.data.link) ? notification.data.link : '';
 
         const itemEl = document.createElement('div');
         itemEl.className = 'notification-item unread';
         itemEl.dataset.id = notification._id || '';
+        itemEl.dataset.link = link;
         itemEl.innerHTML = `
           <i class="fas ${icon}"></i>
-          <div class="notification-text">${escapeHTML(notification.message || '')}</div>
-          <div class="notification-time">Just now</div>
+          <div class="notification-body">
+            ${notification.title ? `<div class="notification-title">${escapeHTML(notification.title)}</div>` : ''}
+            <div class="notification-text">${escapeHTML(notification.message || '')}</div>
+            <div class="notification-time">Just now</div>
+          </div>
         `;
         list.prepend(itemEl);
       }

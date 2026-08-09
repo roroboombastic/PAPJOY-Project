@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PAP-JOY</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="app-header">
+    <img src="icons/icon-48.png" alt="" class="app-logo">
+    <div class="app-title">
+      <h1>PAP-JOY</h1>
+      <p>Premium Footwear</p>
+    </div>
+    <button id="open-store" class="btn btn-primary" title="Open store">Open Store</button>
+  </header>
+
+  <section id="signed-out" class="auth-section hidden">
+    <p class="muted">Sign in to receive order updates, back-in-stock alerts and price drops.</p>
+    <form id="login-form" novalidate>
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com" required>
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" placeholder="••••••••" required>
+      <p id="login-error" class="error hidden"></p>
+      <button type="submit" id="login-btn" class="btn btn-primary btn-block">Sign in</button>
+      <p class="muted small center">Forgot your password? Open the store to reset it.</p>
+    </form>
+  </section>
+
+  <section id="signed-in" class="signed-in hidden">
+    <div class="user-row">
+      <span id="user-name" class="user-name"></span>
+      <button id="sign-out" class="btn btn-ghost btn-small">Sign out</button>
+    </div>
+    <div class="notif-header">
+      <span class="muted small">Notifications</span>
+      <button id="refresh" class="btn btn-ghost btn-small">Refresh</button>
+    </div>
+    <ul id="notification-list" class="notification-list">
+      <li class="empty">No notifications yet.</li>
+    </ul>
+  </section>
+
+  <footer class="app-footer">
+    <span class="muted small">Check every 5 minutes</span>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>

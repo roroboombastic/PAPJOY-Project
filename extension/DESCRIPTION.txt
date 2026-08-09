@@ -1,0 +1,21 @@
+SHORT DESCRIPTION (max 132 chars)
+Quick access to PAP-JOY premium footwear, with notifications for order updates, back-in-stock alerts and price drops.
+
+LONG DESCRIPTION
+PAP-JOY is the official browser companion for the PAP-JOY premium footwear store. One click opens the store, and while you're signed in you'll get desktop notifications for your account activity.
+
+FEATURES
+• One-click access to the PAP-JOY store.
+• Desktop notifications for order updates (placed, shipped, delivered, cancelled).
+• Back-in-stock alerts for items on your wishlist.
+• Price-drop alerts when a wishlist item goes on sale.
+• Unread-notification badge on the toolbar icon.
+• Sign-in / sign-out directly from the popup. No account data leaves your browser beyond what the store's own API requires.
+
+HOW IT WORKS
+The extension checks the PAP-JOY API every 5 minutes for new notifications and shows a badge on the toolbar icon. When you sign in from the popup, your session token is stored securely in your browser's extension storage and is used only to authenticate requests to the PAP-JOY API.
+
+PRIVACY
+PAP-JOY does not collect, transmit, or share any personal data beyond what you explicitly provide when signing in, and the session token is never exposed outside the PAP-JOY API. See the Privacy Policy at the URL below for full details.
+
+PRIVACY POLICY: https://papjoy-project.onrender.com/privacy.html

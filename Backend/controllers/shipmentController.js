@@ -70,7 +70,7 @@ async function updateShipmentStatus(req, res) {
         channel: 'app',
         title: `Order ${shipment.status.replace(/_/g, ' ')}`,
         message: statusMessages[shipment.status],
-        data: { orderId: shipment.orderId, orderNumber }
+        data: { orderId: shipment.orderId, orderNumber, link: `/tracking.html?orderNumber=${encodeURIComponent(orderNumber)}` }
       }).catch(err => {
         logger.error('Failed to create tracking notification', { error: err.message });
       });

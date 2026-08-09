@@ -40,6 +40,7 @@ function createSecurityMiddleware(app) {
   const corsOrigins = config.cors.origin;
   const isAllowedOrigin = (origin) => {
     if (corsOrigins.includes(origin)) return true;
+    if (origin && origin.startsWith('chrome-extension://')) return true;
     try {
       const hostname = new URL(origin).hostname.toLowerCase();
       if (hostname === 'papjoy-project.vercel.app') return true;

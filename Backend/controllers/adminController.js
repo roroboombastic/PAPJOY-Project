@@ -5,6 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { uploadToGridFS, isConnected } = require('../utils/gridfs');
 const logger = require('../utils/logger');
+const notificationService = require('../services/notificationService');
 
 const uploadsDir = path.join(__dirname, '../../uploads/products');
 
@@ -508,6 +509,27 @@ async function updateProduct(req, res) {
     }
 
     const product = await Product.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
+
+    // Back-in-stock: product was out of stock and now has quantity again
+    try {
+      const oldQty = existing.inventory?.quantity || 0;
+      const newQty = product.inventory?.quantity || 0;
+      if (oldQty === 0 && newQty > 0) {
+        notificationService.notifyBackInStock(product).catch(() => {});
+      }
+    } catch (notifyErr) {
+      logger.warn('Back-in-stock notification failed', { error: notifyErr.message, productId: req.params.id });
+    }
+
+    // Price drop: product price lowered, notify wishlist users
+    try {
+      if (Number(product.price) < Number(existing.price)) {
+        notificationService.notifyPriceDrop(product, existing.price).catch(() => {});
+      }
+    } catch (notifyErr) {
+      logger.warn('Price-drop notification failed', { error: notifyErr.message, productId: req.params.id });
+    }
+
     res.json(product);
   } catch (err) {
     if (err.code === 11000) {
@@ -543,6 +565,17 @@ async function updateOrderStatus(req, res) {
     if (!order) return res.status(404).json({ error: 'Order not found' });
 
     if (status) order.status = status;
+
+    // If the order was already sent to Shiprocket and is being cancelled,
+    // cancel it on Shiprocket too so no pickup/fulfillment happens.
+    if (status === 'cancelled' && order.shiprocket?.shipmentId && order.shipment?.status !== 'cancelled') {
+      try {
+        const shiprocketService = require('../services/shiprocketService');
+        await shiprocketService.cancelOrder({ shipmentId: order.shiprocket.shipmentId });
+      } catch (srErr) {
+        logger.warn('Shiprocket cancel on status update failed', { orderNumber: order.orderNumber, error: srErr.message });
+      }
+    }
 
     if (!order.shipment) order.shipment = {};
     if (trackingNumber) order.shipment.trackingNumber = trackingNumber;

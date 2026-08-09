@@ -77,7 +77,7 @@ async function updateLiveShipping() {
     shippingEl.textContent = formatINR(shippingOverride);
     const totalEl = document.getElementById('checkout-total');
     if (totalEl) totalEl.textContent = formatINR(totals.subtotal + shippingOverride + totals.tax - totals.discount);
-    if (shippingNote) shippingNote.textContent = `Live shipping via Shiprocket (${rate.courierName || 'courier'}, ~${rate.estimatedDelivery || 'N/A'} days): ₹${formatINR(shippingOverride)}`;
+    if (shippingNote) shippingNote.textContent = `Live shipping via Shiprocket (${rate.courierName || 'courier'}, ~${rate.estimatedDelivery || 'N/A'} days): ${formatINR(shippingOverride)}`;
   } else {
     window.__liveShippingRate = null;
     updateCheckoutSummary();

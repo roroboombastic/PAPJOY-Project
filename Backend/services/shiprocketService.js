@@ -7,14 +7,38 @@ const TOKEN_TTL_MS = 9 * 24 * 60 * 60 * 1000; // refresh well before Shiprocket'
 
 function looksConfigured(value) {
   if (typeof value !== 'string') return Boolean(value);
-  const normalized = value.trim().toLowerCase();
+  const normalized = value.trim();
   if (!normalized) return false;
-  const placeholderMarkers = ['dummy', 'test', 'your_', 'your-', 'placeholder', 'changeme', 'replace_me', 'example'];
-  return !placeholderMarkers.some((marker) => normalized.includes(marker));
+  const lower = normalized.toLowerCase();
+  const exactPlaceholders = ['dummy', 'test', 'example', 'placeholder', 'changeme', 'replace_me', 'your_email', 'your_password'];
+  if (exactPlaceholders.includes(lower)) return false;
+  if (/\b(changeme|replace[_-]?me|your[-_ ]?email|your[-_ ]?password|xxxx+)\b/.test(lower)) return false;
+  return true;
 }
 
 function isConfigured() {
   return looksConfigured(config.shiprocket.email) && looksConfigured(config.shiprocket.password);
+}
+
+function getConfigStatus() {
+  const email = config.shiprocket.email;
+  const password = config.shiprocket.password;
+  const pickup = config.shiprocket.pickupPincode;
+  const emailSet = looksConfigured(email);
+  const passwordSet = looksConfigured(password);
+  const pickupSet = Boolean(String(pickup || '').trim());
+  const issues = [];
+  if (!emailSet) issues.push('SHIPROCKET_API_EMAIL is missing or looks like a placeholder');
+  if (!passwordSet) issues.push('SHIPROCKET_API_PASSWORD is missing or looks like a placeholder');
+  if (!pickupSet) issues.push('SHIPROCKET_PICKUP_PINCODE is not set (required for rate quotes and order creation)');
+  return {
+    configured: emailSet && passwordSet,
+    emailSet,
+    passwordSet,
+    pickupPincodeSet: pickupSet,
+    liveRatesEnabled: Boolean(config.shiprocket.liveRates),
+    issues
+  };
 }
 
 async function login() {
@@ -300,8 +324,16 @@ async function trackShipment({ awbCode }) {
   return apiRequest(`/courier/track/awb/${encodeURIComponent(awbCode)}`);
 }
 
+async function cancelOrder({ shipmentId }) {
+  return apiRequest('/orders/cancel', {
+    method: 'POST',
+    body: { ids: [String(shipmentId)] }
+  });
+}
+
 module.exports = {
   isConfigured,
+  getConfigStatus,
   login,
   getToken,
   apiRequest,
@@ -313,5 +345,6 @@ module.exports = {
   generatePickup,
   assignAWB,
   generateLabel,
-  trackShipment
+  trackShipment,
+  cancelOrder
 };

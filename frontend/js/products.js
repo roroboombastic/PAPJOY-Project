@@ -2,6 +2,7 @@
 let products = [];
 let productsLoadPromise = null;
 let searchInProgress = false;
+let searchQueued = false;
 let productsLoading = false;
 let selectedFeaturedFilter = 'all';
 let featuredControlsInitialized = false;
@@ -30,35 +31,40 @@ function createProductCardElement(product) {
   const primaryImage = imageUrls[0] || product.image || getNextFallbackImage();
   const invStatus = getInventoryStatus(product);
   const productId = product.id || product._id;
+  const safeName = escapeHTML(product.name);
+  const safeCategory = escapeHTML(product.category || 'Uncategorized');
+  const isOutOfStock = invStatus.outOfStock;
+  const isLowStock = invStatus.lowStock;
 
-  const stockLevel = product.inventory?.quantity;
-  const lowStock = stockLevel > 0 && stockLevel <= 5;
-  const outOfStock = stockLevel === 0;
-  const stockStatus = outOfStock ? 'out-of-stock' : (lowStock ? 'low-stock' : 'in-stock');
-  const stockLabel = outOfStock ? 'Out of Stock' : (lowStock ? 'Only ' + stockLevel + ' left' : '');
+  let subtitle = product.subtitle;
+  if (!subtitle && product.description) {
+    subtitle = product.description.length > 80 ? product.description.slice(0, 80) + '…' : product.description;
+  }
+
+  const stockChip = (isOutOfStock || isLowStock)
+    ? `<div class="stock-chip ${invStatus.class}" role="status" aria-label="${escapeHTML(invStatus.label)}"><span class="stock-chip-dot" aria-hidden="true"></span>${escapeHTML(invStatus.label)}</div>`
+    : '';
 
   card.innerHTML = `
-    <div class="product-image" role="link" tabindex="0" aria-label="View ${product.name}">
-      <img src="${primaryImage}" alt="${product.name || 'Product'}" onerror="handleProductImageError(this)">
+    <div class="product-image${isOutOfStock ? ' out-of-stock' : ''}" role="link" tabindex="0" aria-label="View ${safeName}">
+      <img src="${primaryImage}" alt="${safeName}" loading="lazy" decoding="async" onerror="handleProductImageError(this)">
       ${product.isFeatured ? '<div class="badge featured">Featured</div>' : ''}
-      ${lowStock ? '<div class="badge low-stock-badge">Low Stock</div>' : ''}
-      ${outOfStock ? '<div class="badge out-of-stock-badge">Out of Stock</div>' : ''}
+      ${stockChip}
     </div>
     <div class="product-info">
       <div class="product-info-top">
-        <div class="category">${product.category || 'Uncategorized'}</div>
-        <button class="wishlist-heart" data-product-id="${productId}" title="Add to wishlist" aria-label="Add to wishlist"><i class="${isInWishlist(productId) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
+        <div class="category">${safeCategory}</div>
+        <button class="wishlist-heart" data-product-id="${escapeHTML(productId)}" title="Add to wishlist" aria-label="Add ${safeName} to wishlist"><i class="${isInWishlist(productId) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
       </div>
-      <h3 class="product-name">${product.name}</h3>
-      <p class="product-subtitle">${product.subtitle || (product.description || '').slice(0, 80) + '...'}</p>
-      ${stockLabel ? '<div class="stock-indicator ' + stockStatus + '"><span class="dot"></span>' + stockLabel + '</div>' : ''}
+      <h3 class="product-name">${safeName}</h3>
+      <p class="product-subtitle">${escapeHTML(subtitle)}</p>
       <div class="price">${formatCurrency(product.price || 0)}</div>
       <div class="tax-included">All taxes included</div>
       <div class="product-actions">
-        <button class="btn btn-primary add-to-cart-btn" type="button" data-product-id="${productId}" ${outOfStock ? 'disabled' : ''}>
-          <i class="fas fa-cart-plus"></i> ${outOfStock ? 'Out of Stock' : 'Add to Cart'}
+        <button class="btn btn-primary add-to-cart-btn" type="button" data-product-id="${escapeHTML(productId)}" ${isOutOfStock ? 'disabled' : ''}>
+          <i class="fas fa-cart-plus"></i> ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
         </button>
-        <button class="btn btn-secondary buy-now-btn" type="button" data-product-id="${productId}" ${outOfStock ? 'disabled' : ''}>
+        <button class="btn btn-secondary buy-now-btn" type="button" data-product-id="${escapeHTML(productId)}" ${isOutOfStock ? 'disabled' : ''}>
           <i class="fas fa-bolt"></i> Buy Now
         </button>
       </div>
@@ -199,13 +205,20 @@ function renderProducts() {
   const productGrid = document.querySelector('.product-grid');
   if (!productGrid) return;
 
-  if (!products || !products.length) {
-    showEmptyState();
+  let list = products;
+  if (selectedFeaturedFilter === 'featured') {
+    list = products.filter((product) => product.isFeatured);
+  } else if (selectedFeaturedFilter === 'new') {
+    list = products.filter((product) => product.isNewArrival);
+  }
+
+  if (!list || !list.length) {
+    showEmptyState(productGrid);
     return;
   }
 
   const fragment = document.createDocumentFragment();
-  products.forEach((product) => {
+  list.forEach((product) => {
     const card = createProductCardElement(product);
     if (card) fragment.appendChild(card);
   });
@@ -214,7 +227,7 @@ function renderProducts() {
   if (fragment.childNodes.length) {
     productGrid.appendChild(fragment);
   } else {
-    showEmptyState();
+    showEmptyState(productGrid);
   }
   initProductGridDelegation();
 }
@@ -307,7 +320,7 @@ async function renderProductDetailPage() {
   const variantButtonsHtml = variantButtons.map((entry) => entry.html).join('');
   const defaultVariant = variantButtons.length ? variantButtons[0].name : 'Standard';
   const defaultVariantPrice = product.price + (variantButtons.length ? variantButtons[0].priceDelta : 0);
-  const detailsList = (product.details || []).map((detail) => `<li>${detail}</li>`).join('');
+  const detailsList = (product.details || []).map((detail) => `<li>${escapeHTML(detail)}</li>`).join('');
 
   container.innerHTML = `
     <div class="product-detail-card">
@@ -335,14 +348,25 @@ async function renderProductDetailPage() {
           <span class="dot"></span>
           <span class="stock-text">In Stock</span>
         </div>
-        <div class="detail-meta">
+          <div class="detail-meta">
           <div class="detail-price-wrap">
-            <span id="detail-price">${formatCurrency(product.price || 0)}</span>
+            <span id="detail-price">${formatCurrency(defaultVariantPrice)}</span>
             <span class="tax-included">All taxes included</span>
           </div>
           <button id="detail-add-button" type="button">${translate('product.addToCart')}</button>
           <button id="detail-buy-button" type="button" class="buy-now-button">Buy now</button>
           <button class="wishlist-heart detail-wishlist-heart" type="button" data-product-id="${product.id || product._id}" title="Add to wishlist" aria-label="Add to wishlist"><i class="${isInWishlist(product.id || product._id) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
+        </div>
+        <div class="product-share">
+          <span class="product-share-label"><i class="fas fa-share-alt"></i> Share</span>
+          <div class="product-share-buttons">
+            <a class="product-share-btn share-whatsapp" href="#" role="button" data-share="whatsapp" title="Share on WhatsApp" aria-label="Share on WhatsApp"><i class="fab fa-whatsapp"></i></a>
+            <a class="product-share-btn share-facebook" href="#" role="button" data-share="facebook" title="Share on Facebook" aria-label="Share on Facebook"><i class="fab fa-facebook-f"></i></a>
+            <a class="product-share-btn share-x" href="#" role="button" data-share="x" title="Share on X" aria-label="Share on X"><i class="fab fa-x-twitter"></i></a>
+            <a class="product-share-btn share-telegram" href="#" role="button" data-share="telegram" title="Share on Telegram" aria-label="Share on Telegram"><i class="fab fa-telegram-plane"></i></a>
+            <a class="product-share-btn share-email" href="#" role="button" data-share="email" title="Share via Email" aria-label="Share via Email"><i class="fas fa-envelope"></i></a>
+            <button class="product-share-btn share-copy" type="button" data-share="copy" title="Copy link" aria-label="Copy link"><i class="fas fa-link"></i></button>
+          </div>
         </div>
       </div>
     </div>
@@ -370,18 +394,9 @@ async function renderProductDetailPage() {
   // Stock indicator
   var stockEl = container.querySelector('#detail-stock-indicator');
   if (stockEl) {
-    var qty = product.inventory?.quantity;
-    if (qty === undefined) qty = 10;
-    if (qty === 0) {
-      stockEl.className = 'stock-indicator out-of-stock';
-      stockEl.querySelector('.stock-text').textContent = 'Out of Stock';
-    } else if (qty <= 5) {
-      stockEl.className = 'stock-indicator low-stock';
-      stockEl.querySelector('.stock-text').textContent = 'Only ' + qty + ' left in stock';
-    } else {
-      stockEl.className = 'stock-indicator in-stock';
-      stockEl.querySelector('.stock-text').textContent = 'In Stock';
-    }
+    var inv = getInventoryStatus(product);
+    stockEl.className = 'stock-indicator ' + inv.class;
+    stockEl.querySelector('.stock-text').textContent = inv.status;
   }
 
   // Structured data JSON-LD for SEO
@@ -403,15 +418,13 @@ async function renderProductDetailPage() {
       url: window.location.href,
       priceCurrency: 'INR',
       price: product.price || 0,
-      availability: qty === 0 ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+      availability: inv.outOfStock ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
       itemCondition: 'https://schema.org/NewCondition'
     }
   });
   document.head.appendChild(ldScript);
 
   // Recommendations
-  renderRecommendations(product.id || product._id);
-
   thumbButtons.forEach((button) => {
     button.addEventListener('click', () => {
       if (!mainImage) return;
@@ -443,6 +456,16 @@ async function renderProductDetailPage() {
     });
   }
 
+  container.querySelectorAll('[data-share]').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      shareProduct(product, button.getAttribute('data-share'));
+    });
+  });
+
+  updateProductShareMeta(product);
+
   const productId = product.id || product._id;
   await saveViewedProduct(productId);
 
@@ -470,12 +493,111 @@ async function renderProductDetailPage() {
 }
 window.renderProductDetailPage = renderProductDetailPage;
 
+// ================== SHARE ==================
+
+function getProductShareData(product) {
+  const url = window.location.href.split('#')[0];
+  const title = `${product.name || 'Product'} — PAP-JOY`;
+  const description = String(product.subtitle || product.description || '').slice(0, 120);
+  const image = getProductImageUrls(product)[0] || product.image || window.PRODUCT_FALLBACK_IMAGE || '';
+  const absImage = String(image || '').replace(/^https?:\/\/papjoy-project\.onrender\.com/i, 'https://papjoy-project.onrender.com');
+  return { url, title, description, image: absImage };
+}
+
+function updateProductShareMeta(product) {
+  try {
+    const data = getProductShareData(product);
+    const setMeta = (attr, name, value) => {
+      const el = document.querySelector(`meta[${attr}="${name}"]`);
+      if (el) el.setAttribute('content', value);
+    };
+    setMeta('property', 'og:title', data.title);
+    setMeta('property', 'og:description', data.description);
+    setMeta('property', 'og:url', data.url);
+    if (data.image) setMeta('property', 'og:image', data.image);
+    setMeta('name', 'twitter:title', data.title);
+    setMeta('name', 'twitter:description', data.description);
+    if (data.image) setMeta('name', 'twitter:image', data.image);
+    if (data.title) document.title = data.title;
+  } catch (err) {
+    if (typeof console !== 'undefined' && console.warn) console.warn('Failed to update share meta', err);
+  }
+}
+
+function copyShareLink(url) {
+  const fallbackCopy = () => {
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = url;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try { document.execCommand('copy'); } catch (e2) { /* ignore */ }
+      document.body.removeChild(textarea);
+      if (typeof showToast === 'function') showToast('Link copied to clipboard');
+    } catch (e3) {
+      if (typeof showToast === 'function') showToast('Unable to copy link', 'error');
+    }
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => {
+      if (typeof showToast === 'function') showToast('Link copied to clipboard');
+    }).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function nativeShare(data) {
+  if (navigator.share) {
+    navigator.share({ title: data.title, text: data.text, url: data.url }).catch((err) => {
+      if (err && err.name === 'AbortError') return;
+      copyShareLink(data.url);
+    });
+  } else {
+    copyShareLink(data.url);
+  }
+}
+
+function shareProduct(product, action) {
+  const data = getProductShareData(product);
+  const text = `${data.title} — ${data.description}`.trim();
+  const enc = {
+    url: encodeURIComponent(data.url),
+    title: encodeURIComponent(data.title),
+    text: encodeURIComponent(text),
+    image: encodeURIComponent(data.image || data.url)
+  };
+  switch (action) {
+    case 'whatsapp':
+      window.open(`https://wa.me/?text=${enc.text}%20${enc.url}`, '_blank', 'noopener,noreferrer');
+      break;
+    case 'facebook':
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${enc.url}`, '_blank', 'noopener,noreferrer');
+      break;
+    case 'x':
+      window.open(`https://twitter.com/intent/tweet?url=${enc.url}&text=${enc.text}`, '_blank', 'noopener,noreferrer');
+      break;
+    case 'telegram':
+      window.open(`https://t.me/share/url?url=${enc.url}&text=${enc.text}`, '_blank', 'noopener,noreferrer');
+      break;
+    case 'email':
+      window.location.href = `mailto:?subject=${enc.title}&body=${enc.text}%0A%0A${enc.url}`;
+      break;
+    case 'copy':
+      copyShareLink(data.url);
+      break;
+    default:
+      nativeShare({ title: data.title, text, url: data.url });
+  }
+}
+window.shareProduct = shareProduct;
+window.getProductShareData = getProductShareData;
+
 // ================== SEARCH ==================
 
-async function performSearch() {
-  if (searchInProgress) return;
-  searchInProgress = true;
-
+async function runSearch() {
   if (searchAbortController) searchAbortController.abort();
   searchAbortController = new AbortController();
 
@@ -551,9 +673,20 @@ async function performSearch() {
           <button class="btn btn-primary" onclick="performSearch()">Retry</button>
         </div>`;
     }
-  } finally {
-    searchInProgress = false;
   }
+}
+
+async function performSearch() {
+  if (searchInProgress) {
+    searchQueued = true;
+    return;
+  }
+  searchInProgress = true;
+  do {
+    searchQueued = false;
+    await runSearch();
+  } while (searchQueued);
+  searchInProgress = false;
 }
 window.performSearch = performSearch;
 
@@ -676,8 +809,8 @@ async function renderRecommendations(productId) {
         ${items.slice(0, 4).map((recProduct) => `
           <div class="recommendation-card">
             <a href="${getProductLink(recProduct)}">
-              <img src="${getProductImageUrls(recProduct)[0] || getNextFallbackImage()}" alt="${recProduct.name}" onerror="handleProductImageError(this)" />
-              <h4>${recProduct.name}</h4>
+              <img src="${getProductImageUrls(recProduct)[0] || getNextFallbackImage()}" alt="${escapeHTML(recProduct.name)}" onerror="handleProductImageError(this)" />
+              <h4>${escapeHTML(recProduct.name)}</h4>
               <p>${formatCurrency(recProduct.price)}</p>
             </a>
           </div>
@@ -722,10 +855,11 @@ function renderBreadcrumbs(product) {
 
   container.innerHTML = crumbs.map((crumb, i) => {
     const isLast = i === crumbs.length - 1;
+    const safeLabel = escapeHTML(crumb.label);
     if (isLast || !crumb.href) {
-      return `<span class="breadcrumb-item current" aria-current="page">${crumb.label}</span>`;
+      return `<span class="breadcrumb-item current" aria-current="page">${safeLabel}</span>`;
     }
-    return `<a class="breadcrumb-item" href="${crumb.href}">${crumb.label}</a><span class="breadcrumb-separator">/</span>`;
+    return `<a class="breadcrumb-item" href="${crumb.href}">${safeLabel}</a><span class="breadcrumb-separator">/</span>`;
   }).join('');
 }
 window.renderBreadcrumbs = renderBreadcrumbs;
@@ -930,7 +1064,7 @@ async function initProductFilters() {
   if (categoryFilter && categorySet.size > 0) {
     const sorted = Array.from(categorySet).sort();
     categoryFilter.innerHTML = `<option value="">All Categories</option>` +
-      sorted.map((cat) => `<option value="${cat}"${urlCategory === cat ? ' selected' : ''}>${cat}</option>`).join('');
+      sorted.map((cat) => `<option value="${escapeHTML(cat)}"${urlCategory === cat ? ' selected' : ''}>${escapeHTML(cat)}</option>`).join('');
   }
 
   if (urlCategory && categoryFilter) {
@@ -979,10 +1113,10 @@ function renderActiveFilters() {
   const priceRange = activePrice?.dataset.price;
 
   if (q) {
-    chips.push({ label: `Search: "${q}"`, clear: () => { searchInput.value = ''; performSearch(); } });
+    chips.push({ label: `Search: "${escapeHTML(q)}"`, clear: () => { searchInput.value = ''; performSearch(); } });
   }
   if (category) {
-    chips.push({ label: `Category: ${category}`, clear: () => { categoryFilter.value = ''; performSearch(); } });
+    chips.push({ label: `Category: ${escapeHTML(category)}`, clear: () => { categoryFilter.value = ''; performSearch(); } });
   }
   if (priceRange && priceRange !== 'all') {
     const label = activePrice?.textContent || priceRange;

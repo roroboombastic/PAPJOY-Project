@@ -1,6 +1,7 @@
 const { Order, User } = require('../models');
 const logger = require('../utils/logger');
 const { createOrderFromData, sendOrderEmails, restoreInventoryForOrder } = require('../services/orderService');
+const notificationService = require('../services/notificationService');
 const invoiceController = require('./invoiceController');
 
 async function createOrder(req, res) {
@@ -27,6 +28,11 @@ async function createOrder(req, res) {
     // Notify customer and admin(s)
     sendOrderEmails(order, req.userId).catch((err) => {
       logger.error('Order email notification failed', { error: err.message, orderId: order._id });
+    });
+
+    // In-app notification to the customer when the order is placed
+    notificationService.notifyOrderPlaced(order).catch((err) => {
+      logger.error('Order placed notification failed', { error: err.message, orderId: order._id });
     });
 
     res.status(201).json({ success: true, order });
@@ -160,6 +166,15 @@ async function cancelOrder(req, res) {
     const cancellableStatuses = ['pending', 'confirmed'];
     if (!cancellableStatuses.includes(order.status)) {
       return res.status(400).json({ error: `Cannot cancel order with status "${order.status}". Only pending or confirmed orders can be cancelled.` });
+    }
+
+    if (order.shiprocket?.shipmentId && order.shipment?.status !== 'cancelled') {
+      try {
+        const shiprocketService = require('../services/shiprocketService');
+        await shiprocketService.cancelOrder({ shipmentId: order.shiprocket.shipmentId });
+      } catch (srErr) {
+        logger.warn('Shiprocket cancel on customer cancel failed', { orderNumber: order.orderNumber, error: srErr.message });
+      }
     }
 
     order.status = 'cancelled';
