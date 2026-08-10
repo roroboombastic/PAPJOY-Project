@@ -51,7 +51,7 @@ function handleProductImageError(img) {
       if (!img.dataset.fb) {
         img.src = 'https://papjoy-project.onrender.com' + pathOnly;
       }
-    }, 400);
+    }, 0);
     return;
   }
 
@@ -84,14 +84,24 @@ function resolveProductImageUrl(url) {
   if (!url) return '';
   const str = String(url);
   if (/^(data:|blob:)/i.test(str)) return str;
-  if (/^https?:\/\//i.test(str)) {
-    if (/^https:\/\/papjoy-project\.onrender\.com\/uploads\//i.test(str)) {
-      return str.replace(/^https:\/\/papjoy-project\.onrender\.com/i, '');
-    }
-    return str;
+  let result = str;
+  if (result.indexOf('/') === 0) {
+    try {
+      const apiBase = (typeof window !== 'undefined' && (window.API_BASE_URL || (typeof getDefaultApiBaseUrl === 'function' ? getDefaultApiBaseUrl() : ''))) || '';
+      const backendOrigin = apiBase ? new URL(apiBase).origin : '';
+      if (backendOrigin && backendOrigin !== window.location.origin) {
+        result = backendOrigin + result;
+      }
+    } catch (_) { result = str; }
   }
-  if (str.startsWith('/')) return str;
-  return str;
+  if (/^https:\/\/papjoy-project\.onrender\.com\//i.test(result)) {
+    try {
+      if (window.location.origin === 'https://papjoy-project.onrender.com') {
+        result = result.replace(/^https:\/\/papjoy-project\.onrender\.com/i, '');
+      }
+    } catch (_) { /* keep absolute */ }
+  }
+  return result;
 }
 
 function getProductImageUrls(product) {
