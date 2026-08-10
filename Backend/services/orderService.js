@@ -313,6 +313,8 @@ async function createOrderFromData({
     order.shipmentId = shipment._id;
     await order.save();
 
+    setImmediate(() => { syncOrderToShiprocket(order).catch(() => {}); });
+
     if (userId) {
       const notification = await Notification.create({
         userId,
@@ -360,9 +362,63 @@ async function createOrderFromData({
   }
 }
 
+const SHIPROCKET_SYNC_BACKOFF_MS = 10 * 60 * 1000;
+
+async function syncOrderToShiprocket(order) {
+  try {
+    if (!order || !order._id) return false;
+    if (order.status === 'cancelled' || order.status === 'returned' || order.status === 'refunded') return false;
+    if (!shiprocketService.isConfigured()) return false;
+    if (order.shiprocket?.shipmentId) return true;
+
+    const lastAttempt = order.shiprocket?.lastSyncAttemptAt;
+    if (lastAttempt) {
+      const elapsed = Date.now() - new Date(lastAttempt).getTime();
+      if (elapsed > 0 && elapsed < SHIPROCKET_SYNC_BACKOFF_MS) return false;
+    }
+
+    const data = await shiprocketService.createOrderForPapjoyOrder({ order });
+    if (!data || !data.shipment_id) {
+      throw new Error('Shiprocket did not return a shipment_id');
+    }
+
+    order.shiprocket = order.shiprocket || {};
+    order.shiprocket.shipmentId = String(data.shipment_id);
+    order.shiprocket.courierName = data.courier_name || '';
+    order.shiprocket.courierId = data.courier_id ? String(data.courier_id) : '';
+    order.shiprocket.error = null;
+    order.shiprocket.syncedAt = new Date();
+    order.shiprocket.lastSyncAttemptAt = new Date();
+    await order.save();
+
+    await Shipment.findOneAndUpdate(
+      { orderId: order._id },
+      {
+        $set: {
+          'shiprocket.shipmentId': String(data.shipment_id),
+          'shiprocket.courierName': data.courier_name || '',
+          'shiprocket.courierId': data.courier_id ? String(data.courier_id) : ''
+        }
+      },
+      { new: true }
+    ).catch(() => null);
+
+    logger.info('Auto-synced order to Shiprocket', { orderNumber: order.orderNumber, shipmentId: data.shipment_id });
+    return true;
+  } catch (err) {
+    order.shiprocket = order.shiprocket || {};
+    order.shiprocket.error = String(err?.message || err || 'Shiprocket sync failed').slice(0, 500);
+    order.shiprocket.lastSyncAttemptAt = new Date();
+    await order.save().catch(() => null);
+    logger.warn('Auto-sync order to Shiprocket failed', { orderNumber: order.orderNumber, error: err.message });
+    return false;
+  }
+}
+
 module.exports = {
   createOrderFromData,
   sendOrderEmails,
   restoreInventoryForOrder,
-  adjustInventory
+  adjustInventory,
+  syncOrderToShiprocket
 };

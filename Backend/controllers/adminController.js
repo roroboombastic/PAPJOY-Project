@@ -595,6 +595,15 @@ async function updateOrderStatus(req, res) {
 
     await order.save();
 
+    if (status === 'confirmed' || status === 'processing' || status === 'packed') {
+      try {
+        const { syncOrderToShiprocket } = require('../services/orderService');
+        setImmediate(() => { syncOrderToShiprocket(order).catch(() => {}); });
+      } catch (syncErr) {
+        logger.warn('Auto-sync retry setup failed', { error: syncErr.message });
+      }
+    }
+
     const customerEmail = order.deliveryInfo?.email || order.billingAddress?.email || order.shippingAddress?.email || '';
     if (customerEmail && status) {
       const emailService = require('../services/emailService');

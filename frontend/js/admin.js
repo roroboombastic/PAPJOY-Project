@@ -677,6 +677,11 @@ function resetShiprocketSection(order) {
     if (sr.courierName) parts.push(`Courier: ${sr.courierName}`);
     if (sr.pickupStatus) parts.push(`Pickup: ${sr.pickupStatus}`);
     setShiprocketSuccess(parts.join(' · '));
+  } else if (sr.error) {
+    if (status) {
+      status.textContent = `Auto-sync to Shiprocket pending/failed: ${sr.error}. Fix the address or retry with "Send to Shiprocket".`;
+      status.style.color = 'var(--danger, #dc3545)';
+    }
   }
 
   fetch(`${API_BASE_URL}/api/v1/shiprocket/status`, { headers: { Authorization: `Bearer ${getAuthToken()}` } })
