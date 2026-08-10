@@ -84,10 +84,10 @@ router.get('/reports', adminController.getReports);
 router.get('/categories', adminController.getAdminCategories);
 router.get('/categories/:id', adminController.getCategoryById);
 
-router.post('/uploads', adminWriteLimiter, upload.array('media', 10), persistUploads, adminController.uploadFiles);
+router.post('/uploads', adminWriteLimiter, upload.array('media', 25), persistUploads, adminController.uploadFiles);
 router.post('/import-photo', adminWriteLimiter, adminController.importPhoto);
-router.post('/products', adminWriteLimiter, upload.array('media', 10), persistUploads, parseFormDataJson, validateProductCreate, adminController.createProduct);
-router.put('/products/:id', adminWriteLimiter, upload.array('media', 10), persistUploads, parseFormDataJson, validateProductUpdate, adminController.updateProduct);
+router.post('/products', adminWriteLimiter, upload.array('media', 25), parseFormDataJson, validateProductCreate, persistUploads, adminController.createProduct);
+router.put('/products/:id', adminWriteLimiter, upload.array('media', 25), parseFormDataJson, validateProductUpdate, persistUploads, adminController.updateProduct);
 router.delete('/products/:id', adminWriteLimiter, adminController.deleteProduct);
 
 router.put('/orders/:id/status', adminWriteLimiter, adminController.updateOrderStatus);

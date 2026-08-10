@@ -328,22 +328,27 @@
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving images...';
 
     try {
-      const formData = new FormData();
-      pendingFiles.forEach(f => formData.append('media', f.file));
+      const files = [];
+      const BATCH_SIZE = 10;
+      for (let i = 0; i < pendingFiles.length; i += BATCH_SIZE) {
+        const batch = pendingFiles.slice(i, i + BATCH_SIZE);
+        const formData = new FormData();
+        batch.forEach(f => formData.append('media', f.file));
 
-      const res = await fetch(`${API_BASE_URL}/api/v1/admin/uploads`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData
-      });
+        const res = await fetch(`${API_BASE_URL}/api/v1/admin/uploads`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData
+        });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Failed to save images');
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'Failed to save images');
+        }
+
+        const data = await res.json();
+        files.push(...(data.files || []));
       }
-
-      const data = await res.json();
-      const files = data.files || [];
 
       if (!files.length) throw new Error('No image URLs returned');
 
