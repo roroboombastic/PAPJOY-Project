@@ -12,6 +12,7 @@ const routes = require('./routes');
 const mongoose = require('mongoose');
 const logger = require('./utils/logger');
 const gridfs = require('./utils/gridfs');
+const { startCleanupScheduler } = require('./services/cleanupOrphanedUploads');
 
 const app = express();
 createSecurityMiddleware(app);
@@ -207,6 +208,8 @@ async function start() {
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }
+
+  startCleanupScheduler();
 
   if (config.https.enabled) {
     try {

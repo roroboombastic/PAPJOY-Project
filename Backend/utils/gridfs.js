@@ -28,6 +28,26 @@ function fileExists(filename) {
   return getBucket().find({ filename }).limit(1).toArray();
 }
 
+async function deleteFileByName(filename) {
+  if (!isConnected()) return false;
+  const files = await getBucket().find({ filename }).toArray();
+  let deleted = false;
+  for (const file of files) {
+    await getBucket().delete(file._id);
+    deleted = true;
+  }
+  return deleted;
+}
+
+async function deleteFileByNameSafe(filename) {
+  try {
+    await deleteFileByName(filename);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function openDownloadStreamByName(filename) {
   return getBucket().openDownloadStreamByName(filename);
 }
@@ -36,5 +56,7 @@ module.exports = {
   isConnected,
   uploadToGridFS,
   fileExists,
+  deleteFileByName,
+  deleteFileByNameSafe,
   openDownloadStreamByName
 };

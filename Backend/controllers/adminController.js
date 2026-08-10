@@ -3,11 +3,24 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { uploadToGridFS, isConnected } = require('../utils/gridfs');
+const { uploadToGridFS, isConnected, deleteFileByNameSafe } = require('../utils/gridfs');
 const logger = require('../utils/logger');
 const notificationService = require('../services/notificationService');
 
 const uploadsDir = path.join(__dirname, '../../uploads/products');
+
+async function deleteStoredFiles(files) {
+  if (!files || !files.length) return;
+  for (const file of files) {
+    if (!file.filename) continue;
+    try {
+      fs.unlinkSync(path.join(uploadsDir, file.filename));
+    } catch { /* already gone */ }
+    try {
+      await deleteFileByNameSafe(`products/${file.filename}`);
+    } catch { /* ignore */ }
+  }
+}
 
 function escapeRegex(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -444,6 +457,7 @@ async function createProduct(req, res) {
     });
     res.status(201).json(product);
   } catch (err) {
+    await deleteStoredFiles(req.files);
     if (err.code === 11000) {
       return res.status(409).json({ error: 'Product with this slug or SKU already exists' });
     }
@@ -495,6 +509,19 @@ async function updateProduct(req, res) {
         const existingVideos = Array.isArray(updateData.videos) ? updateData.videos.filter(Boolean) : [];
         updateData.videos = [...newVideos, ...existingVideos];
       }
+    } else if (Array.isArray(updateData.images)) {
+      // No new files uploaded. Only replace the image list when the client
+      // explicitly intends to (full product save includes `name`). A bare
+      // `{ images: [] }` persist call must never wipe existing photos.
+      const isFullSave = typeof updateData.name === 'string';
+      if (updateData.images.length === 0 && !isFullSave) {
+        delete updateData.images;
+      } else {
+        updateData.images = updateData.images.map(img => {
+          if (typeof img === 'string') return { url: img, alt: updateData.name || '', isPrimary: false };
+          return img;
+        });
+      }
     }
 
     const existing = await Product.findById(req.params.id);
@@ -532,6 +559,7 @@ async function updateProduct(req, res) {
 
     res.json(product);
   } catch (err) {
+    await deleteStoredFiles(req.files);
     if (err.code === 11000) {
       return res.status(409).json({ error: 'Product with this slug or SKU already exists' });
     }
