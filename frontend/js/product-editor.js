@@ -315,6 +315,13 @@
     const token = getAuthToken();
     if (!token) return;
 
+    if (!currentProduct?._id) {
+      if (typeof showToast === 'function') {
+        showToast('Product not saved yet. Your images will be attached automatically when you publish the product.', 'info');
+      }
+      return;
+    }
+
     const btn = $('btn-save-images');
     const originalHtml = btn.innerHTML;
     btn.disabled = true;

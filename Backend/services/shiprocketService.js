@@ -5,6 +5,10 @@ let cachedToken = null;
 let tokenExpiry = 0;
 const TOKEN_TTL_MS = 9 * 24 * 60 * 60 * 1000; // refresh well before Shiprocket's ~10 day expiry
 
+let cachedPickupLocations = null;
+let pickupLocationsExpiry = 0;
+const PICKUP_LOCATIONS_TTL_MS = 60 * 60 * 1000;
+
 function looksConfigured(value) {
   if (typeof value !== 'string') return Boolean(value);
   const normalized = value.trim();
@@ -164,9 +168,38 @@ function buildShiprocketAddress(address = {}) {
 }
 
 async function getPickupLocations() {
+  if (cachedPickupLocations && Date.now() < pickupLocationsExpiry) return cachedPickupLocations;
   const data = await apiRequest('/settings/company/pickup-location');
   const locations = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+  cachedPickupLocations = locations;
+  pickupLocationsExpiry = Date.now() + PICKUP_LOCATIONS_TTL_MS;
   return locations;
+}
+
+function pickupLocationNameOf(location) {
+  return String(location && (location.pickup_location || location.name || location.pickup_code) || '').trim();
+}
+
+async function resolvePickupLocationName() {
+  const override = config.shiprocket.pickupLocationName;
+  if (override && String(override).trim()) return String(override).trim();
+
+  const locations = await getPickupLocations();
+  if (!locations.length) return '';
+
+  const pincode = String(config.shiprocket.pickupPincode || '').trim();
+  if (pincode) {
+    const byPin = locations.find(loc => String(loc.pin_code || '').trim() === pincode && pickupLocationNameOf(loc));
+    if (byPin) return pickupLocationNameOf(byPin);
+  }
+
+  const active = locations.find(loc => String(loc.status) === '1' && pickupLocationNameOf(loc));
+  if (active) return pickupLocationNameOf(active);
+
+  const any = locations.find(loc => pickupLocationNameOf(loc));
+  if (any) return pickupLocationNameOf(any);
+
+  return '';
 }
 
 async function checkServiceability({ pickupPostcode, deliveryPostcode, cod = false, weight = 0.5, length = 0, breadth = 0, height = 0, declaredValue = 0 }) {
@@ -296,15 +329,23 @@ function buildOrderPayload({ order, pickupLocation = null }) {
 }
 
 async function createOrderForPapjoyOrder({ order, pickupLocation = null }) {
-  const payload = buildOrderPayload({ order, pickupLocation });
+  let name = pickupLocation;
+  if (!name) name = await resolvePickupLocationName();
+  if (!name) {
+    const error = new Error('Could not resolve a Shiprocket pickup location. Add SHIPROCKET_PICKUP_LOCATION (the pickup location name) or ensure SHIPROCKET_PICKUP_PINCODE matches an active pickup location in your Shiprocket account.');
+    error.code = 'SHIPROCKET_PICKUP_LOCATION_MISSING';
+    throw error;
+  }
+  const payload = buildOrderPayload({ order, pickupLocation: name });
   const data = await apiRequest('/orders/create/adhoc', { method: 'POST', body: payload });
   return data;
 }
 
 async function generatePickup({ shipmentId, pickupDate }) {
+  const name = await resolvePickupLocationName();
   const body = {
     shipment_id: String(shipmentId),
-    pickup_location: config.shiprocket.pickupPincode
+    pickup_location: name || config.shiprocket.pickupPincode
   };
   if (pickupDate) body.fixed_pickup_date = pickupDate;
   return apiRequest('/courier/generate/pickup', { method: 'POST', body });
@@ -338,6 +379,7 @@ module.exports = {
   getToken,
   apiRequest,
   getPickupLocations,
+  resolvePickupLocationName,
   checkServiceability,
   estimateShipping,
   createOrderForPapjoyOrder,

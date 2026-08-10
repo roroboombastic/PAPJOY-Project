@@ -261,6 +261,7 @@ const config = {
     password: getEnv('SHIPROCKET_API_PASSWORD', ''),
     baseUrl: getEnv('SHIPROCKET_BASE_URL', 'https://apiv2.shiprocket.in/v1/external'),
     pickupPincode: getEnv('SHIPROCKET_PICKUP_PINCODE', ''),
+    pickupLocationName: getEnv('SHIPROCKET_PICKUP_LOCATION', ''),
     webhookSecret: getEnv('SHIPROCKET_WEBHOOK_SECRET', ''),
     liveRates: process.env.SHIPROCKET_ENABLE_LIVE_RATES === 'true'
   }
