@@ -252,6 +252,13 @@ async function createOrderFromData({
   const status = paymentMethod === 'cod' ? 'pending' : 'confirmed';
   const finalPaymentStatus = paymentStatus || (paymentMethod === 'cod' ? 'pending' : 'paid');
 
+  let resolvedUserId = userId || null;
+  const deliveryEmail = (deliveryInfo.email || '').trim().toLowerCase();
+  if (!resolvedUserId && deliveryEmail) {
+    const matchedUser = await User.findOne({ email: deliveryEmail }).select('_id').lean();
+    if (matchedUser) resolvedUserId = matchedUser._id;
+  }
+
   const normalizedAddress = {
     name: deliveryInfo.name || deliveryInfo.fullName || '',
     phone: deliveryInfo.phone,
@@ -265,7 +272,7 @@ async function createOrderFromData({
 
   const orderPayload = {
     orderNumber: createOrderNumber(),
-    userId: userId || null,
+    userId: resolvedUserId || null,
     status,
     items: orderTotals.items,
     subtotal,
@@ -305,7 +312,7 @@ async function createOrderFromData({
     const shipment = await Shipment.create({
       orderId: order._id,
       orderNumber: order.orderNumber,
-      userId: userId || null,
+      userId: resolvedUserId || null,
       status: 'pending',
       events: [{ status: 'created', message: 'Order received and pending shipment.' }]
     });
@@ -315,9 +322,9 @@ async function createOrderFromData({
 
     setImmediate(() => { syncOrderToShiprocket(order).catch(() => {}); });
 
-    if (userId) {
+    if (resolvedUserId) {
       const notification = await Notification.create({
-        userId,
+        userId: resolvedUserId,
         orderId: order._id,
         type: 'order',
         channel: 'app',
@@ -325,10 +332,10 @@ async function createOrderFromData({
         message: `Your order ${order.orderNumber} has been received.`,
         data: { orderId: order._id }
       }).catch(() => null);
-      await Cart.findOneAndDelete({ userId });
+      await Cart.findOneAndDelete({ userId: resolvedUserId });
 
       if (notification && sseManager) {
-        sseManager.sendToUser(userId, {
+        sseManager.sendToUser(resolvedUserId, {
           type: 'notification',
           notification: {
             _id: notification._id,

@@ -48,8 +48,11 @@ async function safeParseJson(response) {
 async function apiFetch(path, options = {}) {
   const url = apiUrl(path);
   options.credentials = options.credentials || 'include';
+  const headers = { ...(options.headers || {}) };
   try {
-    const response = await fetch(url, options);
+    const token = (typeof getAuthToken === 'function') ? getAuthToken() : null;
+    if (token && !headers.Authorization) headers.Authorization = `Bearer ${token}`;
+    const response = await fetch(url, { ...options, headers });
     const data = await safeParseJson(response);
     return { response, data };
   } catch (error) {

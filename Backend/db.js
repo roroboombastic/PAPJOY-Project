@@ -83,6 +83,9 @@ async function connectDatabase(uri) {
       readyState: mongoose.connection.readyState,
       db: mongoose.connection.name
     });
+    if (process.env.RUN_ORDER_BACKFILL !== 'false') {
+      require('./services/orderAccountBackfill').runOrderAccountBackfill();
+    }
     return true;
   } catch (err) {
     logger.error('MongoDB connection error', {
