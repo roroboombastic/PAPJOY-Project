@@ -130,7 +130,14 @@ async function apiRequest(path, { method = 'GET', body } = {}) {
         const token = await login();
         return apiRequest(path, { method, body, _token: token });
       }
-      const message = (data && (data.message || data.error)) || `Shiprocket request failed (${response.status})`;
+      let message = (data && (data.message || data.error)) || `Shiprocket request failed (${response.status})`;
+      if (data && data.errors && typeof data.errors === 'object') {
+        const detail = Object.entries(data.errors)
+          .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : String(value)}`)
+          .join('; ');
+        if (detail) message = `${message} — ${detail}`;
+      }
+      message = `${message} (at ${path})`;
       const error = new Error(message);
       error.code = data && data.error_code ? data.error_code : 'SHIPROCKET_API_ERROR';
       error.status = response.status;
@@ -152,6 +159,17 @@ async function apiRequest(path, { method = 'GET', body } = {}) {
 function ensureNumeric(value, fallback = 0) {
   const num = Number(value);
   return Number.isFinite(num) && num > 0 ? num : fallback;
+}
+
+function limitText(value, max = 190) {
+  return String(value || '').trim().slice(0, max);
+}
+
+function formatShiprocketDate(date) {
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function buildShiprocketAddress(address = {}) {
@@ -291,29 +309,29 @@ function buildOrderPayload({ order, pickupLocation = null }) {
 
   return {
     order_id: order.orderNumber,
-    order_date: new Date(order.createdAt || Date.now()).toISOString(),
+    order_date: formatShiprocketDate(order.createdAt || Date.now()),
     pickup_location: pickupLocation || config.shiprocket.pickupPincode,
     channel_id: '',
-    comment: order.notes || '',
-    billing_customer_name: billingAddress.name,
+    comment: limitText(order.notes, 500) || '',
+    billing_customer_name: limitText(billingAddress.name, 70),
     billing_last_name: '',
-    billing_address: billingAddress.address,
-    billing_city: billingAddress.city,
-    billing_pincode: billingAddress.pin_code,
-    billing_state: billingAddress.state,
-    billing_country: billingAddress.country,
-    billing_email: billingAddress.email,
-    billing_phone: billingAddress.phone,
+    billing_address: limitText(billingAddress.address),
+    billing_city: limitText(billingAddress.city, 60),
+    billing_pincode: limitText(billingAddress.pin_code, 10),
+    billing_state: limitText(billingAddress.state, 60),
+    billing_country: limitText(billingAddress.country, 60),
+    billing_email: limitText(billingAddress.email, 120),
+    billing_phone: limitText(billingAddress.phone, 20),
     shipping_is_billing: false,
-    shipping_customer_name: shippingAddress.name,
+    shipping_customer_name: limitText(shippingAddress.name, 70),
     shipping_last_name: '',
-    shipping_address: shippingAddress.address,
-    shipping_city: shippingAddress.city,
-    shipping_pincode: shippingAddress.pin_code,
-    shipping_state: shippingAddress.state,
-    shipping_country: shippingAddress.country,
-    shipping_email: shippingAddress.email,
-    shipping_phone: shippingAddress.phone,
+    shipping_address: limitText(shippingAddress.address),
+    shipping_city: limitText(shippingAddress.city, 60),
+    shipping_pincode: limitText(shippingAddress.pin_code, 10),
+    shipping_state: limitText(shippingAddress.state, 60),
+    shipping_country: limitText(shippingAddress.country, 60),
+    shipping_email: limitText(shippingAddress.email, 120),
+    shipping_phone: limitText(shippingAddress.phone, 20),
     order_items: items,
     payment_method: cod ? 'COD' : 'Prepaid',
     shipping_charges: Number(order.shipping) || 0,
