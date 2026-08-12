@@ -85,7 +85,12 @@ app.get('/health', (req, res) => {
 });
 
 // Image uploads: serve from the local filesystem first, then fall back to GridFS.
+// Images are embedded cross-site (www.papjoy.com), so they must be embeddable cross-origin.
 const uploadsDir = path.join(__dirname, '../uploads');
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+});
 app.use('/uploads', express.static(uploadsDir, {
   maxAge: '30d',
   immutable: true,
@@ -94,7 +99,6 @@ app.use('/uploads', express.static(uploadsDir, {
 }));
 
 app.use('/uploads', async (req, res, next) => {
-  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   if (req.method !== 'GET' && req.method !== 'HEAD') return next();
   const relative = req.path.replace(/^\/+/, '');
   if (!relative) return next();

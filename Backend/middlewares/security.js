@@ -28,6 +28,7 @@ function createSecurityMiddleware(app) {
     },
     hsts: { maxAge: 63072000, includeSubDomains: true, preload: true },
     noSniff: true,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     permissionsPolicy: {
       camera: [],

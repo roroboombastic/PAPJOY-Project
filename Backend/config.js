@@ -56,6 +56,7 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const SHIPROCKET_API_EMAIL = process.env.SHIPROCKET_API_EMAIL || '';
 const SHIPROCKET_API_PASSWORD = process.env.SHIPROCKET_API_PASSWORD || '';
+const SHIPROCKET_API_TOKEN = process.env.SHIPROCKET_API_TOKEN || '';
 const SHIPROCKET_BASE_URL = process.env.SHIPROCKET_BASE_URL || 'https://apiv2.shiprocket.in/v1/external';
 const SHIPROCKET_PICKUP_PINCODE = process.env.SHIPROCKET_PICKUP_PINCODE || '';
 const SHIPROCKET_WEBHOOK_SECRET = process.env.SHIPROCKET_WEBHOOK_SECRET || '';
@@ -259,6 +260,7 @@ const config = {
   shiprocket: {
     email: getEnv('SHIPROCKET_API_EMAIL', ''),
     password: getEnv('SHIPROCKET_API_PASSWORD', ''),
+    apiToken: getEnv('SHIPROCKET_API_TOKEN', ''),
     baseUrl: getEnv('SHIPROCKET_BASE_URL', 'https://apiv2.shiprocket.in/v1/external'),
     pickupPincode: getEnv('SHIPROCKET_PICKUP_PINCODE', ''),
     pickupLocationName: getEnv('SHIPROCKET_PICKUP_LOCATION', ''),
@@ -366,6 +368,7 @@ module.exports = {
   GOOGLE_CLIENT_ID,
   SHIPROCKET_API_EMAIL,
   SHIPROCKET_API_PASSWORD,
+  SHIPROCKET_API_TOKEN,
   SHIPROCKET_BASE_URL,
   SHIPROCKET_PICKUP_PINCODE,
   SHIPROCKET_WEBHOOK_SECRET,

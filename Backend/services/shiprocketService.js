@@ -20,7 +20,12 @@ function looksConfigured(value) {
   return true;
 }
 
+function staticToken() {
+  return String(config.shiprocket.apiToken || '').trim();
+}
+
 function isConfigured() {
+  if (staticToken()) return true;
   return looksConfigured(config.shiprocket.email) && looksConfigured(config.shiprocket.password);
 }
 
@@ -28,18 +33,23 @@ function getConfigStatus() {
   const email = config.shiprocket.email;
   const password = config.shiprocket.password;
   const pickup = config.shiprocket.pickupPincode;
+  const token = staticToken();
   const emailSet = looksConfigured(email);
   const passwordSet = looksConfigured(password);
   const pickupSet = Boolean(String(pickup || '').trim());
+  const apiTokenSet = Boolean(token);
+  const configured = apiTokenSet || (emailSet && passwordSet);
   const issues = [];
-  if (!emailSet) issues.push('SHIPROCKET_API_EMAIL is missing or looks like a placeholder');
-  if (!passwordSet) issues.push('SHIPROCKET_API_PASSWORD is missing or looks like a placeholder');
+  if (!configured) issues.push('Shiprocket credentials are not configured. Set SHIPROCKET_API_TOKEN, or SHIPROCKET_API_EMAIL + SHIPROCKET_API_PASSWORD.');
+  if (!apiTokenSet && !emailSet) issues.push('SHIPROCKET_API_EMAIL is missing or looks like a placeholder');
+  if (!apiTokenSet && !passwordSet) issues.push('SHIPROCKET_API_PASSWORD is missing or looks like a placeholder');
   if (!pickupSet) issues.push('SHIPROCKET_PICKUP_PINCODE is not set (required for rate quotes and order creation)');
   return {
-    configured: emailSet && passwordSet,
+    configured,
     emailSet,
     passwordSet,
     pickupPincodeSet: pickupSet,
+    apiTokenSet,
     liveRatesEnabled: Boolean(config.shiprocket.liveRates),
     issues
   };
@@ -95,6 +105,12 @@ async function login() {
 }
 
 async function getToken() {
+  const token = staticToken();
+  if (token) {
+    cachedToken = token;
+    tokenExpiry = 0;
+    return token;
+  }
   if (cachedToken && Date.now() < tokenExpiry) return cachedToken;
   return login();
 }
@@ -125,6 +141,13 @@ async function apiRequest(path, { method = 'GET', body } = {}) {
 
     if (!response.ok) {
       if (response.status === 401) {
+        if (staticToken()) {
+          const error = new Error(`Shiprocket API token rejected (401) (at ${path}). Regenerate the token in the Shiprocket dashboard and update SHIPROCKET_API_TOKEN.`);
+          error.code = 'SHIPROCKET_AUTH_FAILED';
+          error.status = 401;
+          error.details = data;
+          throw error;
+        }
         cachedToken = null;
         tokenExpiry = 0;
         const token = await login();
