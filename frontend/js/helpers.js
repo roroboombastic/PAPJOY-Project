@@ -44,15 +44,9 @@ function handleProductImageError(img) {
   const isUploadPath = pathOnly.indexOf('/uploads/') === 0;
   const isRenderOrigin = /onrender\.com/i.test(orig);
 
-  if (isUploadPath && !isRenderOrigin && !img.dataset.rendered) {
-    img.dataset.rendered = '1';
-    img.dataset.retry = '0';
-    setTimeout(() => {
-      if (!img.dataset.fb) {
-        img.src = 'https://papjoy-project.onrender.com' + pathOnly;
-      }
-    }, 0);
-    return;
+  let resolved = orig;
+  if (isUploadPath && !isRenderOrigin) {
+    resolved = 'https://papjoy-project.onrender.com' + pathOnly;
   }
 
   const attempt = (parseInt(img.dataset.retry || '0', 10) || 0) + 1;
@@ -62,7 +56,7 @@ function handleProductImageError(img) {
     setTimeout(() => {
       if (!img.dataset.fb) {
         img.src = '';
-        img.src = orig;
+        img.src = resolved;
       }
     }, delay);
   } else {

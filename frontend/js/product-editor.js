@@ -270,35 +270,75 @@
   // =========================================================================
   // FILE UPLOAD
   // =========================================================================
-  function handleFileSelect(files) {
+  function isHeicFile(file) {
+    return /\.(heic|heif)$/i.test(file.name || '') || file.type === 'image/heic' || file.type === 'image/heif';
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) return resolve();
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('Failed to load image converter'));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function convertHeicToJpeg(file) {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js');
+    if (typeof window.heic2any !== 'function') throw new Error('Image converter unavailable');
+    const out = await window.heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+    const blob = Array.isArray(out) ? out[0] : out;
+    return new File([blob], (file.name || 'image.jpg').replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+  }
+
+  function readAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleFileSelect(files) {
     if (!files || !files.length) return;
 
-    Array.from(files).forEach(file => {
+    for (const raw of Array.from(files)) {
+      let file = raw;
+      if (isHeicFile(file)) {
+        try {
+          if (typeof showToast === 'function') showToast(`Converting ${file.name} to JPEG...`, 'info');
+          file = await convertHeicToJpeg(file);
+        } catch (err) {
+          console.error('HEIC conversion failed:', err);
+          if (typeof showToast === 'function') showToast(`Could not process "${raw.name}" — ${err.message}`, 'error');
+          continue;
+        }
+      }
+
       if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
         if (typeof showToast === 'function') showToast(`Skipped "${file.name}" — not an image or video`);
-        return;
+        continue;
       }
       if (file.size > 10 * 1024 * 1024) {
         if (typeof showToast === 'function') showToast(`Skipped "${file.name}" — exceeds 10 MB limit`);
-        return;
+        continue;
       }
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target.result;
-        if (file.type.startsWith('video/')) {
-          videoList.push(dataUrl);
-          renderVideos();
-        } else {
-          imageList.push(dataUrl);
-          renderImages();
-          updatePreview();
-        }
-        pendingFiles.push({ file, dataUrl });
-        isDirty = true;
-      };
-      reader.readAsDataURL(file);
-    });
+      const dataUrl = await readAsDataUrl(file);
+      if (file.type.startsWith('video/')) {
+        videoList.push(dataUrl);
+        renderVideos();
+      } else {
+        imageList.push(dataUrl);
+        renderImages();
+        updatePreview();
+      }
+      pendingFiles.push({ file, dataUrl });
+      isDirty = true;
+    }
 
     $('pe-file-input').value = '';
   }

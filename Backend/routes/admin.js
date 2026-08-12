@@ -16,9 +16,9 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = /\.(jpg|jpeg|png|gif|webp|avif|svg|mp4|webm|mov)$/i;
+    const allowed = /\.(jpg|jpeg|png|gif|webp|avif|svg|heic|heif|mp4|webm|mov)$/i;
     if (allowed.test(path.extname(file.originalname))) cb(null, true);
-    else cb(new Error('Only images (jpg, png, gif, webp, avif, svg) and videos (mp4, webm, mov) are allowed'));
+    else cb(new Error('Only images (jpg, png, gif, webp, avif, svg, heic, heif) and videos (mp4, webm, mov) are allowed'));
   }
 });
 
