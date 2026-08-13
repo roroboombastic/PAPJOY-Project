@@ -327,12 +327,13 @@ async function estimateShipping({ deliveryPostcode, cod = false, items = [] }) {
     height,
     declaredValue
   });
-  const rates = Array.isArray(data.data)
-    ? data.data
-        .map(courier => Number(courier.rate) || 0)
-        .filter(rate => rate > 0)
-        .sort((a, b) => a - b)
+  const companies = data && Array.isArray(data.available_courier_companies)
+    ? data.available_courier_companies
     : [];
+  const rates = companies
+    .map(courier => Number(courier.rate) || 0)
+    .filter(rate => rate > 0)
+    .sort((a, b) => a - b);
   if (!rates.length) return null;
   return Math.round(rates[0]);
 }

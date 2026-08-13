@@ -78,17 +78,19 @@ async function getRates(req, res) {
       declaredValue
     });
 
-    const rates = Array.isArray(data.data)
-      ? data.data.map(courier => ({
-          courierId: courier.courier_id,
-          courierName: courier.courier_name,
-          rate: Number(courier.rate) || 0,
-          estimatedDelivery: courier.etd || '',
-          deliveryBy: courier.etd ? `~${courier.etd} days` : ''
-        }))
-        .filter(c => c.rate > 0)
-        .sort((a, b) => a.rate - b.rate)
+    const companies = data && Array.isArray(data.available_courier_companies)
+      ? data.available_courier_companies
       : [];
+    const rates = companies
+      .map(courier => ({
+        courierId: courier.courier_company_id,
+        courierName: courier.courier_name,
+        rate: Number(courier.rate) || 0,
+        estimatedDelivery: courier.estimated_delivery_days ? `~${courier.estimated_delivery_days} days` : (courier.etd || ''),
+        deliveryBy: courier.estimated_delivery_days ? `~${courier.estimated_delivery_days} days` : (courier.etd || '')
+      }))
+      .filter(c => c.rate > 0)
+      .sort((a, b) => a.rate - b.rate);
 
     res.json({ success: true, rates, cheapest: rates[0] || null, raw: data });
   } catch (err) {
