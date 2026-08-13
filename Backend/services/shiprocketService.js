@@ -327,8 +327,8 @@ async function estimateShipping({ deliveryPostcode, cod = false, items = [] }) {
     height,
     declaredValue
   });
-  const companies = data && Array.isArray(data.available_courier_companies)
-    ? data.available_courier_companies
+  const companies = data && data.data && Array.isArray(data.data.available_courier_companies)
+    ? data.data.available_courier_companies
     : [];
   const rates = companies
     .map(courier => Number(courier.rate) || 0)

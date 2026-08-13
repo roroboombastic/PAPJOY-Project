@@ -78,8 +78,8 @@ async function getRates(req, res) {
       declaredValue
     });
 
-    const companies = data && Array.isArray(data.available_courier_companies)
-      ? data.available_courier_companies
+    const companies = data && data.data && Array.isArray(data.data.available_courier_companies)
+      ? data.data.available_courier_companies
       : [];
     const rates = companies
       .map(courier => ({
