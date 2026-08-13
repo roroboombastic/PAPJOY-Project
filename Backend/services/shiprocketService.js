@@ -237,6 +237,15 @@ function pickFirst(value, fallback) {
   return '';
 }
 
+function normalizeIndianPhone(value) {
+  if (!value) return '';
+  let digits = String(value).replace(/\D/g, '');
+  if (digits.startsWith('0')) digits = digits.slice(1);
+  // Shiprocket expects the Indian country code prefix (91 + 10-digit mobile)
+  if (digits.length === 10) digits = `91${digits}`;
+  return digits;
+}
+
 function buildShiprocketAddress(address = {}) {
   const firstName = typeof address.firstName === 'string' ? address.firstName.trim() : '';
   const lastName = typeof address.lastName === 'string' ? address.lastName.trim() : '';
@@ -250,7 +259,7 @@ function buildShiprocketAddress(address = {}) {
     address.zipCode,
     pickFirst(address.zip, pickFirst(address.postalCode, pickFirst(address.postal, pickFirst(address.pincode, address.pinCode))))
   );
-  const phone = pickFirst(address.phone, pickFirst(address.mobile, pickFirst(address.phoneNumber, address.contact)));
+  const phone = normalizeIndianPhone(pickFirst(address.phone, pickFirst(address.mobile, pickFirst(address.phoneNumber, address.contact))));
   const email = pickFirst(address.email, address.emailId);
 
   return {
