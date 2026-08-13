@@ -246,8 +246,12 @@ function buildShiprocketAddress(address = {}) {
 
 async function getPickupLocations() {
   if (cachedPickupLocations && Date.now() < pickupLocationsExpiry) return cachedPickupLocations;
-  const data = await apiRequest('/settings/company/pickup-location');
-  const locations = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+  const data = await apiRequest('/settings/company/pickup');
+  let locations = [];
+  if (Array.isArray(data)) locations = data;
+  else if (data && Array.isArray(data.shipping_address)) locations = data.shipping_address;
+  else if (data && data.data && Array.isArray(data.data.shipping_address)) locations = data.data.shipping_address;
+  else if (data && Array.isArray(data.data)) locations = data.data;
   cachedPickupLocations = locations;
   pickupLocationsExpiry = Date.now() + PICKUP_LOCATIONS_TTL_MS;
   return locations;
@@ -270,7 +274,12 @@ async function resolvePickupLocationName() {
     if (byPin) return pickupLocationNameOf(byPin);
   }
 
-  const active = locations.find(loc => String(loc.status) === '1' && pickupLocationNameOf(loc));
+  const primary = locations.find(loc => loc.is_primary_location === 1 && pickupLocationNameOf(loc));
+  if (primary) return pickupLocationNameOf(primary);
+
+  const active = locations.find(loc =>
+    (loc.status === 1 || loc.status === 2 || String(loc.status) === '1') && pickupLocationNameOf(loc)
+  );
   if (active) return pickupLocationNameOf(active);
 
   const any = locations.find(loc => pickupLocationNameOf(loc));
