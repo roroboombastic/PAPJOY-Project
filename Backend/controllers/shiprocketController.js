@@ -147,7 +147,7 @@ async function createShiprocketOrder(req, res) {
     res.json({ success: true, order, shiprocket: data });
   } catch (err) {
     logger.error('Create Shiprocket order failed', { error: err.message });
-    res.status(err.status || 500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message, details: err.details || null });
   }
 }
 

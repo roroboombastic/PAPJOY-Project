@@ -454,6 +454,14 @@ async function createOrderForPapjoyOrder({ order, pickupLocation = null }) {
   }
   const payload = buildOrderPayload({ order, pickupLocation: name });
   const data = await apiRequest('/orders/create/adhoc', { method: 'POST', body: payload });
+  if (!data || (!data.shipment_id && !(data.data && data.data.shipment_id))) {
+    const error = new Error('Shiprocket did not return a shipment_id');
+    error.code = 'SHIPROCKET_NO_SHIPMENT';
+    error.details = data;
+    error.status = 502;
+    throw error;
+  }
+  if (data.data && data.data.shipment_id) return data.data;
   return data;
 }
 
