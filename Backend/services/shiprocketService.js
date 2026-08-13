@@ -292,11 +292,19 @@ function pickupLocationNameOf(location) {
 }
 
 async function resolvePickupLocationName() {
-  const override = config.shiprocket.pickupLocationName;
-  if (override && String(override).trim()) return String(override).trim();
-
   const locations = await getPickupLocations();
-  if (!locations.length) return '';
+  const override = config.shiprocket.pickupLocationName;
+
+  if (override && String(override).trim() && locations.length) {
+    const ov = String(override).trim();
+    const match = locations.find(loc => pickupLocationNameOf(loc) === ov);
+    if (match) return pickupLocationNameOf(match);
+  }
+
+  if (!locations.length) {
+    if (override && String(override).trim()) return String(override).trim();
+    return '';
+  }
 
   const pincode = String(config.shiprocket.pickupPincode || '').trim();
   if (pincode) {
@@ -314,6 +322,8 @@ async function resolvePickupLocationName() {
 
   const any = locations.find(loc => pickupLocationNameOf(loc));
   if (any) return pickupLocationNameOf(any);
+
+  if (override && String(override).trim()) return String(override).trim();
 
   return '';
 }
