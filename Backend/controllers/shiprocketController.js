@@ -200,7 +200,11 @@ async function assignAWB(req, res) {
     const awbData = data.awb_assign_data || data;
     const awbCode = awbData.awb_code || data.awb_code || '';
     if (!awbCode) {
-      const error = new Error('Shiprocket did not return an AWB code');
+      const srMsg =
+        (awbData && (awbData.awb_assign_error || awbData.message)) ||
+        (data && data.message) ||
+        'Shiprocket did not return an AWB code';
+      const error = new Error(`Shiprocket AWB assignment failed: ${srMsg}`);
       error.code = 'SHIPROCKET_NO_AWB';
       error.status = 502;
       error.details = data;
