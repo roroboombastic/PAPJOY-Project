@@ -13,12 +13,16 @@ const orderItemSchema = Joi.object({
 
 const addressSchema = Joi.object({
   name: Joi.string().max(100).allow('', null).optional(),
+  fullName: Joi.string().max(100).allow('', null).optional(),
   email: Joi.string().email().allow('', null).optional(),
   phone: Joi.string().max(20).allow('', null).optional(),
   street: Joi.string().max(200).allow('', null).optional(),
+  address: Joi.string().max(200).allow('', null).optional(),
   city: Joi.string().max(100).allow('', null).optional(),
   state: Joi.string().max(100).allow('', null).optional(),
   zipCode: Joi.string().max(20).allow('', null).optional(),
+  postalCode: Joi.string().max(20).allow('', null).optional(),
+  postal: Joi.string().max(20).allow('', null).optional(),
   country: Joi.string().max(100).allow('', null).optional()
 });
 
