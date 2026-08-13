@@ -231,16 +231,37 @@ function formatShiprocketDate(date) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function pickFirst(value, fallback) {
+  if (typeof value === 'string' && value.trim()) return value.trim();
+  if (typeof fallback === 'string' && fallback.trim()) return fallback.trim();
+  return '';
+}
+
 function buildShiprocketAddress(address = {}) {
+  const firstName = typeof address.firstName === 'string' ? address.firstName.trim() : '';
+  const lastName = typeof address.lastName === 'string' ? address.lastName.trim() : '';
+  const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+
+  const name = pickFirst(address.name, pickFirst(address.fullName, pickFirst(address.customerName, fullName)));
+  const street = pickFirst(address.street, pickFirst(address.address, pickFirst(address.addressLine1, pickFirst(address.line1, address.addressLine))));
+  const city = pickFirst(address.city, address.town);
+  const state = pickFirst(address.state, pickFirst(address.province, address.region));
+  const pinCode = pickFirst(
+    address.zipCode,
+    pickFirst(address.zip, pickFirst(address.postalCode, pickFirst(address.postal, pickFirst(address.pincode, address.pinCode))))
+  );
+  const phone = pickFirst(address.phone, pickFirst(address.mobile, pickFirst(address.phoneNumber, address.contact)));
+  const email = pickFirst(address.email, address.emailId);
+
   return {
-    name: address.name || '',
-    address: address.street || address.address || '',
-    city: address.city || '',
-    state: address.state || '',
+    name,
+    address: street,
+    city,
+    state,
     country: address.country || 'India',
-    pin_code: address.zipCode || address.pincode || address.postalCode || '',
-    phone: address.phone || '',
-    email: address.email || ''
+    pin_code: pinCode,
+    phone,
+    email
   };
 }
 
@@ -348,8 +369,9 @@ async function estimateShipping({ deliveryPostcode, cod = false, items = [] }) {
 }
 
 function buildOrderPayload({ order, pickupLocation = null }) {
-  const shippingAddress = buildShiprocketAddress(order.shippingAddress || order.billingAddress || {});
-  const billingAddress = buildShiprocketAddress(order.billingAddress || order.shippingAddress || {});
+  const addressSource = (src) => src || order.deliveryInfo || {};
+  const shippingAddress = buildShiprocketAddress(addressSource(order.shippingAddress) || addressSource(order.billingAddress));
+  const billingAddress = buildShiprocketAddress(addressSource(order.billingAddress) || addressSource(order.shippingAddress));
   const cod = (order.paymentMethod || 'cod') === 'cod';
 
   const items = (order.items || []).map(item => {
