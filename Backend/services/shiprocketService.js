@@ -280,19 +280,17 @@ async function resolvePickupLocationName() {
 }
 
 async function checkServiceability({ pickupPostcode, deliveryPostcode, cod = false, weight = 0.5, length = 0, breadth = 0, height = 0, declaredValue = 0 }) {
-  return apiRequest('/courier/serviceability/', {
-    method: 'POST',
-    body: {
-      pickup_postcode: pickupPostcode,
-      delivery_postcode: deliveryPostcode,
-      cod: cod,
-      weight: ensureNumeric(weight, 0.5),
-      length: ensureNumeric(length),
-      breadth: ensureNumeric(breadth),
-      height: ensureNumeric(height),
-      declared_value: ensureNumeric(declaredValue)
-    }
+  const params = new URLSearchParams({
+    pickup_postcode: String(pickupPostcode || ''),
+    delivery_postcode: String(deliveryPostcode || ''),
+    cod: cod ? 1 : 0,
+    weight: ensureNumeric(weight, 0.5),
+    length: ensureNumeric(length),
+    breadth: ensureNumeric(breadth),
+    height: ensureNumeric(height),
+    declared_value: ensureNumeric(declaredValue)
   });
+  return apiRequest(`/courier/serviceability/?${params.toString()}`, { method: 'GET' });
 }
 
 function aggregateDimensions(items = []) {
