@@ -9,6 +9,10 @@ let cachedPickupLocations = null;
 let pickupLocationsExpiry = 0;
 const PICKUP_LOCATIONS_TTL_MS = 60 * 60 * 1000;
 
+// Set once a configured static token is rejected, so we stop retrying it and
+// fall back to email/password login instead.
+let staticTokenInvalid = false;
+
 function looksConfigured(value) {
   if (typeof value !== 'string') return Boolean(value);
   const normalized = value.trim();
@@ -106,7 +110,7 @@ async function login() {
 
 async function getToken() {
   const token = staticToken();
-  if (token) {
+  if (token && !staticTokenInvalid) {
     cachedToken = token;
     tokenExpiry = 0;
     return token;
@@ -115,7 +119,7 @@ async function getToken() {
   return login();
 }
 
-async function apiRequest(path, { method = 'GET', body } = {}) {
+async function apiRequest(path, { method = 'GET', body, _authAttempt = 0 } = {}) {
   const token = await getToken();
 
   const controller = new AbortController();
@@ -141,8 +145,40 @@ async function apiRequest(path, { method = 'GET', body } = {}) {
 
     if (!response.ok) {
       if (response.status === 401) {
-        if (staticToken()) {
-          const error = new Error(`Shiprocket API token rejected (401) (at ${path}). Regenerate the token in the Shiprocket dashboard and update SHIPROCKET_API_TOKEN.`);
+        if (_authAttempt >= 1) {
+          const error = new Error(`Shiprocket authentication failed (401) at ${path}. Check SHIPROCKET_API_TOKEN or SHIPROCKET_API_EMAIL/SHIPROCKET_API_PASSWORD.`);
+          error.code = 'SHIPROCKET_AUTH_FAILED';
+          error.status = 401;
+          error.details = data;
+          throw error;
+        }
+        if (staticToken() && !staticTokenInvalid) {
+          // The configured static token was rejected. Invalidate it and fall back
+          // to email/password login (if configured) so a stale/wrong token does
+          // not permanently block the integration.
+          staticTokenInvalid = true;
+          cachedToken = null;
+          tokenExpiry = 0;
+          if (looksConfigured(config.shiprocket.email) && looksConfigured(config.shiprocket.password)) {
+            try {
+              await login();
+              return apiRequest(path, { method, body, _authAttempt: 1 });
+            } catch (loginErr) {
+              const error = new Error(
+                `Shiprocket rejected the configured API token and login also failed: ${loginErr.message}. ` +
+                `Regenerate the token (Shiprocket → My Profile → API & Webhooks) or fix SHIPROCKET_API_EMAIL/SHIPROCKET_API_PASSWORD.`
+              );
+              error.code = 'SHIPROCKET_AUTH_FAILED';
+              error.status = 401;
+              error.details = data;
+              throw error;
+            }
+          }
+          const error = new Error(
+            `Shiprocket API token rejected (401) at ${path}. The SHIPROCKET_API_TOKEN value is invalid. ` +
+            `Regenerate it in the Shiprocket dashboard (My Profile → API & Webhooks), ` +
+            `or set SHIPROCKET_API_EMAIL + SHIPROCKET_API_PASSWORD instead.`
+          );
           error.code = 'SHIPROCKET_AUTH_FAILED';
           error.status = 401;
           error.details = data;
@@ -150,8 +186,8 @@ async function apiRequest(path, { method = 'GET', body } = {}) {
         }
         cachedToken = null;
         tokenExpiry = 0;
-        const token = await login();
-        return apiRequest(path, { method, body, _token: token });
+        await login();
+        return apiRequest(path, { method, body, _authAttempt: 1 });
       }
       let message = (data && (data.message || data.error)) || `Shiprocket request failed (${response.status})`;
       if (data && data.errors && typeof data.errors === 'object') {
