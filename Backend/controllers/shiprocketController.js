@@ -200,7 +200,11 @@ async function assignAWB(req, res) {
     const awbData = data.awb_assign_data || data;
     const awbCode = awbData.awb_code || data.awb_code || '';
     if (!awbCode) {
-      throw new Error('Shiprocket did not return an AWB code');
+      const error = new Error('Shiprocket did not return an AWB code');
+      error.code = 'SHIPROCKET_NO_AWB';
+      error.status = 502;
+      error.details = data;
+      throw error;
     }
 
     order.shiprocket = order.shiprocket || {};
@@ -249,7 +253,7 @@ async function assignAWB(req, res) {
     res.json({ success: true, order, shiprocket: data, awbCode, trackingUrl: order.shipment.trackingUrl });
   } catch (err) {
     logger.error('Shiprocket AWB assign failed', { error: err.message });
-    res.status(err.status || 500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: err.message, details: err.details || null });
   }
 }
 
