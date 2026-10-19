@@ -40,11 +40,20 @@ function normalizeEmail(value) {
 
 async function generateInvoiceNumber(invoiceDate = new Date()) {
   const year = invoiceDate.getFullYear();
+<<<<<<< HEAD
   const sequenceDoc = await InvoiceSequence.findOneAndUpdate(
     { year },
     { $inc: { sequence: 1 } },
     { new: true, upsert: true, setDefaultsOnInsert: true }
   );
+=======
+  let sequenceDoc = await InvoiceSequence.findOne({ year });
+  if (!sequenceDoc) {
+    sequenceDoc = await InvoiceSequence.create({ year, sequence: 0 });
+  }
+  sequenceDoc.sequence += 1;
+  await sequenceDoc.save();
+>>>>>>> 5b221d0 (Add header, footer, admin styles, and footwear products)
   return `PAP-INV-${year}-${String(sequenceDoc.sequence).padStart(6, '0')}`;
 }
 
@@ -52,10 +61,21 @@ function buildAddressLine(address = {}) {
   return [address.street, address.city, address.state, address.zipCode, address.country].filter(Boolean).join(', ');
 }
 
+function getInvoiceUserId(invoice) {
+  if (!invoice.userId) return null;
+  if (typeof invoice.userId === 'object' && invoice.userId._id) return invoice.userId._id.toString();
+  return invoice.userId.toString();
+}
+
 function canAccessInvoice(invoice, req, guestEmail = '') {
   if (req.userEmail && ADMIN_EMAILS.includes(normalizeEmail(req.userEmail))) return true;
+<<<<<<< HEAD
   if (invoice.userId && req.userId) {
     const invoiceUserId = (invoice.userId._id || invoice.userId).toString();
+=======
+  const invoiceUserId = getInvoiceUserId(invoice);
+  if (invoiceUserId && req.userId) {
+>>>>>>> 5b221d0 (Add header, footer, admin styles, and footwear products)
     return invoiceUserId === req.userId.toString();
   }
   if (!invoice.userId) {
@@ -67,8 +87,9 @@ function canAccessInvoice(invoice, req, guestEmail = '') {
 // Generate invoice after successful payment
 async function generateInvoice(orderId) {
   try {
-    const order = await Order.findById(orderId).populate('userId').populate('shipmentId');
+    const order = await Order.findById(orderId).populate('userId');
     if (!order) {
+      logger.error('Generate invoice failed - order not found', { orderId });
       throw new Error('Order not found');
     }
 

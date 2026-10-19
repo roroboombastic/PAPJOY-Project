@@ -90,6 +90,43 @@
   <!-- Overlay for mobile -->
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
+  <!-- Top Header -->
+  <header class="site-header">
+    <div class="header-top">
+      <div class="header-logo">
+        <a href="index.html">PAP-JOY</a>
+      </div>
+      <div class="header-search">
+        <input type="text" placeholder="Search for shoes, brands..." id="header-search-input" />
+        <button class="search-btn" onclick="handleHeaderSearch()"><i class="fas fa-search"></i></button>
+      </div>
+      <div class="header-actions">
+        <a href="tracking.html" class="header-action-link" title="Track Order">
+          <i class="fas fa-truck"></i>
+          <span>Track</span>
+        </a>
+        <a href="account.html" class="header-action-link" title="Account">
+          <i class="fas fa-user"></i>
+          <span>Account</span>
+        </a>
+        <a href="cart.html" class="header-action-link cart-link" title="Cart">
+          <i class="fas fa-shopping-bag"></i>
+          <span>Cart</span>
+          <span class="cart-count-badge" id="header-cart-count">0</span>
+        </a>
+      </div>
+    </div>
+    <nav class="header-nav">
+      <a href="index.html" class="header-nav-link active">Home</a>
+      <a href="product.html" class="header-nav-link">Shop All</a>
+      <a href="product.html?category=sneakers" class="header-nav-link">Sneakers</a>
+      <a href="product.html?category=casual" class="header-nav-link">Casual</a>
+      <a href="product.html?category=formal" class="header-nav-link">Formal</a>
+      <a href="product.html?category=sports" class="header-nav-link">Sports</a>
+      <a href="signin.html" class="header-nav-link">Sign In</a>
+    </nav>
+  </header>
+
   <main>
     <!-- Dynamic Hero Section -->
     <section class="hero">
@@ -166,6 +203,7 @@
   </main>
 
   <footer class="site-footer">
+<<<<<<< HEAD
     <div class="footer-grid">
       <div class="footer-brand">
         <div class="brand"><a href="index.html"><img src="/logo.png" alt="PAP-JOY" class="logo-img-footer" /><span class="logo-text">PAP-JOY</span></a></div>
@@ -190,12 +228,64 @@
         <div class="contact-item">
           <i class="fas fa-phone"></i>
           <a href="tel:+917206993413">+91 7206993413</a>
+=======
+    <div class="footer-main">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="footer-logo"><a href="index.html">PAP-JOY</a></div>
+          <p>Premium footwear for every journey. Crafted with precision, built for comfort.</p>
+          <div class="footer-social">
+            <a href="#" class="social-link" title="Instagram" aria-label="Follow us on Instagram"><i class="fab fa-instagram"></i></a>
+            <a href="#" class="social-link" title="Facebook" aria-label="Follow us on Facebook"><i class="fab fa-facebook-f"></i></a>
+            <a href="#" class="social-link" title="YouTube" aria-label="Subscribe on YouTube"><i class="fab fa-youtube"></i></a>
+            <a href="#" class="social-link" title="Twitter" aria-label="Follow us on Twitter"><i class="fab fa-twitter"></i></a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="product.html">Shop All</a></li>
+            <li><a href="tracking.html">Track Order</a></li>
+            <li><a href="account.html">My Account</a></li>
+            <li><a href="signin.html">Sign In</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Categories</h4>
+          <ul>
+            <li><a href="product.html?category=sneakers">Sneakers</a></li>
+            <li><a href="product.html?category=casual">Casual</a></li>
+            <li><a href="product.html?category=formal">Formal</a></li>
+            <li><a href="product.html?category=sports">Sports</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Contact Us</h4>
+          <div class="footer-contact-item">
+            <i class="fas fa-envelope"></i>
+            <a href="mailto:support@papjoy.com">support@papjoy.com</a>
+          </div>
+          <div class="footer-contact-item">
+            <i class="fas fa-phone"></i>
+            <a href="tel:+919876543210">+91 98765 43210</a>
+          </div>
+          <div class="footer-contact-item">
+            <i class="fas fa-map-marker-alt"></i>
+            <span>Delhi, India</span>
+          </div>
+>>>>>>> 5b221d0 (Add header, footer, admin styles, and footwear products)
         </div>
       </div>
     </div>
-
-    <div class="copyright">
-      <p>&copy; 2026 PAP-JOY. Crafted for every journey. All rights reserved.</p>
+    <div class="footer-bottom">
+      <p>&copy; 2026 PAP-JOY. All rights reserved.</p>
+      <div class="footer-payment">
+        <i class="fab fa-cc-visa" title="Visa"></i>
+        <i class="fab fa-cc-mastercard" title="Mastercard"></i>
+        <i class="fab fa-cc-paypal" title="PayPal"></i>
+        <i class="fab fa-cc-amazon-pay" title="Amazon Pay"></i>
+      </div>
     </div>
   </footer>
     <script src="js/config.js" defer></script>

@@ -4,6 +4,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".",
   "rewrites": [
+    { "source": "/api/:path*", "destination": "https://papjoy-backend-production.up.railway.app/api/:path*" },
     { "source": "/product", "destination": "/product.html" },
     { "source": "/product/:path*", "destination": "/product.html" },
     { "source": "/account", "destination": "/account.html" },

@@ -21,9 +21,15 @@ async function createOrder(req, res) {
     });
 
     // Auto-generate an invoice for every created order
+<<<<<<< HEAD
     invoiceController.generateInvoice(order._id).catch((invoiceErr) => {
+=======
+    try {
+      await invoiceController.generateInvoice(order._id);
+    } catch (invoiceErr) {
+>>>>>>> 5b221d0 (Add header, footer, admin styles, and footwear products)
       logger.error('Auto invoice generation failed', { error: invoiceErr.message, orderId: order._id });
-    });
+    }
 
     // Notify customer and admin(s)
     sendOrderEmails(order, req.userId).catch((err) => {

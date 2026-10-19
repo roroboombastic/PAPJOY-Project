@@ -405,6 +405,7 @@ async function getAdminCategories(req, res) {
   }
 }
 
+<<<<<<< HEAD
 async function createProduct(req, res) {
   try {
     const parseJsonField = (val) => {
@@ -790,6 +791,26 @@ async function getCategoryById(req, res) {
   } catch (err) {
     logger.error('Get category by ID failed', { error: err.message });
     res.status(500).json({ error: 'Failed to load category' });
+=======
+async function updateOrder(req, res) {
+  try {
+    const { id } = req.params;
+    const { status, trackingNumber, carrier, trackingUrl } = req.body;
+    const update = {};
+    if (status) update.status = status;
+    if (trackingNumber || carrier || trackingUrl) {
+      update['shipment.trackingNumber'] = trackingNumber;
+      update['shipment.carrier'] = carrier;
+      update['shipment.trackingUrl'] = trackingUrl;
+      update['shipment.status'] = status || undefined;
+    }
+    const order = await Order.findByIdAndUpdate(id, update, { new: true });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    res.json(order);
+  } catch (err) {
+    logger.error('Admin update order failed', { error: err.message });
+    res.status(500).json({ error: 'Failed to update order' });
+>>>>>>> 5b221d0 (Add header, footer, admin styles, and footwear products)
   }
 }
 
@@ -804,6 +825,7 @@ module.exports = {
   getAnalytics,
   getAdminCategories,
   getReports,
+<<<<<<< HEAD
   createProduct,
   updateProduct,
   deleteProduct,
@@ -815,4 +837,7 @@ module.exports = {
   getCategoryById,
   updateUserRole,
   updateUserStatus
+=======
+  updateOrder
+>>>>>>> 5b221d0 (Add header, footer, admin styles, and footwear products)
 };
