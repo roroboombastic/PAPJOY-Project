@@ -21,6 +21,65 @@ function requireConfigured() {
   }
 }
 
+function getFirstMeaningfulString(value) {
+  if (value == null) return '';
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed || '';
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = getFirstMeaningfulString(item);
+      if (found) return found;
+    }
+    return '';
+  }
+
+  if (typeof value === 'object') {
+    const keys = ['awb_assign_error', 'error', 'message', 'error_message', 'description', 'details'];
+    for (const key of keys) {
+      const found = getFirstMeaningfulString(value[key]);
+      if (found) return found;
+    }
+
+    for (const key of Object.keys(value)) {
+      if (key === 'data' || key === 'details' || key === 'errors') {
+        const found = getFirstMeaningfulString(value[key]);
+        if (found) return found;
+      }
+    }
+  }
+
+  return '';
+}
+
+function extractAwbFailureMessage(data) {
+  if (!data || typeof data !== 'object') return 'Shiprocket did not return an AWB code';
+
+  const dataObject = data.data && typeof data.data === 'object' && !Array.isArray(data.data) ? data.data : data;
+  const awbData = dataObject.awb_assign_data || dataObject;
+  const messageCandidates = [
+    awbData && awbData.awb_assign_error,
+    awbData && awbData.message,
+    awbData && awbData.error,
+    awbData && awbData.error_message,
+    data && data.message,
+    data && data.error,
+    data && data.error_message,
+    data && data.awb_assign_error,
+    data && data.data && data.data.message,
+    data && data.data && data.data.error,
+    data && data.data && data.data.awb_assign_error,
+    getFirstMeaningfulString(dataObject),
+    getFirstMeaningfulString(data)
+  ];
+
+  const message = messageCandidates.find(candidate => typeof candidate === 'string' && candidate.trim());
+  return message ? message.trim() : 'Shiprocket did not return an AWB code';
+}
+
 async function getPickupLocations(req, res) {
   try {
     requireConfigured();
@@ -197,13 +256,11 @@ async function assignAWB(req, res) {
 
     const data = await shiprocketService.assignAWB({ shipmentId, courierId });
 
-    const awbData = data.awb_assign_data || data;
-    const awbCode = awbData.awb_code || data.awb_code || '';
+    const dataObject = data && data.data && typeof data.data === 'object' && !Array.isArray(data.data) ? data.data : data;
+    const awbData = dataObject && dataObject.awb_assign_data ? dataObject.awb_assign_data : dataObject;
+    const awbCode = awbData && (awbData.awb_code || awbData.awbCode || data.awb_code || data.awbCode || '');
     if (!awbCode) {
-      const srMsg =
-        (awbData && (awbData.awb_assign_error || awbData.message)) ||
-        (data && data.message) ||
-        'Shiprocket did not return an AWB code';
+      const srMsg = extractAwbFailureMessage(data);
       const error = new Error(`Shiprocket AWB assignment failed: ${srMsg}`);
       error.code = 'SHIPROCKET_NO_AWB';
       error.status = 502;
@@ -383,8 +440,6 @@ async function handleWebhook(req, res) {
 
     const query = orderNumber ? { orderNumber } : (awbCode ? { 'shiprocket.awbCode': awbCode } : null);
     if (!query) {
-      // Shiprocket requires a 200 response to save/keep a webhook URL active,
-      // so unknown/no-reference payloads are acknowledged instead of rejected.
       logger.warn('Shiprocket webhook with no order reference', { orderNumber, awbCode });
       return res.json({ success: true, received: false });
     }
