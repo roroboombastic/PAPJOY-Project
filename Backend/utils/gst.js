@@ -1,4 +1,4 @@
-const { GST_PERCENT, GST_STATE, BUSINESS_GSTIN, BUSINESS_NAME, GST_RETURN_POLICY, CUSTOMER_SUPPORT } = require('../config');
+const { GST_PERCENT, GST_STATE, BUSINESS_GSTIN, BUSINESS_NAME } = require('../config');
 
 const STATE_IGST_EXEMPT = ['ut', 'ld'];
 const GST_STATE_CODES = {
@@ -42,10 +42,7 @@ const GST_STATE_CODES = {
   dadra: 26,
   lakshadweep: 31,
   'daman and diu': 26,
-<<<<<<< HEAD
   'dadra and nagar haveli and daman and diu': 26,
-=======
->>>>>>> 5b221d0 (Add header, footer, admin styles, and footwear products)
   'dadra and nagar haveli': 26
 };
 
@@ -143,7 +140,5 @@ module.exports = {
   GST_PERCENT,
   GST_STATE,
   BUSINESS_GSTIN,
-  BUSINESS_NAME,
-  GST_RETURN_POLICY,
-  CUSTOMER_SUPPORT
+  BUSINESS_NAME
 };

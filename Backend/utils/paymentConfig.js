@@ -4,11 +4,8 @@ function looksConfigured(value) {
   if (typeof value !== 'string') return Boolean(value);
   const normalized = value.trim().toLowerCase();
   if (!normalized) return false;
-  if (normalized.length < 8) return false;
-  const placeholderMarkers = ['your_', 'your-', 'placeholder', 'changeme', 'replace_me'];
-  if (placeholderMarkers.some((marker) => normalized.includes(marker))) return false;
-  if (normalized === 'dummy' || normalized === 'test') return false;
-  return true;
+  const placeholderMarkers = ['dummy', 'test', 'your_', 'your-', 'placeholder', 'changeme', 'replace_me', 'example'];
+  return !placeholderMarkers.some((marker) => normalized.includes(marker));
 }
 
 function isRazorpayConfigured() {
@@ -44,11 +41,7 @@ function getRazorpayInstance() {
 
 module.exports = {
   getPaymentProviderStatus,
-<<<<<<< HEAD
   isPaymentConfigured,
   isRazorpayConfigured,
   getRazorpayInstance
-=======
-  isPaymentConfigured
->>>>>>> 5b221d0 (Add header, footer, admin styles, and footwear products)
 };

@@ -6,7 +6,6 @@ const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const { auth, verifyAdmin } = require('../middlewares/auth');
 const adminController = require('../controllers/adminController');
-<<<<<<< HEAD
 const { validateProductCreate, validateProductUpdate } = require('../validations/productValidation');
 const { uploadToGridFS, isConnected } = require('../utils/gridfs');
 const logger = require('../utils/logger');
@@ -52,10 +51,6 @@ const adminWriteLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'Too many admin requests, please try again later' }
 });
-=======
-const productController = require('../controllers/productController');
-const categoryController = require('../controllers/categoryController');
->>>>>>> 5b221d0 (Add header, footer, admin styles, and footwear products)
 
 const router = express.Router();
 router.use(auth);
@@ -80,22 +75,13 @@ function parseFormDataJson(req, res, next) {
 
 router.get('/summary', adminController.getSummary);
 router.get('/products', adminController.getProducts);
-<<<<<<< HEAD
 router.get('/products/:id', adminController.getProductById);
 router.get('/orders', adminController.getOrders);
 router.get('/orders/:id', adminController.getOrderById);
-=======
-router.post('/products', productController.createProduct);
-router.put('/products/:id', productController.updateProduct);
-router.delete('/products/:id', productController.deleteProduct);
-router.get('/orders', adminController.getOrders);
-router.put('/orders/:id', adminController.updateOrder);
->>>>>>> 5b221d0 (Add header, footer, admin styles, and footwear products)
 router.get('/users', adminController.getUsers);
 router.get('/analytics', adminController.getAnalytics);
 router.get('/reports', adminController.getReports);
 router.get('/categories', adminController.getAdminCategories);
-<<<<<<< HEAD
 router.get('/categories/:id', adminController.getCategoryById);
 
 router.post('/uploads', adminWriteLimiter, upload.array('media', 25), persistUploads, adminController.uploadFiles);
@@ -112,10 +98,5 @@ router.delete('/categories/:id', adminWriteLimiter, adminController.deleteCatego
 
 router.put('/users/:id/role', adminWriteLimiter, adminController.updateUserRole);
 router.put('/users/:id/status', adminWriteLimiter, adminController.updateUserStatus);
-=======
-router.post('/categories', categoryController.createCategory);
-router.put('/categories/:id', categoryController.updateCategory);
-router.delete('/categories/:id', categoryController.deleteCategory);
->>>>>>> 5b221d0 (Add header, footer, admin styles, and footwear products)
 
 module.exports = router;

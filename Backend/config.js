@@ -47,15 +47,10 @@ const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET || process.env.PAY
 const PAYPAL_MODE = process.env.PAYPAL_MODE || 'sandbox';
 const PAYPAL_SUCCESS_URL = process.env.PAYPAL_SUCCESS_URL || `${APP_URL}/success.html?provider=paypal`;
 const PAYPAL_CANCEL_URL = process.env.PAYPAL_CANCEL_URL || `${APP_URL}/checkout.html?paypal=canceled`;
-<<<<<<< HEAD
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY || '';
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_SECRET || '';
 const RAZORPAY_KEY = RAZORPAY_KEY_ID;
 const RAZORPAY_SECRET = RAZORPAY_KEY_SECRET;
-=======
-const RAZORPAY_KEY = process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY || '';
-const RAZORPAY_SECRET = process.env.RAZORPAY_KEY_SECRET || process.env.RAZORPAY_SECRET || '';
->>>>>>> 5b221d0 (Add header, footer, admin styles, and footwear products)
 const RAZORPAY_CURRENCY = process.env.RAZORPAY_CURRENCY || 'INR';
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';

@@ -125,7 +125,6 @@ function createSecurityMiddleware(app) {
   });
   app.use('/api/v1/payments/webhook', webhookLimiter);
   
-<<<<<<< HEAD
   app.use((req, res, next) => {
     const sanitize = (obj) => {
       if (!obj || typeof obj !== 'object') return;
@@ -140,26 +139,6 @@ function createSecurityMiddleware(app) {
     if (req.body) sanitize(req.body);
     if (req.query) sanitize(req.query);
     if (req.params) sanitize(req.params);
-=======
-  // Custom NoSQL injection sanitizer for Express 5 compatibility
-  app.use((req, res, next) => {
-    const sanitize = (obj) => {
-      if (!obj || typeof obj !== 'object') return obj;
-      if (Array.isArray(obj)) return obj.map(sanitize);
-      const cleaned = {};
-      for (const [key, value] of Object.entries(obj)) {
-        if (key.startsWith('$') || key.includes('.')) continue;
-        cleaned[key] = typeof value === 'object' && value !== null ? sanitize(value) : value;
-      }
-      return cleaned;
-    };
-    if (req.body && typeof req.body === 'object') req.body = sanitize(req.body);
-    if (req.query && typeof req.query === 'object') {
-      for (const key of Object.keys(req.query)) {
-        if (key.startsWith('$') || key.includes('.')) delete req.query[key];
-      }
-    }
->>>>>>> 5b221d0 (Add header, footer, admin styles, and footwear products)
     next();
   });
   app.use(hpp());
@@ -167,8 +146,7 @@ function createSecurityMiddleware(app) {
   if (config.https.force) {
     app.use((req, res, next) => {
       const secure = req.secure || req.headers['x-forwarded-proto'] === 'https';
-      const hostname = req.hostname || '';
-      if (!secure && hostname && !hostname.startsWith('localhost') && hostname !== '127.0.0.1') {
+      if (!secure && req.hostname && !req.hostname.startsWith('localhost')) {
         return res.redirect(301, `https://${req.headers.host}${req.originalUrl}`);
       }
       next();
