@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <script>
+  (function(){
+    try{
+      var t=localStorage.getItem("papjoy-theme");
+      if(t==="dark"){document.documentElement.setAttribute("data-theme","dark");}
+      else if(t==="light"){document.documentElement.setAttribute("data-theme","light");}
+      else if(window.matchMedia("(prefers-color-scheme: dark)").matches){
+        document.documentElement.setAttribute("data-theme","dark");
+      }
+    }catch(e){}
+  })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Create your PAP-JOY account to track orders, save favorites, and enjoy exclusive offers." />
+  <meta name="theme-color" content="#0a0a0a" />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  <title>PAP-JOY | Create Account</title>
+  <script>
+    if (window.location.hostname === 'papjoy-project.vercel.app' || window.location.hostname === 'papjoy.com' || window.location.hostname === 'www.papjoy.com') {
+      window.API_BASE_URL = 'https://papjoy-project.onrender.com';
+    }
+  </script>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://papjoy-project.onrender.com" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="manifest" href="/manifest.json" />
+
+  <meta property="og:title" content="PAP-JOY | Create Account" />
+  <meta property="og:description" content="Create your PAP-JOY account to track orders, save favorites, and enjoy exclusive offers." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="PAP-JOY" />
+  <meta property="og:image" content="https://papjoy.com/logo.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <script>
+  (function(){
+    var V='papjoy-v38',K='papjoy-sw-version';
+    try{
+      if('serviceWorker'in navigator&&navigator.serviceWorker.controller){
+        if(localStorage.getItem(K)!==V){
+          localStorage.setItem(K,V);
+          navigator.serviceWorker.getRegistrations().then(function(list){
+            var ps=[];for(var i=0;i<list.length;i++){ps.push(list[i].unregister());}
+            return Promise.all(ps);
+          }).catch(function(){}).then(function(){location.reload();});
+        }
+      }else{
+        localStorage.setItem(K,V);
+      }
+    }catch(e){}
+  })();
+  </script>
+</head>
+<body data-page="signup">
+  <div id="global-error" class="global-error" style="display: none;"></div>
+
+  <div id="announcement-bar" class="announcement-bar">
+    <div class="announcement-bar-inner">
+      <span class="announcement-icon"><i class="fas fa-shipping-fast"></i></span>
+      <span class="announcement-text">All prices include all taxes</span>
+      <span class="announcement-separator">|</span>
+      <span class="announcement-icon"><i class="fas fa-undo-alt"></i></span>
+      <span class="announcement-text">Easy 7-day returns</span>
+      <span class="announcement-separator">|</span>
+      <span class="announcement-icon"><i class="fas fa-shield-alt"></i></span>
+      <span class="announcement-text">Secure payments with Razorpay</span>
+      <button class="announcement-close" id="announcement-close" aria-label="Close announcement"><i class="fas fa-times"></i></button>
+    </div>
+  </div>
+
+  <aside id="site-sidebar" class="site-sidebar"></aside>
+  <button class="mobile-menu-toggle" id="mobile-menu-toggle">
+    <i class="fas fa-bars"></i>
+  </button>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <main>
+    <section class="auth-page">
+      <div class="auth-panel" id="auth-panel">
+        <div class="auth-tabs" id="auth-tabs">
+          <button class="auth-tab" data-tab="signin" id="tab-signin">Sign In</button>
+          <button class="auth-tab active" data-tab="signup" id="tab-signup">Create Account</button>
+        </div>
+
+        <div class="auth-tab-body" id="panel-signin" style="display: none;">
+          <div class="auth-panel-intro">
+            <h2>Welcome back</h2>
+            <p>Sign in to access your orders, wishlist, and more.</p>
+          </div>
+
+          <div id="auth-message" class="auth-message"></div>
+
+          <form id="auth-form" class="auth-form" novalidate>
+            <div class="form-group">
+              <label for="email">Email address</label>
+              <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email" />
+            </div>
+            <div class="form-group">
+              <label for="password">Password</label>
+              <div class="password-field">
+                <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password" />
+                <button type="button" id="password-toggle" class="toggle-password" aria-label="Toggle password visibility">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="remember" name="remember" checked />
+              <label for="remember">Keep me signed in</label>
+            </div>
+            <button type="submit" class="checkout-button">Continue</button>
+            <div id="google-signin-button" class="oauth-button"></div>
+          </form>
+
+          <div class="auth-footnote">
+            <p><a href="forgot-password.html" id="forgot-password-link">Forgot your password?</a></p>
+            <p>Don't have an account? <a href="signin.html#signup">Create one</a></p>
+          </div>
+        </div>
+
+        <div class="auth-tab-body" id="panel-signup">
+          <div class="auth-panel-intro">
+            <h2>Create your account</h2>
+            <p>Join PAP-JOY to track orders, save items, and get exclusive offers.</p>
+          </div>
+
+          <div id="signup-message" class="auth-message"></div>
+
+          <form id="signup-form" class="auth-form" novalidate>
+            <div class="form-group">
+              <label for="name">Full name</label>
+              <input type="text" id="name" name="name" placeholder="Your full name" required autocomplete="name" />
+            </div>
+            <div class="form-group">
+              <label for="signup-email">Email address</label>
+              <input type="email" id="signup-email" name="email" placeholder="you@example.com" required autocomplete="email" />
+            </div>
+            <div class="form-group">
+              <label for="signup-phone">Phone number</label>
+              <input type="tel" id="signup-phone" name="phone" placeholder="+91 98765 43210" required autocomplete="tel" />
+            </div>
+            <div class="form-group">
+              <label for="signup-password">Password</label>
+              <div class="password-field">
+                <input type="password" id="signup-password" name="password" placeholder="At least 8 characters" required autocomplete="new-password" />
+                <button type="button" id="signup-password-toggle" class="toggle-password" aria-label="Toggle password visibility">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+              <div class="password-strength">
+                <span class="password-strength-bar"><span class="password-strength-fill" id="signup-password-strength-fill"></span></span>
+                <small id="signup-password-strength-text">Use 8+ characters with a mix of letters, numbers, and symbols.</small>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="confirm-password">Confirm password</label>
+              <div class="password-field">
+                <input type="password" id="confirm-password" name="confirmPassword" placeholder="Re-enter your password" required autocomplete="new-password" />
+                <button type="button" id="confirm-password-toggle" class="toggle-password" aria-label="Toggle password visibility">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="terms" name="terms" required />
+              <label for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="marketing" name="marketing" />
+              <label for="marketing">Send me exclusive offers and updates</label>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" id="remember-signup" name="remember" checked />
+              <label for="remember-signup">Keep me signed in on this device</label>
+            </div>
+            <button type="submit" class="checkout-button">Create account</button>
+            <div id="google-signup-button" class="oauth-button"></div>
+          </form>
+
+          <div class="auth-footnote">
+            <p>Already have an account? <a href="signin.html">Sign in</a></p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="brand"><a href="index.html"><img src="/logo.png" alt="PAP-JOY" class="logo-img-footer" /><span class="logo-text">PAP-JOY</span></a></div>
+        <p>Premium footwear for every journey.</p>
+      </div>
+
+      <div class="social-section">
+        <h4>Connect With Us</h4>
+        <div class="social-links">
+          <a href="https://www.instagram.com/papjoy_?igsh=cWtuMDJ5dWM0dg==0" class="social-link" title="Instagram" aria-label="Follow us on Instagram" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
+          <a href="https://www.facebook.com/profile.php?id=61592415609500" class="social-link" title="Facebook" aria-label="Follow us on Facebook" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook-f"></i></a>
+          <a href="https://youtube.com/@papjoy_shoes?si=Pl5P9cMTKRX5JV71" class="social-link" title="YouTube" aria-label="Subscribe on YouTube" target="_blank" rel="noopener noreferrer"><i class="fab fa-youtube"></i></a>
+        </div>
+      </div>
+
+      <div class="contact-info">
+        <h4>Contact Us</h4>
+        <div class="contact-item">
+          <i class="fas fa-envelope"></i>
+          <a href="mailto:papp.joyy@gmail.com">papp.joyy@gmail.com</a>
+        </div>
+        <div class="contact-item">
+          <i class="fas fa-phone"></i>
+          <a href="tel:+917206993413">+91 7206993413</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="copyright">
+      <p>&copy; 2026 PAP-JOY. Crafted for every journey. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="js/config.js" defer></script>
+  <script src="js/helpers.js" defer></script>
+  <script src="js/storage.js" defer></script>
+  <script src="js/i18n.js" defer></script>
+  <script src="js/api.js" defer></script>
+  <script src="js/auth.js" defer></script>
+  <script src="js/navigation.js" defer></script>
+  <script src="js/cart.js" defer></script>
+  <script src="js/wishlist.js" defer></script>
+  <script src="js/ui.js" defer></script>
+  <script src="js/main.js" defer></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const tabs = document.querySelectorAll('.auth-tab');
+      const panels = {
+        signin: document.getElementById('panel-signin'),
+        signup: document.getElementById('panel-signup')
+      };
+      const tabsContainer = document.getElementById('auth-tabs');
+
+      function showPanel(name) {
+        Object.values(panels).forEach(p => { if (p) p.style.display = 'none'; });
+        tabs.forEach(t => t.classList.remove('active'));
+        if (panels[name]) {
+          panels[name].style.display = '';
+          const matchingTab = document.querySelector('.auth-tab[data-tab="' + name + '"]');
+          if (matchingTab) matchingTab.classList.add('active');
+          if (tabsContainer) tabsContainer.style.display = '';
+        }
+      }
+
+      function handleHash() {
+        const hash = window.location.hash.replace('#', '') || 'signup';
+        if (hash === 'signin') showPanel('signin');
+        else showPanel('signup');
+      }
+
+      tabs.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+          const target = tab.dataset.tab;
+          window.location.hash = target === 'signin' ? '' : target;
+        });
+      });
+
+      document.querySelectorAll('.toggle-password').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var input = btn.closest('.password-field')?.querySelector('input');
+          if (!input) return;
+          var isPw = input.type === 'password';
+          input.type = isPw ? 'text' : 'password';
+          var icon = btn.querySelector('i');
+          if (icon) icon.className = isPw ? 'fas fa-eye-slash' : 'fas fa-eye';
+        });
+      });
+
+      window.addEventListener('hashchange', handleHash);
+      handleHash();
+    });
+  </script>
+</body>
+</html>
