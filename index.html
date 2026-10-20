@@ -13,178 +13,56 @@
     <script src="script.js" defer></script>
   </head>
   <body>
-    <div class="announcement">
-      <p>A little joy goes a long way <span aria-hidden="true">✳</span> Meet PAPJOY</p>
-    </div>
-
-    <header class="site-header">
-      <a class="brand" href="#home" aria-label="PAPJOY home">
-        <img src="assets/papjoy-mark.jpeg" alt="" width="48" height="48">
-        <span class="brand-wordmark">papjoy<span class="brand-period">.</span></span>
-      </a>
-
-      <button
-        class="menu-toggle"
-        type="button"
-        aria-expanded="false"
-        aria-controls="primary-nav"
-        aria-label="Open navigation"
-      >
-        <span></span>
-        <span></span>
-      </button>
-
-      <nav class="primary-nav" id="primary-nav" aria-label="Main navigation">
-        <a href="#collection">The collection</a>
-        <a href="#story">Our point of view</a>
-        <a href="#footer">Get in touch</a>
-      </nav>
-
-      <a class="header-cta" href="#collection">
-        Find your pair <span aria-hidden="true">↗</span>
-      </a>
-    </header>
-
-    <main id="home">
-      <section class="hero section-shell" aria-labelledby="hero-title">
-        <div class="hero-copy">
-          <p class="eyebrow"><span></span> A fresh take on everyday</p>
-          <h1 id="hero-title">A little joy<br>in every <em>step.</em></h1>
-          <p class="hero-description">
-            Easy-to-love footwear with thoughtful details and a feel-good point of view.
-            Meet the pairs made to go wherever your day takes you.
-          </p>
-          <a class="button button-dark" href="#collection">
-            Explore the collection <span aria-hidden="true">↗</span>
-          </a>
-          <div class="hero-note">
-            <span class="note-mark" aria-hidden="true">✳</span>
-            <p>Find the pair<br>that feels like you.</p>
-          </div>
+    <main id="home" class="page-shell">
+      <header class="site-header">
+        <div class="promo-bar">
+          <span class="promo-icon" aria-hidden="true">✦</span>
+          <span>All prices include all taxes</span>
+          <button class="close-banner" type="button" aria-label="Close announcement">×</button>
         </div>
 
-        <div class="hero-visual">
-          <div class="hero-image-wrap">
-            <img
-              class="hero-image"
-              src="assets/black-gold-sandals.jpg"
-              alt="Black PAPJOY sandals with warm gold detailing"
-              fetchpriority="high"
-            >
-          </div>
-          <div class="hero-sticker" aria-label="Joy with PAPJOY">
-            <span>JOY WITH</span>
-            <strong>PAPJOY</strong>
-            <span aria-hidden="true">✳</span>
-          </div>
-          <p class="image-caption">Little details. Big feel-good energy.</p>
-        </div>
-      </section>
+        <button class="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </header>
 
-      <section class="collection section-shell" id="collection" aria-labelledby="collection-title">
-        <div class="section-heading">
+      <section class="hero-panel" aria-labelledby="hero-title">
+        <div class="badge-wrap">
+          <span class="badge-icon" aria-hidden="true">✦</span>
+          <span>Designed for every step</span>
+        </div>
+
+        <p class="eyebrow">Premium Performance</p>
+
+        <h1 id="hero-title">Step into comfort with<br>elevated style.</h1>
+
+        <p class="hero-description">
+          Shop handcrafted footwear built for modern movement, bold streetwear, and everyday adventures.
+        </p>
+
+        <div class="stats" aria-label="Brand statistics">
           <div>
-            <p class="eyebrow"><span></span> Meet your new favourites</p>
-            <h2 id="collection-title">Good days start<br>with good <em>shoes.</em></h2>
+            <strong>12+</strong>
+            <span>Premium styles</span>
           </div>
-          <p class="section-intro">
-            From soft neutrals to all-out classics, find a style that makes getting dressed
-            feel like the easiest part of your day.
-          </p>
+          <div>
+            <strong>3</strong>
+            <span>Curated collections</span>
+          </div>
+          <div>
+            <strong>5+</strong>
+            <span>Years craft</span>
+          </div>
         </div>
 
-        <div class="product-grid">
-          <article class="product-card">
-            <a class="product-image image-cream" href="#story" aria-label="Discover Cream Crush sandals">
-              <img src="assets/cream-strap-sandals.jpg" alt="Cream sandals with cross straps and gold accents" loading="lazy">
-              <span class="product-number">01</span>
-              <span class="product-arrow" aria-hidden="true">↗</span>
-            </a>
-            <div class="product-meta">
-              <div><h3>Cream Crush</h3><p>Soft neutrals, easy days</p></div>
-              <span class="product-swatch swatch-cream" aria-label="Cream"></span>
-            </div>
-          </article>
-
-          <article class="product-card">
-            <a class="product-image image-black" href="#story" aria-label="Discover The Everyday buckle flats">
-              <img src="assets/black-buckle-flats.jpg" alt="Black buckle flats with a clean, classic shape" loading="lazy">
-              <span class="product-number">02</span>
-              <span class="product-arrow" aria-hidden="true">↗</span>
-            </a>
-            <div class="product-meta">
-              <div><h3>The Everyday</h3><p>A classic with a twist</p></div>
-              <span class="product-swatch swatch-black" aria-label="Black"></span>
-            </div>
-          </article>
-
-          <article class="product-card">
-            <a class="product-image image-mauve" href="#story" aria-label="Discover Rose Day sandals">
-              <img src="assets/mauve-cross-sandals.jpg" alt="Dusty mauve cross-strap sandals with gold accents" loading="lazy">
-              <span class="product-number">03</span>
-              <span class="product-arrow" aria-hidden="true">↗</span>
-            </a>
-            <div class="product-meta">
-              <div><h3>Rose Day</h3><p>A softer kind of statement</p></div>
-              <span class="product-swatch swatch-mauve" aria-label="Dusty mauve"></span>
-            </div>
-          </article>
-
-          <article class="product-card">
-            <a class="product-image image-platform" href="#story" aria-label="Discover After Hours platform heels">
-              <img src="assets/black-platform-heels.jpg" alt="Black platform heels with cream detailing" loading="lazy">
-              <span class="product-number">04</span>
-              <span class="product-arrow" aria-hidden="true">↗</span>
-            </a>
-            <div class="product-meta">
-              <div><h3>After Hours</h3><p>Made for your plus-one plans</p></div>
-              <span class="product-swatch swatch-platform" aria-label="Black and cream"></span>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section class="story section-shell" id="story" aria-labelledby="story-title">
-        <div class="story-image">
-          <img
-            src="assets/black-buckle-flats.jpg"
-            alt="A close look at the shape and detail of PAPJOY black flats"
-            loading="lazy"
-          >
-          <span class="story-image-label">Made for the everyday, and everything else.</span>
-        </div>
-        <div class="story-copy">
-          <p class="eyebrow"><span></span> The PAPJOY point of view</p>
-          <h2 id="story-title">Wear what<br>makes you <em>smile.</em></h2>
-          <p>
-            The best things are the ones that feel like you. PAPJOY is all about wearable
-            styles, playful details and those small moments of joy that come with finding
-            your perfect pair.
-          </p>
-          <a class="text-link" href="#collection">Find a style to love <span aria-hidden="true">↗</span></a>
-          <div class="story-seal" aria-hidden="true"><span>JOY WITH<br><strong>PAPJOY</strong></span></div>
-        </div>
-      </section>
-
-      <section class="closing-banner" aria-labelledby="closing-title">
-        <div class="closing-inner">
-          <p class="eyebrow"><span></span> Your next favourite is waiting</p>
-          <h2 id="closing-title">Step into a<br><em>happier</em> day.</h2>
-          <a class="button button-light" href="#collection">Meet the collection <span aria-hidden="true">↗</span></a>
-          <span class="closing-flower flower-one" aria-hidden="true">✳</span>
-          <span class="closing-flower flower-two" aria-hidden="true">✳</span>
+        <div class="cta-row">
+          <a class="button button-primary" href="#collection">Shop the collection</a>
+          <a class="button button-secondary" href="#join">Join PAP-JOY</a>
         </div>
       </section>
     </main>
 
-    <footer class="site-footer" id="footer">
-      <a class="brand footer-brand" href="#home" aria-label="PAPJOY, back to top">
-        <img src="assets/papjoy-mark.jpeg" alt="" width="44" height="44" loading="lazy">
-        <span class="brand-wordmark">papjoy<span class="brand-period">.</span></span>
-      </a>
-      <p>Joy with every step.</p>
-      <a class="back-to-top" href="#home">Back to top <span aria-hidden="true">↑</span></a>
-      <span class="copyright">© <span id="current-year"></span> PAPJOY</span>
-    </footer>
   </body>
 </html>
