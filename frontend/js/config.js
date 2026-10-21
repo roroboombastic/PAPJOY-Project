@@ -1,4 +1,6 @@
 let cacheExpiry = 5 * 60 * 1000;
+// Products added within this window are surfaced as "New Arrivals".
+const NEW_ARRIVAL_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const PRODUCT_PLACEHOLDER_SVG = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">' +
   '<rect width="600" height="600" fill="#f3f1ea"/>' +
@@ -177,6 +179,7 @@ window.PRODUCT_PLACEHOLDER_SVG = PRODUCT_PLACEHOLDER_SVG;
 window.getNextFallbackImage = getNextFallbackImage;
 window.GST_RATE = GST_RATE;
 window.cacheExpiry = cacheExpiry;
+window.NEW_ARRIVAL_WINDOW_MS = NEW_ARRIVAL_WINDOW_MS;
 window.API_BASE_URL = API_BASE_URL;
 window.getDefaultApiBaseUrl = getDefaultApiBaseUrl;
 window.apiUrl = apiUrl;

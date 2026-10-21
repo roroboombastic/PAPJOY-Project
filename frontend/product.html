@@ -15,7 +15,7 @@
   })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Browse our complete collection of premium shoes and sneakers. Find your perfect pair with easy size filtering." />
+  <meta name="description" content="Browse the complete PAP-JOY collection. Filter by category, brand and price, sort the results and compare every style before you add it to your cart." />
   <meta name="theme-color" content="#0a0a0a" />
   <link rel="icon" type="image/png" href="/logo.png" />
   <link rel="apple-touch-icon" href="/icon-192.png" />
@@ -35,7 +35,7 @@
   <link rel="manifest" href="/manifest.json" />
   
   <meta property="og:title" content="PAP-JOY | Shop Footwear Collection" />
-  <meta property="og:description" content="Browse our complete collection of premium shoes and sneakers. Find your perfect pair with easy size filtering." />
+  <meta property="og:description" content="Browse the complete PAP-JOY collection. Filter by category, brand and price, sort the results and compare every style before you add it to your cart." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="PAP-JOY" />
   <meta property="og:image" content="https://papjoy.com/logo.png" />
@@ -43,7 +43,7 @@
   
   <script>
   (function(){
-    var V='papjoy-v38',K='papjoy-sw-version';
+    var V='papjoy-v39',K='papjoy-sw-version';
     try{
       if('serviceWorker'in navigator&&navigator.serviceWorker.controller){
         if(localStorage.getItem(K)!==V){
@@ -79,51 +79,161 @@
   <button class="mobile-menu-toggle" id="mobile-menu-toggle"><i class="fas fa-bars"></i></button>
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-  <main class="product-section">
+  <main class="product-section shop-page">
     <nav class="breadcrumbs" id="breadcrumbs" aria-label="Breadcrumb"></nav>
-    <div class="section-header product-filter-header">
-      <div>
+
+    <!-- ============ HERO ============ -->
+    <section class="shop-hero">
+      <div class="shop-hero-copy">
         <p class="eyebrow" data-i18n="product.eyebrow">Full collection</p>
-        <h1 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">Shop all styles</h1>
-        <h2 data-i18n="product.heading">Shop all styles</h2>
+        <h1 class="shop-hero-title" data-i18n="shop.heroTitle">Find your perfect pair</h1>
+        <p class="shop-hero-intro" data-i18n="product.intro">Browse every shoe, compare features, and add your favorites to the cart.</p>
       </div>
-      <div class="product-status" id="product-status"></div>
-
-    </div>
-    <div class="product-intro-wrap">
-      <p class="product-intro" data-i18n="product.intro">Browse every shoe, compare features, and add your favorites to the cart.</p>
-
-      <div class="shop-filter-bar" id="shop-filter-bar">
-        <div class="search-autocomplete-wrapper">
-          <input id="search-products" type="search" placeholder="Search shoes, categories..." autocomplete="off" />
-          <div class="search-autocomplete" id="search-autocomplete"></div>
+      <div class="shop-hero-stats" id="shop-stats">
+        <div class="shop-stat">
+          <span class="shop-stat-value" id="shop-stat-total">0</span>
+          <span class="shop-stat-label" data-i18n="shop.statStyles">styles</span>
         </div>
-        <select id="category-filter">
-          <option value="">All Categories</option>
-        </select>
-        <select id="sort-filter">
-          <option value="newest">Newest</option>
-          <option value="price-asc">Price: Low to High</option>
-          <option value="price-desc">Price: High to Low</option>
-          <option value="rating">Best Rated</option>
-        </select>
-        <div class="price-quick-select" id="price-quick-select">
-          <button class="price-chip active" data-price="all">All Prices</button>
-          <button class="price-chip" data-price="0-1000">Under 1K</button>
-          <button class="price-chip" data-price="1000-5000">1K &ndash; 5K</button>
-          <button class="price-chip" data-price="5000-10000">5K &ndash; 10K</button>
-          <button class="price-chip" data-price="10000-999999">10K+</button>
+        <div class="shop-stat">
+          <span class="shop-stat-value" id="shop-stat-categories">0</span>
+          <span class="shop-stat-label" data-i18n="shop.statCategories">categories</span>
         </div>
-        <label class="toggle-filter">
-          <input type="checkbox" id="in-stock-filter" />
-          <span class="toggle-track"><span class="toggle-thumb"></span></span>
-          <span>In Stock</span>
-        </label>
+        <div class="shop-stat is-sale">
+          <span class="shop-stat-value" id="shop-stat-sale">0</span>
+          <span class="shop-stat-label" data-i18n="shop.statOnSale">on sale</span>
+        </div>
       </div>
+    </section>
 
-      <div class="active-filters" id="active-filters"></div>
+    <!-- ============ LAYOUT ============ -->
+    <div class="shop-layout">
+      <!-- Filter sidebar (sticky on desktop, drawer on mobile) -->
+      <aside class="shop-sidebar" id="shop-sidebar" aria-label="Product filters">
+        <div class="shop-sidebar-head">
+          <h2 class="shop-sidebar-title">
+            <i class="fas fa-sliders" aria-hidden="true"></i>
+            <span data-i18n="shop.filters">Filters</span>
+          </h2>
+          <button type="button" class="shop-sidebar-close" id="shop-sidebar-close" title="Close filters" data-i18n-aria-label="shop.closeFilters">
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <div class="shop-sidebar-body">
+          <section class="shop-facet-group">
+            <h3 class="shop-facet-title" data-i18n="shop.category">Category</h3>
+            <div class="shop-facet-list" id="facet-categories"></div>
+          </section>
+
+          <section class="shop-facet-group">
+            <h3 class="shop-facet-title" data-i18n="shop.price">Price</h3>
+            <div class="shop-price-range">
+              <label class="shop-price-input">
+                <span data-i18n="shop.priceMin">Min</span>
+                <input type="number" id="price-min" min="0" step="1" inputmode="numeric" placeholder="0" />
+              </label>
+              <span class="shop-price-dash" aria-hidden="true">&ndash;</span>
+              <label class="shop-price-input">
+                <span data-i18n="shop.priceMax">Max</span>
+                <input type="number" id="price-max" min="0" step="1" inputmode="numeric" placeholder="0" />
+              </label>
+            </div>
+            <div class="price-quick-select" id="price-quick-select">
+              <button type="button" class="price-chip active" data-price="all" data-i18n="shop.allPrices">All prices</button>
+              <button type="button" class="price-chip" data-price="0-499">&lt; 500</button>
+              <button type="button" class="price-chip" data-price="500-999">500 &ndash; 999</button>
+              <button type="button" class="price-chip" data-price="1000-1499">1000 &ndash; 1499</button>
+              <button type="button" class="price-chip" data-price="1500-999999">1500+</button>
+            </div>
+          </section>
+
+          <section class="shop-facet-group">
+            <h3 class="shop-facet-title" data-i18n="shop.brand">Brand</h3>
+            <div class="shop-facet-list" id="facet-brands"></div>
+          </section>
+
+          <section class="shop-facet-group" data-facet-group="sizes">
+            <h3 class="shop-facet-title" data-i18n="shop.size">Size</h3>
+            <div class="shop-facet-chips" id="facet-sizes"></div>
+          </section>
+
+          <section class="shop-facet-group" data-facet-group="colors" hidden>
+            <h3 class="shop-facet-title" data-i18n="shop.color">Colour</h3>
+            <div class="shop-facet-chips" id="facet-colors"></div>
+          </section>
+
+          <section class="shop-facet-group">
+            <h3 class="shop-facet-title" data-i18n="shop.availability">Availability</h3>
+            <label class="toggle-filter">
+              <input type="checkbox" id="in-stock-filter" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span data-i18n="shop.inStock">In stock only</span>
+            </label>
+          </section>
+        </div>
+
+        <div class="shop-sidebar-foot">
+          <button type="button" class="shop-reset-btn" id="shop-filter-reset">
+            <i class="fas fa-rotate-left" aria-hidden="true"></i>
+            <span data-i18n="shop.clearAll">Clear all</span>
+          </button>
+          <button type="button" class="shop-apply-btn" id="shop-sidebar-apply" data-i18n="shop.viewResults">View results</button>
+        </div>
+      </aside>
+      <div class="shop-sidebar-backdrop" id="shop-sidebar-backdrop"></div>
+
+      <!-- Results -->
+      <section class="shop-results">
+        <div class="shop-toolbar">
+          <button type="button" class="shop-filter-open" id="shop-filter-open" aria-expanded="false" aria-controls="shop-sidebar">
+            <i class="fas fa-sliders" aria-hidden="true"></i>
+            <span data-i18n="shop.filters">Filters</span>
+          </button>
+
+          <div class="search-autocomplete-wrapper shop-search">
+            <i class="fas fa-search shop-search-icon" aria-hidden="true"></i>
+            <input id="search-products" type="search" autocomplete="off"
+                   data-i18n-placeholder="shop.searchPlaceholder"
+                   placeholder="Search shoes, categories..." />
+            <div class="search-autocomplete" id="search-autocomplete"></div>
+          </div>
+
+          <div class="shop-toolbar-controls">
+            <label class="shop-per-page">
+              <span data-i18n="shop.show">Show</span>
+              <select id="per-page-select" aria-label="Products per page"></select>
+            </label>
+            <select id="sort-filter" aria-label="Sort products">
+              <option value="newest" data-i18n="shop.sortNewest">Newest first</option>
+              <option value="price-asc" data-i18n="shop.sortPriceAsc">Price: low to high</option>
+              <option value="price-desc" data-i18n="shop.sortPriceDesc">Price: high to low</option>
+              <option value="rating" data-i18n="shop.sortRating">Best rated</option>
+              <option value="name-asc" data-i18n="shop.sortName">Name: A&ndash;Z</option>
+              <option value="discount" data-i18n="shop.sortDiscount">Biggest discount</option>
+            </select>
+            <div class="shop-view-toggle" id="shop-view-toggle" role="group" aria-label="View mode">
+              <button type="button" data-view="grid" class="active" title="Grid view" data-i18n-title="shop.gridView" data-i18n-aria-label="shop.gridView">
+                <i class="fas fa-th" aria-hidden="true"></i>
+              </button>
+              <button type="button" data-view="list" title="List view" data-i18n-title="shop.listView" data-i18n-aria-label="shop.listView">
+                <i class="fas fa-list" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="shop-notice" id="shop-notice" style="display: none;"></div>
+
+        <div class="shop-results-head">
+          <p class="product-status" id="product-status" role="status" aria-live="polite"></p>
+          <div class="active-filters" id="active-filters"></div>
+        </div>
+
+        <div class="product-grid shop-grid" id="product-grid"></div>
+
+        <nav class="shop-pagination" id="shop-pagination" aria-label="Product pages"></nav>
+      </section>
     </div>
-    <div class="product-grid" id="product-grid"></div>
   </main>
 
   <footer class="site-footer">
@@ -170,8 +280,7 @@
     <script src="js/wishlist.js" defer></script>
     <script src="js/ui.js" defer></script>
     <script src="js/products.js" defer></script>
+    <script src="js/shop.js" defer></script>
     <script src="js/main.js" defer></script>
 </body>
 </html>
-
-
