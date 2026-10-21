@@ -16,7 +16,8 @@
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Admin dashboard for managing products, orders, users, and analytics." />
-  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#12241b" />
   <link rel="icon" type="image/png" href="/logo.png" />
   <link rel="apple-touch-icon" href="/icon-192.png" />
   <title>PAP-JOY | Admin Dashboard</title>
@@ -27,23 +28,24 @@
     }
   </script>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="css/admin.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="preconnect" href="https://papjoy-project.onrender.com" />
   <link rel="manifest" href="/manifest.json" />
-  
+
   <meta property="og:title" content="PAP-JOY | Admin Dashboard" />
   <meta property="og:description" content="Admin dashboard for managing products, orders, users, and analytics." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="PAP-JOY" />
   <meta property="og:image" content="https://papjoy.com/logo.png" />
   <meta name="twitter:card" content="summary_large_image" />
-  
+
   <script>
   (function(){
-    var V='papjoy-v40',K='papjoy-sw-version';
+    var V='papjoy-v41',K='papjoy-sw-version';
     try{
       if('serviceWorker'in navigator&&navigator.serviceWorker.controller){
         if(localStorage.getItem(K)!==V){
@@ -61,579 +63,810 @@
   </script>
 </head>
 <body>
-  <div class="admin-mobile-header" id="admin-mobile-header">
-    <button class="admin-hamburger" id="admin-hamburger" onclick="toggleAdminSidebar()">
-      <i class="fas fa-bars"></i>
-    </button>
-    <span class="admin-mobile-title">PAP-JOY Admin</span>
-    <a href="index.html" class="admin-mobile-store" title="Back to store homepage"><i class="fas fa-store"></i></a>
-  </div>
-  <div class="admin-container">
-    <!-- Sidebar Navigation -->
-    <aside class="admin-sidebar">
-      <div class="admin-logo">
-        <h2>PAP-JOY Admin</h2>
+  <a class="adm-skip-link" href="#adm-main">Skip to main content</a>
+
+  <div class="admin-container" id="admin-container">
+    <!-- ================= Sidebar ================= -->
+    <aside class="admin-sidebar" id="admin-sidebar" aria-label="Admin navigation">
+      <div class="adm-brand">
+        <div class="adm-brand__mark" aria-hidden="true"><i class="fas fa-gem"></i></div>
+        <div class="adm-brand__text">
+          <strong>PAP-JOY</strong>
+          <span>Seller Console</span>
+        </div>
       </div>
-      <nav class="admin-nav">
-        <button class="admin-nav-item active" data-page="dashboard">
-          📊 Dashboard
-        </button>
-        <button class="admin-nav-item" data-page="products">
-          📦 Products
-        </button>
-        <button class="admin-nav-item" data-page="orders">
-          📋 Orders
-        </button>
-        <button class="admin-nav-item" data-page="users">
-          👥 Users
-        </button>
-        <button class="admin-nav-item" data-page="analytics">
-          📈 Analytics
-        </button>
-        <button class="admin-nav-item" data-page="categories">
-          🏷️ Categories
-        </button>
-        <a href="index.html" class="admin-nav-item admin-store-link" title="Back to store homepage">
-          🌐 View Store
-        </a>
+
+      <nav class="adm-nav" aria-label="Admin sections">
+        <div class="adm-nav__group">
+          <p class="adm-nav__label">Overview</p>
+          <button type="button" class="admin-nav-item active" data-page="dashboard" aria-current="page">
+            <i class="fas fa-chart-pie" aria-hidden="true"></i><span>Dashboard</span>
+          </button>
+          <button type="button" class="admin-nav-item" data-page="analytics">
+            <i class="fas fa-chart-line" aria-hidden="true"></i><span>Analytics</span>
+          </button>
+        </div>
+
+        <div class="adm-nav__group">
+          <p class="adm-nav__label">Catalogue</p>
+          <button type="button" class="admin-nav-item" data-page="products">
+            <i class="fas fa-box-open" aria-hidden="true"></i><span>Products</span><span class="adm-nav__count" id="nav-product-count"></span>
+          </button>
+          <button type="button" class="admin-nav-item" data-page="categories">
+            <i class="fas fa-tags" aria-hidden="true"></i><span>Categories</span>
+          </button>
+        </div>
+
+        <div class="adm-nav__group">
+          <p class="adm-nav__label">Sales</p>
+          <button type="button" class="admin-nav-item" data-page="orders">
+            <i class="fas fa-receipt" aria-hidden="true"></i><span>Orders</span><span class="adm-nav__count" id="nav-order-count"></span>
+          </button>
+        </div>
+
+        <div class="adm-nav__group">
+          <p class="adm-nav__label">Customers</p>
+          <button type="button" class="admin-nav-item" data-page="users">
+            <i class="fas fa-users" aria-hidden="true"></i><span>Users</span>
+          </button>
+        </div>
       </nav>
-      <div class="admin-user-info">
-        <div id="admin-user-name">Admin</div>
-        <div class="admin-user-actions">
-          <a href="index.html" class="btn-store" title="Back to store homepage"><i class="fas fa-store"></i></a>
-          <button class="btn-logout" onclick="logoutAdmin()">Logout</button>
+
+      <div class="adm-sidebar__foot">
+        <div class="adm-user-card">
+          <span class="adm-avatar" id="admin-user-avatar" aria-hidden="true">A</span>
+          <div class="adm-user-card__meta">
+            <strong id="admin-user-name">Admin</strong>
+            <span id="admin-user-role">Administrator</span>
+          </div>
+          <div class="admin-user-actions">
+            <a href="index.html" class="btn-store" title="Back to store homepage" aria-label="Back to store homepage"><i class="fas fa-store" aria-hidden="true"></i></a>
+            <button type="button" class="btn-logout" onclick="logoutAdmin()" title="Sign out" aria-label="Sign out"><i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i></button>
+          </div>
         </div>
       </div>
     </aside>
+    <div id="admin-sidebar-overlay" class="admin-sidebar-overlay" onclick="closeAdminSidebar()" aria-hidden="true"></div>
 
-    <!-- Main Content Area -->
-    <main class="admin-main">
-      <!-- Dashboard Page -->
-      <section id="dashboard-page" class="admin-page active">
-        <h1>Dashboard</h1>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon">💰</div>
-            <div class="stat-content">
-              <div class="stat-label">Total Revenue</div>
-              <div class="stat-value" id="stat-revenue">₹0</div>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">📦</div>
-            <div class="stat-content">
-              <div class="stat-label">Total Orders</div>
-              <div class="stat-value" id="stat-orders">0</div>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">🛍️</div>
-            <div class="stat-content">
-              <div class="stat-label">Total Products</div>
-              <div class="stat-value" id="stat-products">0</div>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">👥</div>
-            <div class="stat-content">
-              <div class="stat-label">Total Users</div>
-              <div class="stat-value" id="stat-users">0</div>
+    <!-- ================= Workspace ================= -->
+    <main class="admin-main" id="adm-main">
+      <header class="adm-topbar">
+        <button type="button" class="adm-topbar__toggle" id="adm-sidebar-toggle" aria-label="Collapse sidebar" aria-expanded="true" aria-controls="admin-sidebar">
+          <i class="fas fa-bars" aria-hidden="true"></i>
+        </button>
+
+        <div class="adm-search">
+          <i class="fas fa-search" aria-hidden="true"></i>
+          <label class="sr-only" for="adm-global-search">Search the admin console</label>
+          <input type="search" id="adm-global-search" placeholder="Search orders, products, customers…" autocomplete="off" />
+        </div>
+
+        <div class="adm-topbar__actions">
+          <a class="adm-btn adm-btn--ghost adm-btn--sm" href="index.html"><i class="fas fa-store" aria-hidden="true"></i> View store</a>
+          <button type="button" class="adm-icon-btn" id="adm-theme-toggle" title="Toggle colour theme" aria-label="Toggle colour theme">
+            <i class="fas fa-moon" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="adm-icon-btn" id="adm-notif-btn" title="Pending orders" aria-label="Pending orders">
+            <i class="fas fa-bell" aria-hidden="true"></i>
+            <span class="adm-icon-btn__dot" id="adm-notif-count" hidden>0</span>
+          </button>
+
+          <div class="adm-profile">
+            <button type="button" class="adm-profile__btn" id="adm-profile-btn" aria-haspopup="true" aria-expanded="false" aria-controls="adm-profile-menu">
+              <span class="adm-avatar adm-avatar--sm" id="admin-user-avatar-top" aria-hidden="true">A</span>
+              <span id="admin-user-name-top">Admin</span>
+              <i class="fas fa-chevron-down" aria-hidden="true"></i>
+            </button>
+            <div class="adm-menu" id="adm-profile-menu" role="menu">
+              <div class="adm-menu__head">
+                <strong id="adm-profile-name">Admin</strong>
+                <span id="adm-profile-email">admin@papjoy.com</span>
+              </div>
+              <a href="index.html" role="menuitem"><i class="fas fa-store" aria-hidden="true"></i> View storefront</a>
+              <a href="product-edit.html" role="menuitem"><i class="fas fa-plus" aria-hidden="true"></i> Add new product</a>
+              <button type="button" role="menuitem" onclick="toggleAdminTheme()"><i class="fas fa-circle-half-stroke" aria-hidden="true"></i> Switch theme</button>
+              <button type="button" role="menuitem" onclick="logoutAdmin()"><i class="fas fa-arrow-right-from-bracket" aria-hidden="true"></i> Sign out</button>
             </div>
           </div>
         </div>
+      </header>
 
-        <!-- Recent Orders -->
-        <section class="dashboard-section">
-          <h2>Recent Orders</h2>
-          <div class="orders-table-container">
+      <div class="adm-content">
+        <!-- ================= Dashboard ================= -->
+        <section id="dashboard-page" class="admin-page active" aria-labelledby="dashboard-heading">
+          <div class="adm-page-head">
+            <div class="adm-page-head__title">
+              <nav class="adm-crumbs" aria-label="Breadcrumb">
+                <span>Admin</span><i class="fas fa-chevron-right" aria-hidden="true"></i><span>Dashboard</span>
+              </nav>
+              <h1 id="dashboard-heading">Dashboard</h1>
+              <p id="dash-greeting">Store performance at a glance</p>
+            </div>
+            <div class="adm-page-head__actions">
+              <button type="button" class="adm-btn adm-btn--ghost" onclick="refreshAdminData()"><i class="fas fa-rotate" aria-hidden="true"></i> Refresh</button>
+              <a class="adm-btn adm-btn--primary" href="product-edit.html"><i class="fas fa-plus" aria-hidden="true"></i> Add product</a>
+            </div>
+          </div>
+
+          <div class="adm-grid adm-grid--kpi">
+            <article class="adm-kpi adm-kpi--ok">
+              <div class="adm-kpi__top">
+                <span class="adm-kpi__label">Total revenue</span>
+                <span class="adm-kpi__icon" aria-hidden="true"><i class="fas fa-indian-rupee-sign"></i></span>
+              </div>
+              <div class="adm-kpi__value" id="stat-revenue">₹0</div>
+              <div class="adm-kpi__meta"><span id="stat-revenue-meta">Paid orders only</span></div>
+            </article>
+
+            <article class="adm-kpi adm-kpi--info">
+              <div class="adm-kpi__top">
+                <span class="adm-kpi__label">Total orders</span>
+                <span class="adm-kpi__icon" aria-hidden="true"><i class="fas fa-receipt"></i></span>
+              </div>
+              <div class="adm-kpi__value" id="stat-orders">0</div>
+              <div class="adm-kpi__meta"><span id="stat-orders-meta">All time</span></div>
+            </article>
+
+            <article class="adm-kpi adm-kpi--violet">
+              <div class="adm-kpi__top">
+                <span class="adm-kpi__label">Catalogue</span>
+                <span class="adm-kpi__icon" aria-hidden="true"><i class="fas fa-box-open"></i></span>
+              </div>
+              <div class="adm-kpi__value" id="stat-products">0</div>
+              <div class="adm-kpi__meta"><span id="stat-products-meta">Products listed</span></div>
+            </article>
+
+            <article class="adm-kpi">
+              <div class="adm-kpi__top">
+                <span class="adm-kpi__label">Customers</span>
+                <span class="adm-kpi__icon" aria-hidden="true"><i class="fas fa-users"></i></span>
+              </div>
+              <div class="adm-kpi__value" id="stat-users">0</div>
+              <div class="adm-kpi__meta"><span id="stat-users-meta">Registered accounts</span></div>
+            </article>
+          </div>
+
+          <div class="adm-mini-stats" style="margin-top:16px;">
+            <div class="adm-mini-stat">
+              <span>Average order value</span>
+              <strong id="stat-aov">₹0</strong>
+            </div>
+            <div class="adm-mini-stat">
+              <span>Revenue awaiting payment</span>
+              <strong id="stat-pending">₹0</strong>
+            </div>
+            <div class="adm-mini-stat">
+              <span>Refunds</span>
+              <strong id="stat-refunds">₹0</strong>
+            </div>
+            <div class="adm-mini-stat">
+              <span>GST collected</span>
+              <strong id="stat-gst">₹0</strong>
+            </div>
+          </div>
+
+          <div class="adm-grid adm-grid--2-1" style="margin-top:16px;">
+            <section class="adm-panel">
+              <div class="adm-panel__head">
+                <div>
+                  <h2>Revenue trend</h2>
+                  <p>Paid revenue over the last 30 days</p>
+                </div>
+                <span class="adm-pill adm-pill--ok adm-pill--plain" id="dash-chart-total">₹0</span>
+              </div>
+              <div class="adm-panel__body">
+                <div class="adm-chart-wrap" id="dash-revenue-chart" aria-live="polite">
+                  <p class="adm-empty"><span>Loading chart data…</span></p>
+                </div>
+              </div>
+            </section>
+
+            <section class="adm-panel">
+              <div class="adm-panel__head">
+                <div>
+                  <h2>Order status</h2>
+                  <p>Live pipeline breakdown</p>
+                </div>
+              </div>
+              <div class="adm-panel__body">
+                <div class="adm-status-list" id="order-status-dist">
+                  <p class="adm-empty"><span>Loading…</span></p>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div class="adm-grid adm-grid--2-1" style="margin-top:16px;">
+            <section class="adm-panel">
+              <div class="adm-panel__head">
+                <div>
+                  <h2>Recent orders</h2>
+                  <p>Latest 10 orders placed in the store</p>
+                </div>
+                <button type="button" class="adm-btn adm-btn--ghost adm-btn--sm" data-goto-page="orders">View all</button>
+              </div>
+              <div class="adm-panel__body adm-panel__body--flush">
+                <div class="adm-table-wrap" style="border:0;border-radius:0;box-shadow:none;">
+                  <table class="admin-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Order</th>
+                        <th scope="col">Customer</th>
+                        <th scope="col">Total</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Date</th>
+                        <th scope="col"><span class="sr-only">Actions</span></th>
+                      </tr>
+                    </thead>
+                    <tbody id="recent-orders-list">
+                      <tr><td colspan="6" class="text-center">Loading…</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            <section class="adm-panel">
+              <div class="adm-panel__head">
+                <div>
+                  <h2>Quick actions</h2>
+                  <p>Jump straight to common tasks</p>
+                </div>
+              </div>
+              <div class="adm-panel__body">
+                <div class="adm-quick-actions">
+                  <a class="adm-quick-action" href="product-edit.html">
+                    <i class="fas fa-plus" aria-hidden="true"></i>
+                    <span>Add product<small>Create a new product listing</small></span>
+                  </a>
+                  <button type="button" class="adm-quick-action" data-goto-page="orders">
+                    <i class="fas fa-truck" aria-hidden="true"></i>
+                    <span>Process orders<small>Review and fulfil pending orders</small></span>
+                  </button>
+                  <button type="button" class="adm-quick-action" data-goto-page="categories">
+                    <i class="fas fa-tags" aria-hidden="true"></i>
+                    <span>Manage categories<small>Organise your catalogue structure</small></span>
+                  </button>
+                  <button type="button" class="adm-quick-action" data-goto-page="analytics">
+                    <i class="fas fa-chart-line" aria-hidden="true"></i>
+                    <span>View analytics<small>Revenue, top products and category sales</small></span>
+                  </button>
+                </div>
+
+                <div style="margin-top:18px;">
+                  <h3 style="margin:0 0 8px;font-size:0.8rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--adm-ink-3);">Latest activity</h3>
+                  <div class="adm-feed" id="dash-feed">
+                    <p class="adm-empty"><span>Loading…</span></p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- ================= Products ================= -->
+        <section id="products-page" class="admin-page" aria-labelledby="products-heading">
+          <div class="adm-page-head">
+            <div class="adm-page-head__title">
+              <nav class="adm-crumbs" aria-label="Breadcrumb">
+                <span>Admin</span><i class="fas fa-chevron-right" aria-hidden="true"></i><span>Catalogue</span><i class="fas fa-chevron-right" aria-hidden="true"></i><span>Products</span>
+              </nav>
+              <h1 id="products-heading">Products</h1>
+              <p>Manage your live catalogue, pricing and stock</p>
+            </div>
+            <div class="adm-page-head__actions">
+              <a class="adm-btn adm-btn--primary" href="product-edit.html"><i class="fas fa-plus" aria-hidden="true"></i> Add product</a>
+            </div>
+          </div>
+
+          <div class="adm-toolbar">
+            <div class="adm-toolbar__search">
+              <i class="fas fa-search" aria-hidden="true"></i>
+              <label class="sr-only" for="product-search">Search products</label>
+              <input type="search" id="product-search" placeholder="Search by name, SKU or slug…" autocomplete="off" oninput="adminDebounce('products', () => loadAdminProducts())" />
+            </div>
+            <label class="sr-only" for="product-status">Filter by status</label>
+            <select id="product-status" onchange="loadAdminProducts()">
+              <option value="all">All status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            <span class="adm-toolbar__count" id="products-count"></span>
+          </div>
+
+          <div class="adm-table-wrap">
             <table class="admin-table">
               <thead>
                 <tr>
-                  <th>Order ID</th>
-                  <th>Customer</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                  <th>Action</th>
+                  <th scope="col">Product</th>
+                  <th scope="col">SKU</th>
+                  <th scope="col">Price</th>
+                  <th scope="col">Stock</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="admin-table__actions"><span class="sr-only">Actions</span></th>
                 </tr>
               </thead>
-              <tbody id="recent-orders-list">
-                <tr><td colspan="6" class="text-center">Loading...</td></tr>
+              <tbody id="products-list">
+                <tr><td colspan="6" class="text-center">Loading products…</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="admin-pagination" id="products-pagination"></div>
+        </section>
+
+        <!-- ================= Orders ================= -->
+        <section id="orders-page" class="admin-page" aria-labelledby="orders-heading">
+          <div class="adm-page-head">
+            <div class="adm-page-head__title">
+              <nav class="adm-crumbs" aria-label="Breadcrumb">
+                <span>Admin</span><i class="fas fa-chevron-right" aria-hidden="true"></i><span>Sales</span><i class="fas fa-chevron-right" aria-hidden="true"></i><span>Orders</span>
+              </nav>
+              <h1 id="orders-heading">Orders</h1>
+              <p>Track fulfilment, payments and shipping</p>
+            </div>
+          </div>
+
+          <div class="adm-toolbar">
+            <div class="adm-toolbar__search">
+              <i class="fas fa-search" aria-hidden="true"></i>
+              <label class="sr-only" for="order-search">Search orders</label>
+              <input type="search" id="order-search" placeholder="Search by order number or customer…" autocomplete="off" oninput="adminDebounce('orders', () => loadAdminOrders())" />
+            </div>
+            <label class="sr-only" for="order-status-filter">Filter by order status</label>
+            <select id="order-status-filter" onchange="loadAdminOrders()">
+              <option value="all">All status</option>
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="processing">Processing</option>
+              <option value="packed">Packed</option>
+              <option value="shipped">Shipped</option>
+              <option value="out_for_delivery">Out for delivery</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="returned">Returned</option>
+              <option value="refunded">Refunded</option>
+            </select>
+            <label class="sr-only" for="order-sort">Sort orders</label>
+            <select id="order-sort" onchange="loadAdminOrders()">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="highest-value">Highest value</option>
+              <option value="lowest-value">Lowest value</option>
+            </select>
+            <span class="adm-toolbar__count" id="orders-count"></span>
+          </div>
+
+          <div class="adm-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th scope="col">Order</th>
+                  <th scope="col">Customer</th>
+                  <th scope="col">Items</th>
+                  <th scope="col">Total</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Payment</th>
+                  <th scope="col">Placed</th>
+                  <th scope="col" class="admin-table__actions"><span class="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody id="orders-list">
+                <tr><td colspan="8" class="text-center">Loading orders…</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="admin-pagination" id="orders-pagination"></div>
+        </section>
+
+        <!-- ================= Users ================= -->
+        <section id="users-page" class="admin-page" aria-labelledby="users-heading">
+          <div class="adm-page-head">
+            <div class="adm-page-head__title">
+              <nav class="adm-crumbs" aria-label="Breadcrumb">
+                <span>Admin</span><i class="fas fa-chevron-right" aria-hidden="true"></i><span>Customers</span><i class="fas fa-chevron-right" aria-hidden="true"></i><span>Users</span>
+              </nav>
+              <h1 id="users-heading">Users</h1>
+              <p>Customer accounts, roles and access</p>
+            </div>
+          </div>
+
+          <div class="adm-toolbar">
+            <div class="adm-toolbar__search">
+              <i class="fas fa-search" aria-hidden="true"></i>
+              <label class="sr-only" for="user-search">Search users</label>
+              <input type="search" id="user-search" placeholder="Search by name or email…" autocomplete="off" oninput="adminDebounce('users', () => loadAdminUsers())" />
+            </div>
+            <label class="sr-only" for="user-role-filter">Filter by role</label>
+            <select id="user-role-filter" onchange="loadAdminUsers()">
+              <option value="all">All roles</option>
+              <option value="customer">Customers</option>
+              <option value="admin">Admins</option>
+            </select>
+            <span class="adm-toolbar__count" id="users-count"></span>
+          </div>
+
+          <div class="adm-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th scope="col">Customer</th>
+                  <th scope="col">Email</th>
+                  <th scope="col">Role</th>
+                  <th scope="col">Joined</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="admin-table__actions"><span class="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody id="users-list">
+                <tr><td colspan="6" class="text-center">Loading users…</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="admin-pagination" id="users-pagination"></div>
+        </section>
+
+        <!-- ================= Analytics ================= -->
+        <section id="analytics-page" class="admin-page" aria-labelledby="analytics-heading">
+          <div class="adm-page-head">
+            <div class="adm-page-head__title">
+              <nav class="adm-crumbs" aria-label="Breadcrumb">
+                <span>Admin</span><i class="fas fa-chevron-right" aria-hidden="true"></i><span>Overview</span><i class="fas fa-chevron-right" aria-hidden="true"></i><span>Analytics</span>
+              </nav>
+              <h1 id="analytics-heading">Analytics</h1>
+              <p>Revenue, best sellers and sales mix</p>
+            </div>
+            <div class="adm-page-head__actions">
+              <label class="sr-only" for="analytics-range">Reporting period</label>
+              <select id="analytics-range" onchange="loadAnalytics()">
+                <option value="week">Last 7 days</option>
+                <option value="month" selected>Last 30 days</option>
+                <option value="year">Last 12 months</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="adm-grid adm-grid--2-1" style="margin-bottom:16px;">
+            <section class="adm-panel">
+              <div class="adm-panel__head">
+                <div>
+                  <h2>Revenue</h2>
+                  <p>Paid revenue for the selected period</p>
+                </div>
+                <span class="adm-pill adm-pill--ok adm-pill--plain" id="analytics-chart-total">₹0</span>
+              </div>
+              <div class="adm-panel__body">
+                <div class="adm-chart-wrap" id="revenue-chart" aria-live="polite">
+                  <p class="adm-empty"><span>Loading chart data…</span></p>
+                </div>
+              </div>
+            </section>
+
+            <section class="adm-panel">
+              <div class="adm-panel__head">
+                <div>
+                  <h2>Payment mix</h2>
+                  <p>Orders by payment method</p>
+                </div>
+              </div>
+              <div class="adm-panel__body">
+                <div class="adm-status-list" id="analytics-payments">
+                  <p class="adm-empty"><span>Loading…</span></p>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <section class="adm-panel dashboard-section" style="margin-bottom:16px;">
+            <div class="adm-panel__head">
+              <div>
+                <h2>Top selling products</h2>
+                <p>Best performers by units sold</p>
+              </div>
+            </div>
+            <div class="adm-panel__body adm-panel__body--flush">
+              <div class="adm-table-wrap" style="border:0;border-radius:0;box-shadow:none;">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">#</th>
+                      <th scope="col">Product</th>
+                      <th scope="col">Units sold</th>
+                      <th scope="col">Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody id="top-products-list">
+                    <tr><td colspan="4" class="text-center">Loading…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section class="adm-panel dashboard-section" style="margin-bottom:16px;">
+            <div class="adm-panel__head">
+              <div>
+                <h2>Sales by category</h2>
+                <p>Revenue contribution per category</p>
+              </div>
+            </div>
+            <div class="adm-panel__body adm-panel__body--flush">
+              <div class="adm-table-wrap" style="border:0;border-radius:0;box-shadow:none;">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Category</th>
+                      <th scope="col">Units sold</th>
+                      <th scope="col">Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody id="category-sales-list">
+                    <tr><td colspan="3" class="text-center">Loading…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <!-- ================= Categories ================= -->
+        <section id="categories-page" class="admin-page" aria-labelledby="categories-heading">
+          <div class="adm-page-head">
+            <div class="adm-page-head__title">
+              <nav class="adm-crumbs" aria-label="Breadcrumb">
+                <span>Admin</span><i class="fas fa-chevron-right" aria-hidden="true"></i><span>Catalogue</span><i class="fas fa-chevron-right" aria-hidden="true"></i><span>Categories</span>
+              </nav>
+              <h1 id="categories-heading">Categories</h1>
+              <p>Control how your catalogue is organised</p>
+            </div>
+            <div class="adm-page-head__actions">
+              <button type="button" class="adm-btn adm-btn--primary" onclick="showCategoryForm()"><i class="fas fa-plus" aria-hidden="true"></i> Add category</button>
+            </div>
+          </div>
+
+          <div class="adm-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th scope="col">Category</th>
+                  <th scope="col">Slug</th>
+                  <th scope="col">Sort order</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="admin-table__actions"><span class="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody id="categories-list">
+                <tr><td colspan="5" class="text-center">Loading categories…</td></tr>
               </tbody>
             </table>
           </div>
         </section>
-
-        <!-- Order Status Distribution -->
-        <section class="dashboard-section">
-          <h2>Order Status Distribution</h2>
-          <div class="status-distribution" id="order-status-dist">
-            <p class="text-center">Loading...</p>
-          </div>
-        </section>
-      </section>
-
-      <!-- Products Page -->
-      <section id="products-page" class="admin-page">
-        <div class="admin-header">
-          <h2>Products Management</h2>
-          <button class="btn btn-primary" onclick="window.location.href='product-edit.html'">➕ Add Product</button>
-        </div>
-
-        <!-- Search & Filters -->
-        <div class="admin-filters">
-          <input
-            type="text"
-            id="product-search"
-            placeholder="Search products..."
-            oninput="adminDebounce('products', () => loadAdminProducts())"
-          />
-          <select id="product-status" onchange="loadAdminProducts()">
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </div>
-
-        <!-- Products Table -->
-        <div class="admin-table-wrapper">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>Product Name</th>
-                <th>SKU</th>
-                <th>Price</th>
-                <th>Stock</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="products-list">
-              <tr><td colspan="6" class="text-center">Loading products...</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Pagination -->
-        <div class="admin-pagination" id="products-pagination"></div>
-      </section>
-
-      <!-- Orders Page -->
-      <section id="orders-page" class="admin-page">
-        <div class="admin-header">
-          <h2>Orders Management</h2>
-        </div>
-
-        <!-- Filters -->
-        <div class="admin-filters">
-          <input
-            type="text"
-            id="order-search"
-            placeholder="Search by order # or customer name..."
-            oninput="adminDebounce('orders', () => loadAdminOrders())"
-          />
-          <select id="order-status-filter" onchange="loadAdminOrders()">
-            <option value="all">All Orders</option>
-            <option value="pending">Pending</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="processing">Processing</option>
-            <option value="shipped">Shipped</option>
-            <option value="delivered">Delivered</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-          <select id="order-sort" onchange="loadAdminOrders()">
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-            <option value="highest-value">Highest Value</option>
-            <option value="lowest-value">Lowest Value</option>
-          </select>
-        </div>
-
-        <!-- Orders Table -->
-        <div class="admin-table-wrapper">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>Order #</th>
-                <th>Customer</th>
-                <th>Total</th>
-                <th>Status</th>
-                <th>Payment</th>
-                <th>Date</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="orders-list">
-              <tr><td colspan="7" class="text-center">Loading orders...</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Pagination -->
-        <div class="admin-pagination" id="orders-pagination"></div>
-      </section>
-
-      <!-- Users Page -->
-      <section id="users-page" class="admin-page">
-        <div class="admin-header">
-          <h2>Users Management</h2>
-        </div>
-
-        <!-- Search -->
-        <div class="admin-filters">
-          <input
-            type="text"
-            id="user-search"
-            placeholder="Search users by name or email..."
-            oninput="adminDebounce('users', () => loadAdminUsers())"
-          />
-          <select id="user-role-filter" onchange="loadAdminUsers()">
-            <option value="all">All Users</option>
-            <option value="customer">Customers</option>
-            <option value="admin">Admins</option>
-          </select>
-        </div>
-
-        <!-- Users Table -->
-        <div class="admin-table-wrapper">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Created</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="users-list">
-              <tr><td colspan="6" class="text-center">Loading users...</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Pagination -->
-        <div class="admin-pagination" id="users-pagination"></div>
-      </section>
-
-      <!-- Analytics Page -->
-      <section id="analytics-page" class="admin-page">
-        <h2>Analytics</h2>
-        
-        <!-- Revenue Chart -->
-        <section class="dashboard-section">
-          <h2>Revenue (Last 30 Days)</h2>
-          <div id="revenue-chart" class="chart-container">
-            <p class="text-center">Loading chart data...</p>
-          </div>
-        </section>
-
-        <!-- Top Products -->
-        <section class="dashboard-section">
-          <h2>Top Selling Products</h2>
-          <div class="admin-table-wrapper">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Units Sold</th>
-                  <th>Revenue</th>
-                </tr>
-              </thead>
-              <tbody id="top-products-list">
-                <tr><td colspan="3" class="text-center">Loading...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </section>
-
-      <!-- Categories Page -->
-      <section id="categories-page" class="admin-page">
-        <div class="admin-header">
-          <h2>Categories Management</h2>
-          <button class="btn btn-primary" onclick="showCategoryForm()">➕ Add Category</button>
-        </div>
-
-        <!-- Categories Table -->
-        <div class="admin-table-wrapper">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Slug</th>
-                <th>Status</th>
-                <th>Sort Order</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="categories-list">
-              <tr><td colspan="5" class="text-center">Loading categories...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+      </div>
     </main>
   </div>
 
-  <!-- Order Modal -->
-  <div id="order-modal" class="modal">
-    <div class="modal-content order-modal-content">
-      <span class="modal-close" onclick="closeOrderModal()">&times;</span>
-      <h2>Order Details</h2>
-      <div id="order-details"><p class="text-center">Loading order details...</p></div>
-      <div id="order-payment-collect" class="order-payment-collect" style="display:none;">
-        <h3 class="order-form-title">Collect Payment at Delivery</h3>
-        <p class="order-payment-hint">Generate a UPI QR for the delivery partner to show the customer. Once paid, mark the order as collected.</p>
-        <div class="order-payment-actions">
-          <button type="button" class="btn btn-primary" id="collect-qr-btn" onclick="generateCollectionQR()"><i class="fas fa-qrcode"></i> Generate UPI QR</button>
-          <button type="button" class="btn btn-success" id="mark-collected-btn" onclick="markOrderCollected()" style="display:none;"><i class="fas fa-check"></i> Mark as Paid</button>
+  <!-- ================= Order detail drawer ================= -->
+  <div id="order-modal" class="modal admin-drawer" role="dialog" aria-modal="true" aria-labelledby="order-drawer-title">
+    <div class="adm-drawer__panel">
+      <div class="adm-drawer__head">
+        <div>
+          <h2 id="order-drawer-title">Order details</h2>
+          <p id="order-drawer-sub">Review fulfilment, payments and shipping</p>
         </div>
-        <div id="collection-qr-display" style="display:none;">
-          <img id="collection-qr-image" alt="UPI payment QR" />
-          <p class="order-payment-hint">Ask the customer to scan this QR with any UPI app (GPay / PhonePe / Paytm). The payment will be tagged to the order number.</p>
-        </div>
-        <div id="collection-qr-message"></div>
+        <button type="button" class="adm-icon-btn" onclick="closeOrderModal()" aria-label="Close order details">
+          <i class="fas fa-xmark" aria-hidden="true"></i>
+        </button>
       </div>
-      <div id="order-shiprocket" class="order-payment-collect" style="display:none;">
-        <h3 class="order-form-title">Shiprocket Fulfillment</h3>
-        <p class="order-payment-hint">Send this order to Shiprocket to book a courier, print a label, and get live tracking.</p>
-        <div class="order-payment-actions">
-          <button type="button" class="btn btn-primary" id="shiprocket-ship-btn" onclick="shiprocketShipOrder()"><i class="fas fa-truck"></i> Ship to Shiprocket</button>
-          <button type="button" class="btn btn-primary" id="shiprocket-pickup-btn" onclick="shiprocketGeneratePickup()" style="display:none;"><i class="fas fa-warehouse"></i> Generate Pickup</button>
-          <button type="button" class="btn btn-primary" id="shiprocket-awb-btn" onclick="shiprocketAssignAWB()" style="display:none;"><i class="fas fa-barcode"></i> Assign AWB</button>
-          <button type="button" class="btn btn-primary" id="shiprocket-label-btn" onclick="shiprocketGenerateLabel()" style="display:none;"><i class="fas fa-print"></i> Generate Label</button>
-          <button type="button" class="btn btn-secondary" id="shiprocket-track-btn" onclick="shiprocketTrackOrder()" style="display:none;"><i class="fas fa-search"></i> Refresh Tracking</button>
-          <button type="button" class="btn btn-danger-outline" id="shiprocket-cancel-btn" onclick="shiprocketCancelOrder()" style="display:none;"><i class="fas fa-ban"></i> Cancel Order</button>
+
+      <div class="adm-drawer__body">
+        <div id="order-details"><p class="adm-empty"><span>Loading order details…</span></p></div>
+
+        <div id="order-payment-collect" class="order-payment-collect" style="display:none;">
+          <h3 class="order-form-title">Collect payment at delivery</h3>
+          <p class="order-payment-hint">Generate a UPI QR for the delivery partner to show the customer. Once paid, mark the order as collected.</p>
+          <div class="order-payment-actions">
+            <button type="button" class="btn btn-primary" id="collect-qr-btn" onclick="generateCollectionQR()"><i class="fas fa-qrcode" aria-hidden="true"></i> Generate UPI QR</button>
+            <button type="button" class="btn btn-success" id="mark-collected-btn" onclick="markOrderCollected()" style="display:none;"><i class="fas fa-check" aria-hidden="true"></i> Mark as paid</button>
+          </div>
+          <div id="collection-qr-display" style="display:none;">
+            <img id="collection-qr-image" alt="UPI payment QR code" />
+            <p class="order-payment-hint">Ask the customer to scan this QR with any UPI app (GPay / PhonePe / Paytm). The payment will be tagged to the order number.</p>
+          </div>
+          <div id="collection-qr-message"></div>
         </div>
-        <div id="shiprocket-status"></div>
+
+        <div id="order-shiprocket" class="order-payment-collect" style="display:none;">
+          <h3 class="order-form-title">Shiprocket fulfilment</h3>
+          <p class="order-payment-hint">Send this order to Shiprocket to book a courier, print a label and get live tracking.</p>
+          <div class="order-payment-actions">
+            <button type="button" class="btn btn-primary" id="shiprocket-ship-btn" onclick="shiprocketShipOrder()"><i class="fas fa-truck" aria-hidden="true"></i> Ship to Shiprocket</button>
+            <button type="button" class="btn btn-primary" id="shiprocket-pickup-btn" onclick="shiprocketGeneratePickup()" style="display:none;"><i class="fas fa-warehouse" aria-hidden="true"></i> Generate pickup</button>
+            <button type="button" class="btn btn-primary" id="shiprocket-awb-btn" onclick="shiprocketAssignAWB()" style="display:none;"><i class="fas fa-barcode" aria-hidden="true"></i> Assign AWB</button>
+            <button type="button" class="btn btn-primary" id="shiprocket-label-btn" onclick="shiprocketGenerateLabel()" style="display:none;"><i class="fas fa-print" aria-hidden="true"></i> Generate label</button>
+            <button type="button" class="btn btn-secondary" id="shiprocket-track-btn" onclick="shiprocketTrackOrder()" style="display:none;"><i class="fas fa-search" aria-hidden="true"></i> Refresh tracking</button>
+            <button type="button" class="btn btn-danger-outline" id="shiprocket-cancel-btn" onclick="shiprocketCancelOrder()" style="display:none;"><i class="fas fa-ban" aria-hidden="true"></i> Cancel order</button>
+          </div>
+          <div id="shiprocket-status"></div>
+        </div>
       </div>
-      <form id="order-form" onsubmit="updateOrderStatus(event)">
-        <h3 class="order-form-title">Update Order Status</h3>
-        <input type="hidden" id="order-id" />
-        <div class="form-group">
-          <label>Order Status *</label>
-          <select id="order-status-update" required>
-            <option value="pending">Pending</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="processing">Processing</option>
-            <option value="packed">Packed</option>
-            <option value="shipped">Shipped</option>
-            <option value="out_for_delivery">Out for Delivery</option>
-            <option value="delivered">Delivered</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="returned">Returned</option>
-            <option value="refunded">Refunded</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Tracking Number</label>
-          <input type="text" id="order-tracking-number" />
-        </div>
-        <div class="form-group">
-          <label>Carrier</label>
-          <input type="text" id="order-carrier" />
-        </div>
-        <div class="form-group">
-          <label>Tracking URL</label>
-          <input type="url" id="order-tracking-url" />
-        </div>
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary">Update Order</button>
-          <button type="button" class="btn btn-secondary" onclick="closeOrderModal()">Cancel</button>
-        </div>
-      </form>
+
+      <div class="adm-drawer__foot">
+        <form id="order-form" onsubmit="updateOrderStatus(event)">
+          <h3 class="order-form-title">Update order status</h3>
+          <input type="hidden" id="order-id" />
+          <div class="form-row">
+            <div class="form-group">
+              <label for="order-status-update">Order status</label>
+              <select id="order-status-update" required>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="processing">Processing</option>
+                <option value="packed">Packed</option>
+                <option value="shipped">Shipped</option>
+                <option value="out_for_delivery">Out for delivery</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="returned">Returned</option>
+                <option value="refunded">Refunded</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="order-tracking-number">Tracking number</label>
+              <input type="text" id="order-tracking-number" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="order-carrier">Carrier</label>
+              <input type="text" id="order-carrier" />
+            </div>
+            <div class="form-group">
+              <label for="order-tracking-url">Tracking URL</label>
+              <input type="url" id="order-tracking-url" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-check" aria-hidden="true"></i> Update order</button>
+            <button type="button" class="btn btn-secondary" onclick="closeOrderModal()">Cancel</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
-  <!-- Sidebar Overlay (mobile) -->
-  <div id="admin-sidebar-overlay" class="admin-sidebar-overlay" onclick="closeAdminSidebar()"></div>
-
-  <!-- Product Modal -->
-  <div id="product-modal" class="modal">
+  <!-- ================= Product modal ================= -->
+  <div id="product-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="product-modal-title">
     <div class="modal-content">
-      <span class="modal-close" onclick="closeProductModal()">&times;</span>
-      <h2>Product Form</h2>
+      <span class="modal-close" onclick="closeProductModal()" role="button" tabindex="0" aria-label="Close product form">&times;</span>
+      <h2 id="product-modal-title">Product details</h2>
       <form id="product-form" onsubmit="saveProduct(event)">
         <input type="hidden" id="product-id" />
         <div class="form-group">
-          <label>Product Name *</label>
+          <label for="product-name">Product name *</label>
           <input type="text" id="product-name" required />
         </div>
         <div class="form-group">
-          <label>Slug</label>
+          <label for="product-slug">Slug</label>
           <input type="text" id="product-slug" />
         </div>
         <div class="form-group">
-          <label>Description</label>
+          <label for="product-description">Description</label>
           <textarea id="product-description"></textarea>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Price *</label>
+            <label for="product-price">Price *</label>
             <input type="number" id="product-price" min="0" step="0.01" required />
           </div>
           <div class="form-group">
-            <label>Stock</label>
+            <label for="product-stock">Stock</label>
             <input type="number" id="product-stock" min="0" />
           </div>
           <div class="form-group">
-            <label>Shipping Charge (₹)</label>
+            <label for="product-shipping">Shipping charge (₹)</label>
             <input type="number" id="product-shipping" min="0" step="0.01" />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Weight (kg)</label>
+            <label for="product-weight">Weight (kg)</label>
             <input type="number" id="product-weight" min="0" step="0.01" />
           </div>
           <div class="form-group">
-            <label>Length (cm)</label>
+            <label for="product-length">Length (cm)</label>
             <input type="number" id="product-length" min="0" step="0.01" />
           </div>
           <div class="form-group">
-            <label>Breadth (cm)</label>
+            <label for="product-breadth">Breadth (cm)</label>
             <input type="number" id="product-breadth" min="0" step="0.01" />
           </div>
           <div class="form-group">
-            <label>Height (cm)</label>
+            <label for="product-height">Height (cm)</label>
             <input type="number" id="product-height" min="0" step="0.01" />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>SKU</label>
+            <label for="product-sku">SKU</label>
             <input type="text" id="product-sku" />
           </div>
           <div class="form-group">
-            <label>Brand</label>
+            <label for="product-brand">Brand</label>
             <input type="text" id="product-brand" />
           </div>
         </div>
         <div class="form-group">
-          <label>Category</label>
+          <label for="product-category">Category</label>
           <select id="product-category"></select>
         </div>
         <div class="form-group">
-          <label>Image URL</label>
-          <input type="url" id="product-image-url" placeholder="https://..." />
+          <label for="product-image-url">Image URL</label>
+          <input type="url" id="product-image-url" placeholder="https://…" />
         </div>
         <div class="form-group">
-          <label>
+          <label for="product-active">
             <input type="checkbox" id="product-active" checked />
             Active
           </label>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn btn-primary">Save Product</button>
+          <button type="submit" class="btn btn-primary">Save product</button>
           <button type="button" class="btn btn-secondary" onclick="closeProductModal()">Cancel</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Category Modal -->
-  <div id="category-modal" class="modal">
+  <!-- ================= Category modal ================= -->
+  <div id="category-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="category-modal-title">
     <div class="modal-content">
-      <span class="modal-close" onclick="closeCategoryModal()">&times;</span>
-      <h2>Category Form</h2>
+      <span class="modal-close" onclick="closeCategoryModal()" role="button" tabindex="0" aria-label="Close category form">&times;</span>
+      <h2 id="category-modal-title">Category details</h2>
       <form id="category-form" onsubmit="saveCategory(event)">
         <input type="hidden" id="category-id" />
         <div class="form-group">
-          <label>Category Name *</label>
+          <label for="category-name">Category name *</label>
           <input type="text" id="category-name" required />
         </div>
         <div class="form-group">
-          <label>Slug *</label>
+          <label for="category-slug">Slug *</label>
           <input type="text" id="category-slug" required />
         </div>
         <div class="form-group">
-          <label>Description</label>
+          <label for="category-description">Description</label>
           <textarea id="category-description"></textarea>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Sort Order</label>
+            <label for="category-sort-order">Sort order</label>
             <input type="number" id="category-sort-order" min="0" />
           </div>
           <div class="form-group">
-            <label>
+            <label for="category-active">
               <input type="checkbox" id="category-active" checked />
               Active
             </label>
           </div>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn btn-primary">Save Category</button>
+          <button type="submit" class="btn btn-primary">Save category</button>
           <button type="button" class="btn btn-secondary" onclick="closeCategoryModal()">Cancel</button>
         </div>
       </form>
     </div>
   </div>
-  <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      const user = getCurrentUser();
-      if (!user || !user.token) {
-        window.location.href = 'signin.html';
-        return;
-      }
 
-      if (user.role !== 'admin' && user.role !== 'super_admin') {
-        window.location.href = 'signin.html';
-        return;
-      }
-
-      document.getElementById('admin-user-name').textContent = user.name || 'Admin';
-      
-      loadAdminDashboard();
-
-      document.querySelectorAll('.admin-nav-item').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('.admin-nav-item').forEach(b => b.classList.remove('active'));
-          document.querySelectorAll('.admin-page').forEach(p => p.classList.remove('active'));
-          
-          btn.classList.add('active');
-          const page = btn.dataset.page;
-          document.getElementById(`${page}-page`).classList.add('active');
-
-          const sidebar = document.querySelector('.admin-sidebar');
-          const overlay = document.getElementById('admin-sidebar-overlay');
-          if (sidebar) sidebar.classList.remove('mobile-open');
-          if (overlay) overlay.classList.remove('active');
-
-          if (page === 'dashboard') loadAdminDashboard();
-          else if (page === 'products') loadAdminProducts();
-          else if (page === 'orders') loadAdminOrders();
-          else if (page === 'users') loadAdminUsers();
-          else if (page === 'analytics') loadAnalytics();
-          else if (page === 'categories') loadAdminCategories();
-        });
-      });
-    });
-
-    function logoutAdmin() {
-      if (typeof signOut === 'function') {
-        signOut();
-      } else {
-        localStorage.removeItem('papjoy-user');
-        localStorage.removeItem('papjoy-token');
-        localStorage.removeItem('papjoy-refresh-token');
-        sessionStorage.removeItem('papjoy-user');
-        sessionStorage.removeItem('papjoy-token');
-        sessionStorage.removeItem('papjoy-refresh-token');
-        window.location.href = 'signin.html';
-      }
-    }
-  </script>
-    <script src="js/config.js" defer></script>
-    <script src="js/helpers.js" defer></script>
-    <script src="js/storage.js" defer></script>
-    <script src="js/i18n.js" defer></script>
-    <script src="js/api.js" defer></script>
-    <script src="js/auth.js" defer></script>
-    <script src="js/ui.js" defer></script>
-    <script src="js/admin.js" defer></script>
-    <script src="js/main.js" defer></script>
+  <script src="js/config.js" defer></script>
+  <script src="js/helpers.js" defer></script>
+  <script src="js/storage.js" defer></script>
+  <script src="js/i18n.js" defer></script>
+  <script src="js/api.js" defer></script>
+  <script src="js/auth.js" defer></script>
+  <script src="js/ui.js" defer></script>
+  <script src="js/admin.js" defer></script>
+  <script>window.__papjoyAdminConsole = true;</script>
+  <script src="js/main.js" defer></script>
 </body>
 </html>
