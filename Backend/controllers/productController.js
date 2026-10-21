@@ -5,23 +5,61 @@ function escapeRegex(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function parseLimit(value, fallback = 20, max = 200) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return Math.min(Math.floor(parsed), max);
+}
+
+/**
+ * Resolve the `category` query parameter to Category document ids.
+ *
+ * The catalogue stores categories with a human name ("Flat", "heels") and a
+ * slug that does not always match that name ("womens footwear"), so the lookup
+ * accepts either form (case-insensitively) and also supports a comma separated
+ * list of categories.
+ *
+ * Returns null when no category was requested, and an array (possibly empty)
+ * when it was - an empty array correctly matches no products instead of
+ * silently returning the whole catalogue.
+ */
+async function resolveCategoryIds(categoryParam) {
+  const raw = String(categoryParam || '').trim();
+  if (!raw) return null;
+
+  const values = raw.split(',').map((value) => value.trim()).filter(Boolean);
+  if (!values.length) return null;
+
+  const or = [];
+  values.forEach((value) => {
+    const safe = escapeRegex(value);
+    or.push({ slug: { $regex: `^${safe}$`, $options: 'i' } });
+    or.push({ name: { $regex: `^${safe}$`, $options: 'i' } });
+  });
+
+  const categories = await Category.find({ $or: or }).select('_id').lean();
+  return categories.map((category) => category._id);
+}
+
 async function listProducts(req, res) {
   try {
-    const { category, featured, limit = 20, page = 1 } = req.query;
+    const { category, featured, limit, page = 1 } = req.query;
     const query = { isActive: true };
-    if (category) {
-      const categoryEntity = await Category.findOne({ slug: category });
-      if (categoryEntity) query.categoryId = categoryEntity._id;
+    const categoryIds = await resolveCategoryIds(category);
+    if (categoryIds) {
+      query.categoryId = { $in: categoryIds };
     }
     if (featured === 'true') query.isFeatured = true;
+    const perPage = parseLimit(limit);
+    const currentPage = Math.max(1, Number(page) || 1);
     const products = await Product.find(query)
       .populate('categoryId', 'name slug')
       .sort({ createdAt: -1 })
-      .limit(Number(limit))
-      .skip((Number(page) - 1) * Number(limit))
+      .limit(perPage)
+      .skip((currentPage - 1) * perPage)
       .lean();
     const total = await Product.countDocuments(query);
-    res.json({ products, pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) } });
+    res.json({ products, pagination: { page: currentPage, limit: perPage, total, pages: Math.ceil(total / perPage) } });
   } catch (err) {
     logger.error('Product list failed', { error: err.message });
     res.status(500).json({ error: 'Failed to fetch products' });
@@ -74,8 +112,8 @@ async function searchProducts(req, res) {
       ]});
     }
     if (category) {
-      const categoryEntity = await Category.findOne({ slug: category });
-      if (categoryEntity) query.categoryId = categoryEntity._id;
+      const categoryIds = await resolveCategoryIds(category);
+      if (categoryIds) query.categoryId = { $in: categoryIds };
     }
     if (priceMin || priceMax) {
       const priceQuery = {};
@@ -102,14 +140,16 @@ async function searchProducts(req, res) {
     else if (sort === 'price-desc') sortObj = { price: -1 };
     else if (sort === 'rating') sortObj = { rating: -1, reviewCount: -1 };
 
+    const perPage = parseLimit(limit);
+    const currentPage = Math.max(1, Number(page) || 1);
     const products = await Product.find(query)
       .populate('categoryId', 'name slug')
       .sort(sortObj)
-      .limit(Number(limit))
-      .skip((Number(page) - 1) * Number(limit))
+      .limit(perPage)
+      .skip((currentPage - 1) * perPage)
       .lean();
     const total = await Product.countDocuments(query);
-    res.json({ products, pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) } });
+    res.json({ products, pagination: { page: currentPage, limit: perPage, total, pages: Math.ceil(total / perPage) } });
   } catch (err) {
     logger.error('Product search failed', { error: err.message });
     res.status(500).json({ error: 'Search failed' });
@@ -120,9 +160,9 @@ async function getFilterOptions(req, res) {
   try {
     const { category } = req.query;
     const query = { isActive: true };
-    if (category) {
-      const categoryEntity = await Category.findOne({ slug: category });
-      if (categoryEntity) query.categoryId = categoryEntity._id;
+    const categoryIds = await resolveCategoryIds(category);
+    if (categoryIds) {
+      query.categoryId = { $in: categoryIds };
     }
     const products = await Product.find(query).lean();
     const brands = [...new Set(products.map((p) => p.brand).filter(Boolean))].sort();
@@ -143,7 +183,14 @@ async function getFilterOptions(req, res) {
         if (/color/i.test(attr.name)) allColors.add(attr.value);
       });
     });
-    res.json({ brands, sizes: [...allSizes].sort(), colors: [...allColors].sort(), priceRange: { min: minPrice === Infinity ? 0 : minPrice, max: maxPrice } });
+    const categories = await Category.find({ isActive: true }).select('name slug').sort({ name: 1 }).lean();
+    res.json({
+      brands,
+      sizes: [...allSizes].sort(),
+      colors: [...allColors].sort(),
+      priceRange: { min: minPrice === Infinity ? 0 : minPrice, max: maxPrice },
+      categories: categories.map((c) => ({ name: c.name, slug: c.slug }))
+    });
   } catch (err) {
     logger.error('Filter options failed', { error: err.message });
     res.status(500).json({ error: 'Failed to fetch filters' });
@@ -218,5 +265,7 @@ module.exports = {
   createProduct,
   updateProduct,
   deleteProduct,
-  bulkUpload
+  bulkUpload,
+  resolveCategoryIds,
+  parseLimit
 };

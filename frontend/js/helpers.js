@@ -147,10 +147,19 @@ function normalizeProduct(product) {
   const variants = Array.isArray(product.variants) && product.variants.length
     ? product.variants.map((variant) => ({
         name: variant.name || variant.value || 'Standard',
+        value: variant.value || variant.name || 'Standard',
         priceDelta: variant.priceModifier ?? variant.priceDelta ?? 0
       }))
-    : [{ name: 'Standard', priceDelta: 0 }];
+    : [{ name: 'Standard', value: 'Standard', priceDelta: 0 }];
   const subtitle = product.subtitle || product.shortDescription || (typeof product.description === 'string' ? product.description.slice(0, 80) : '');
+  const price = Number(product.price || 0);
+  const comparePrice = Number(product.comparePrice || 0);
+  const createdAtMs = product.createdAt ? new Date(product.createdAt).getTime() : 0;
+  const newArrivalWindow = typeof NEW_ARRIVAL_WINDOW_MS === 'number' ? NEW_ARRIVAL_WINDOW_MS : 30 * 24 * 60 * 60 * 1000;
+  // The catalogue has no dedicated "new arrival" flag, so recent additions are
+  // derived from the creation date instead.
+  const isNewArrival = Boolean(product.isNewArrival || product.newArrival || product.isNew)
+    || (createdAtMs > 0 && Date.now() - createdAtMs <= newArrivalWindow);
   return {
     ...product,
     id: product.id || product._id || product.slug,
@@ -163,9 +172,15 @@ function normalizeProduct(product) {
     images: images.length ? images : [product.image || window.PRODUCT_FALLBACK_IMAGE],
     details,
     variants,
-    price: Number(product.price || 0),
+    price,
+    comparePrice: comparePrice > price ? comparePrice : 0,
+    discountPercent: comparePrice > price ? Math.round(((comparePrice - price) / comparePrice) * 100) : 0,
+    rating: Number(product.rating || 0),
+    reviewCount: Number(product.reviewCount || 0),
+    brand: product.brand || '',
+    createdAt: product.createdAt || '',
     isFeatured: Boolean(product.isFeatured),
-    isNewArrival: Boolean(product.isNewArrival || product.newArrival || product.isNew || false),
+    isNewArrival,
     inventory: product.inventory || { quantity: 0, lowStockThreshold: 10 }
   };
 }
@@ -184,6 +199,28 @@ function getInventoryStatus(product) {
 
 function getProductLink(product) {
   return product.slug ? `product-detail.html?slug=${product.slug}` : `product-detail.html?id=${product.id}`;
+}
+
+function getProductSizes(product) {
+  const sizes = new Set();
+  (product?.variants || []).forEach((variant) => {
+    if (/size/i.test(variant.name || '')) sizes.add(variant.value || variant.name);
+  });
+  (product?.attributes || []).forEach((attr) => {
+    if (/size/i.test(attr.name || '')) sizes.add(attr.value);
+  });
+  return [...sizes].filter(Boolean);
+}
+
+function getProductColors(product) {
+  const colors = new Set();
+  (product?.variants || []).forEach((variant) => {
+    if (/colou?r/i.test(variant.name || '')) colors.add(variant.value || variant.name);
+  });
+  (product?.attributes || []).forEach((attr) => {
+    if (/colou?r/i.test(attr.name || '')) colors.add(attr.value);
+  });
+  return [...colors].filter(Boolean);
 }
 
 function getProductById(productId) {
@@ -224,6 +261,8 @@ window.dedupeItemsByKey = dedupeItemsByKey;
 window.normalizeProduct = normalizeProduct;
 window.getInventoryStatus = getInventoryStatus;
 window.getProductLink = getProductLink;
+window.getProductSizes = getProductSizes;
+window.getProductColors = getProductColors;
 window.getProductById = getProductById;
 window.getQueryParams = getQueryParams;
 window.loadScript = loadScript;

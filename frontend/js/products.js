@@ -45,10 +45,53 @@ function createProductCardElement(product) {
     ? `<div class="stock-chip ${invStatus.class}" role="status" aria-label="${escapeHTML(invStatus.label)}"><span class="stock-chip-dot" aria-hidden="true"></span>${escapeHTML(invStatus.label)}</div>`
     : '';
 
+  const price = Number(product.price || 0);
+  const comparePrice = Number(product.comparePrice || 0);
+  const discountPercent = Number(product.discountPercent || 0);
+  const hasDiscount = discountPercent > 0 && comparePrice > price;
+
+  const discountBadge = hasDiscount
+    ? `<div class="badge discount">-${discountPercent}%</div>`
+    : '';
+  const newBadge = product.isNewArrival
+    ? `<div class="badge new">${escapeHTML(translate('shop.newBadge'))}</div>`
+    : '';
+  const featuredBadge = product.isFeatured
+    ? `<div class="badge featured">${escapeHTML(translate('shop.featuredBadge'))}</div>`
+    : '';
+
+  // The badges are stacked in a single column so that a product that is both
+  // new and discounted does not end up with two labels on top of each other.
+  const badges = [featuredBadge, newBadge, discountBadge].filter(Boolean).join('');
+  const badgeHtml = badges ? `<div class="product-badges">${badges}</div>` : '';
+
+  const priceRow = hasDiscount
+    ? `<div class="price-row">
+        <span class="price">${formatCurrency(price)}</span>
+        <span class="price-compare">
+          <s class="price-mrp">${formatCurrency(comparePrice)}</s>
+          <span class="price-discount">${escapeHTML(translate('shop.discount', { percent: discountPercent }))}</span>
+        </span>
+      </div>`
+    : `<div class="price-row"><span class="price">${formatCurrency(price)}</span></div>`;
+
+  const rating = Number(product.rating || 0);
+  const reviewCount = Number(product.reviewCount || 0);
+  const ratingRow = rating > 0
+    ? `<div class="product-rating">
+        <span class="product-stars" aria-hidden="true">${'★'.repeat(Math.round(rating))}${'☆'.repeat(5 - Math.round(rating))}</span>
+        <span class="product-rating-value">${rating.toFixed(1)}</span>
+        ${reviewCount > 0 ? `<span class="product-review-count">(${reviewCount})</span>` : ''}
+      </div>`
+    : '';
+
   card.innerHTML = `
     <div class="product-image${isOutOfStock ? ' out-of-stock' : ''}" role="link" tabindex="0" aria-label="View ${safeName}">
-      <img src="${primaryImage}" alt="${safeName}" decoding="async" onload="revealProductImage(this)" onerror="handleProductImageError(this)">
-      ${product.isFeatured ? '<div class="badge featured">Featured</div>' : ''}
+      <img src="${primaryImage}" alt="${safeName}" decoding="async" loading="lazy" onload="revealProductImage(this)" onerror="handleProductImageError(this)">
+      ${badgeHtml}
+      <button class="quick-view-btn" type="button" data-quick-view="${escapeHTML(productId)}" title="${escapeHTML(translate('shop.quickView'))}" aria-label="${escapeHTML(translate('shop.quickView'))}: ${safeName}">
+        <i class="fas fa-eye" aria-hidden="true"></i>
+      </button>
       ${stockChip}
     </div>
     <div class="product-info">
@@ -57,15 +100,16 @@ function createProductCardElement(product) {
         <button class="wishlist-heart" data-product-id="${escapeHTML(productId)}" title="Add to wishlist" aria-label="Add ${safeName} to wishlist"><i class="${isInWishlist(productId) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
       </div>
       <h3 class="product-name">${safeName}</h3>
+      ${ratingRow}
       <p class="product-subtitle">${escapeHTML(subtitle)}</p>
-      <div class="price">${formatCurrency(product.price || 0)}</div>
+      ${priceRow}
       <div class="tax-included">All taxes included</div>
       <div class="product-actions">
         <button class="btn btn-primary add-to-cart-btn" type="button" data-product-id="${escapeHTML(productId)}" ${isOutOfStock ? 'disabled' : ''}>
-          <i class="fas fa-cart-plus"></i> ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+          <i class="fas fa-cart-plus"></i> ${isOutOfStock ? escapeHTML(translate('product.outOfStock')) : escapeHTML(translate('product.addToCartLabel'))}
         </button>
         <button class="btn btn-secondary buy-now-btn" type="button" data-product-id="${escapeHTML(productId)}" ${isOutOfStock ? 'disabled' : ''}>
-          <i class="fas fa-bolt"></i> Buy Now
+          <i class="fas fa-bolt"></i> ${escapeHTML(translate('product.buyNow'))}
         </button>
       </div>
     </div>
@@ -110,6 +154,35 @@ function showProductSkeleton(container, count = 8) {
   `).join('');
 }
 
+async function fetchAllProducts() {
+  const pageSize = 100;
+  const collected = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}/api/v1/products?limit=${pageSize}&page=${page}`,
+      { timeout: 30000 }
+    );
+    if (!response.ok) {
+      throw new Error(`Product API returned ${response.status}`);
+    }
+
+    const data = await response.json();
+    const batch = Array.isArray(data.products) ? data.products : [];
+    collected.push(...batch.map(normalizeProduct).filter(Boolean));
+
+    const pagination = data.pagination || {};
+    totalPages = Math.max(1, Number(pagination.pages) || 1);
+    page += 1;
+
+    if (!batch.length) break;
+  } while (page <= totalPages);
+
+  return collected;
+}
+
 async function loadProducts() {
   if (productsLoadPromise) {
     return productsLoadPromise;
@@ -117,7 +190,7 @@ async function loadProducts() {
 
   productsLoading = true;
   const grid = document.querySelector('.product-grid');
-  showProductSkeleton(grid);
+  if (grid && document.body.dataset.page !== 'shop') showProductSkeleton(grid);
 
   productsLoadPromise = (async () => {
     const now = Date.now();
@@ -131,7 +204,7 @@ async function loadProducts() {
           cachedProducts = data.map(normalizeProduct).filter(Boolean);
           if (cachedProducts.length) {
             products = cachedProducts;
-            renderProducts();
+            if (document.body.dataset.page !== 'shop') renderProducts();
           }
         }
       } catch (error) {
@@ -140,14 +213,9 @@ async function loadProducts() {
     }
 
     try {
-      const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/products`, { timeout: 30000 });
-      if (!response.ok) {
-        throw new Error(`Product API returned ${response.status}`);
-      }
-
-      const data = await response.json();
-      const receivedProducts = Array.isArray(data.products) ? data.products : [];
-      const loadedProducts = receivedProducts.map(normalizeProduct).filter(Boolean);
+      // The full catalogue is loaded (not just the first page) so that every
+      // product is reachable from the listing page and from the filter facets.
+      const loadedProducts = await fetchAllProducts();
 
       if (loadedProducts.length) {
         products = loadedProducts;
@@ -158,7 +226,7 @@ async function loadProducts() {
         products = [];
       }
 
-      renderProducts();
+      if (document.body.dataset.page !== 'shop') renderProducts();
       return products;
     } catch (error) {
       console.error('Failed to load products:', error);
@@ -168,7 +236,7 @@ async function loadProducts() {
         localStorage.removeItem('papjoy-products-cache');
         products = [];
       }
-      renderProducts();
+      if (document.body.dataset.page !== 'shop') renderProducts();
       return products;
     } finally {
       productsLoading = false;
@@ -182,6 +250,7 @@ async function loadProducts() {
   }
 }
 window.loadProducts = loadProducts;
+window.fetchAllProducts = fetchAllProducts;
 
 async function getProductBySlug(slug) {
   try {
@@ -596,97 +665,10 @@ window.shareProduct = shareProduct;
 window.getProductShareData = getProductShareData;
 
 // ================== SEARCH ==================
-
-async function runSearch() {
-  if (searchAbortController) searchAbortController.abort();
-  searchAbortController = new AbortController();
-
-  const searchInput = document.getElementById('search-products');
-  const sortFilter = document.getElementById('sort-filter');
-  const inStockFilter = document.getElementById('in-stock-filter');
-  const categoryFilter = document.getElementById('category-filter');
-  const productGrid = document.getElementById('product-grid') || document.querySelector('.product-grid');
-
-  const q = searchInput?.value || '';
-  const sort = sortFilter?.value || 'newest';
-  const inStock = inStockFilter?.checked || false;
-  const category = categoryFilter?.value || '';
-
-  const activePrice = document.querySelector('.price-chip.active');
-  const priceRange = activePrice?.dataset.price || 'all';
-  let priceMin = 0;
-  let priceMax = 999999;
-  if (priceRange !== 'all') {
-    const parts = priceRange.split('-');
-    priceMin = parseInt(parts[0], 10) || 0;
-    priceMax = parseInt(parts[1], 10) || 999999;
-  }
-
-  if (productGrid) {
-    showProductSkeleton(productGrid);
-  }
-
-  try {
-    const result = await searchProducts({
-      q, category, sort, inStock, priceMin, priceMax,
-      signal: searchAbortController.signal
-    });
-
-    if (searchAbortController.signal.aborted) return;
-
-    const rawProducts = Array.isArray(result.products) ? result.products : [];
-    products = rawProducts.map(normalizeProduct).filter(Boolean);
-
-    if (productGrid) {
-      if (!products.length) {
-        productGrid.innerHTML = `<div class="empty-state">No products found matching your criteria.</div>`;
-        const statusEl = document.getElementById('product-status');
-        if (statusEl) statusEl.textContent = '0 products found';
-        renderActiveFilters();
-        return;
-      }
-
-      const fragment = document.createDocumentFragment();
-      products.forEach((product) => {
-        const card = createProductCardElement(product);
-        if (card) fragment.appendChild(card);
-      });
-
-      productGrid.innerHTML = '';
-      productGrid.appendChild(fragment);
-      initProductGridDelegation();
-    }
-
-    const statusEl = document.getElementById('product-status');
-    if (statusEl) {
-      statusEl.textContent = `${products.length} ${products.length === 1 ? 'product' : 'products'} found`;
-    }
-
-    renderActiveFilters();
-  } catch (error) {
-    if (error.name === 'AbortError') return;
-    console.error('Search error:', error);
-    if (productGrid) {
-      productGrid.innerHTML = `
-        <div class="error-state">
-          <p>Failed to load products. Please try again.</p>
-          <button class="btn btn-primary" onclick="performSearch()">Retry</button>
-        </div>`;
-    }
-  }
-}
+// The listing page filter/sort/pagination logic lives in js/shop.js.
 
 async function performSearch() {
-  if (searchInProgress) {
-    searchQueued = true;
-    return;
-  }
-  searchInProgress = true;
-  do {
-    searchQueued = false;
-    await runSearch();
-  } while (searchQueued);
-  searchInProgress = false;
+  if (typeof refreshShopResults === 'function') return refreshShopResults();
 }
 window.performSearch = performSearch;
 
@@ -822,6 +804,41 @@ async function renderRecommendations(productId) {
   }
 }
 window.renderRecommendations = renderRecommendations;
+
+// ================== CATEGORY NAVIGATION LINKS ==================
+
+// The header and footer used to link to categories that do not exist in the
+// catalogue (sneakers / casual / formal / sports). They are now rendered from
+// the categories that actually have products.
+function getCatalogueCategories() {
+  const counts = new Map();
+  (Array.isArray(products) ? products : []).forEach((product) => {
+    const category = product.category && product.category !== 'Uncategorized' ? product.category : '';
+    if (category) counts.set(category, (counts.get(category) || 0) + 1);
+  });
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+}
+
+function renderCategoryNavLinks() {
+  const categories = getCatalogueCategories();
+  if (!categories.length) return;
+
+  const navEl = document.getElementById('nav-categories');
+  if (navEl) {
+    navEl.innerHTML = categories.slice(0, 4).map(([name]) =>
+      `<a href="product.html?category=${encodeURIComponent(name)}" class="header-nav-link">${escapeHTML(name)}</a>`
+    ).join('');
+  }
+
+  const footerEl = document.getElementById('footer-categories');
+  if (footerEl) {
+    footerEl.innerHTML = categories.map(([name]) =>
+      `<a href="product.html?category=${encodeURIComponent(name)}"><i class="fas fa-angle-right"></i>${escapeHTML(name)}</a>`
+    ).join('');
+  }
+}
+window.renderCategoryNavLinks = renderCategoryNavLinks;
 
 // ================== BREADCRUMBS ==================
 
@@ -1034,130 +1051,18 @@ async function saveViewedProduct(productId) {
 window.saveViewedProduct = saveViewedProduct;
 
 // ================== PRODUCT FILTERS INITIALIZATION ==================
+// The listing page filter/sort/pagination logic lives in js/shop.js.
 
 async function initProductFilters() {
-  const searchInput = document.getElementById('search-products');
-  const sortFilter = document.getElementById('sort-filter');
-  const inStockFilter = document.getElementById('in-stock-filter');
-  const categoryFilter = document.getElementById('category-filter');
-  const priceQuickSelect = document.getElementById('price-quick-select');
-
-  if (!searchInput) return;
-
-  const params = new URLSearchParams(window.location.search);
-  const urlCategory = params.get('category');
-  const urlQuery = params.get('q');
-  if (urlCategory && searchInput) {
-    searchInput.value = urlCategory;
-  }
-  if (urlQuery && searchInput) {
-    searchInput.value = urlQuery;
-  }
-
-  // Populate category dropdown from products
-  const categorySet = new Set();
-  products.forEach((p) => {
-    if (p.category && p.category !== 'Uncategorized') {
-      categorySet.add(p.category);
-    }
-  });
-  if (categoryFilter && categorySet.size > 0) {
-    const sorted = Array.from(categorySet).sort();
-    categoryFilter.innerHTML = `<option value="">All Categories</option>` +
-      sorted.map((cat) => `<option value="${escapeHTML(cat)}"${urlCategory === cat ? ' selected' : ''}>${escapeHTML(cat)}</option>`).join('');
-  }
-
-  if (urlCategory && categoryFilter) {
-    categoryFilter.value = urlCategory;
-  }
-
-  // Price quick-select
-  if (priceQuickSelect) {
-    priceQuickSelect.addEventListener('click', (e) => {
-      const chip = e.target.closest('.price-chip');
-      if (!chip) return;
-      priceQuickSelect.querySelectorAll('.price-chip').forEach((c) => c.classList.remove('active'));
-      chip.classList.add('active');
-      performSearch();
-    });
-  }
-
-  // Event listeners
-  const handleSearch = debounce(() => performSearch(), 300);
-
-  if (searchInput) searchInput.addEventListener('input', handleSearch);
-  if (sortFilter) sortFilter.addEventListener('change', () => performSearch());
-  if (inStockFilter) inStockFilter.addEventListener('change', () => performSearch());
-  if (categoryFilter) categoryFilter.addEventListener('change', () => performSearch());
-
-  await performSearch();
+  if (typeof initShopPage === 'function') return initShopPage();
 }
 window.initProductFilters = initProductFilters;
 
 // ================== ACTIVE FILTER CHIPS ==================
+// Rendered by js/shop.js.
 
 function renderActiveFilters() {
-  const container = document.getElementById('active-filters');
-  if (!container) return;
-
-  const chips = [];
-  const searchInput = document.getElementById('search-products');
-  const categoryFilter = document.getElementById('category-filter');
-  const sortFilter = document.getElementById('sort-filter');
-  const inStockFilter = document.getElementById('in-stock-filter');
-  const activePrice = document.querySelector('.price-chip.active');
-
-  const q = searchInput?.value?.trim();
-  const category = categoryFilter?.value;
-  const inStock = inStockFilter?.checked;
-  const priceRange = activePrice?.dataset.price;
-
-  if (q) {
-    chips.push({ label: `Search: "${escapeHTML(q)}"`, clear: () => { searchInput.value = ''; performSearch(); } });
-  }
-  if (category) {
-    chips.push({ label: `Category: ${escapeHTML(category)}`, clear: () => { categoryFilter.value = ''; performSearch(); } });
-  }
-  if (priceRange && priceRange !== 'all') {
-    const label = activePrice?.textContent || priceRange;
-    chips.push({ label: `Price: ${label}`, clear: () => {
-      document.querySelectorAll('.price-chip').forEach((c) => c.classList.remove('active'));
-      document.querySelector('.price-chip[data-price="all"]')?.classList.add('active');
-      performSearch();
-    }});
-  }
-  if (inStock) {
-    chips.push({ label: 'In Stock', clear: () => { inStockFilter.checked = false; performSearch(); } });
-  }
-
-  if (!chips.length) {
-    container.innerHTML = '';
-    return;
-  }
-
-  container.innerHTML = chips.map((chip, i) =>
-    `<span class="filter-chip">${chip.label}<button class="filter-chip-remove" data-chip-index="${i}" title="Remove">&times;</button></span>`
-  ).join('') + `<button class="clear-all-btn" id="clear-all-filters">Clear All</button>`;
-
-  container.querySelectorAll('.filter-chip-remove').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const idx = parseInt(btn.dataset.chipIndex, 10);
-      if (chips[idx]) chips[idx].clear();
-    });
-  });
-
-  const clearAllBtn = document.getElementById('clear-all-filters');
-  if (clearAllBtn) {
-    clearAllBtn.addEventListener('click', () => {
-      if (searchInput) searchInput.value = '';
-      if (categoryFilter) categoryFilter.value = '';
-      if (inStockFilter) inStockFilter.checked = false;
-      if (sortFilter) sortFilter.value = 'newest';
-      document.querySelectorAll('.price-chip').forEach((c) => c.classList.remove('active'));
-      document.querySelector('.price-chip[data-price="all"]')?.classList.add('active');
-      performSearch();
-    });
-  }
+  if (typeof renderShopFilterChips === 'function') return renderShopFilterChips();
 }
 window.renderActiveFilters = renderActiveFilters;
 
@@ -1178,6 +1083,8 @@ async function renderPage() {
     initFeaturedControls();
   }
 
+  renderCategoryNavLinks();
+
   const needsSavedItemsSync = page === 'cart' || page === 'checkout' || page === 'product' || page === 'shop' || page === 'account' || page === 'product-detail';
   const needsCartSync = page === 'cart' || page === 'checkout' || page === 'account';
 
@@ -1187,7 +1094,11 @@ async function renderPage() {
 
   if (page === 'product' || page === 'shop') {
     renderBreadcrumbs();
-    await initProductFilters();
+    if (typeof initShopPage === 'function') {
+      await initShopPage();
+    } else {
+      await initProductFilters();
+    }
     initSearchAutocomplete();
   }
 
