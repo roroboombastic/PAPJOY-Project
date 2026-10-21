@@ -86,8 +86,10 @@ function createProductCardElement(product) {
     : '';
 
   card.innerHTML = `
-    <div class="product-image${isOutOfStock ? ' out-of-stock' : ''}" role="link" tabindex="0" aria-label="View ${safeName}">
-      <img src="${primaryImage}" alt="${safeName}" decoding="async" loading="lazy" onload="revealProductImage(this)" onerror="handleProductImageError(this)">
+    <div class="product-image${isOutOfStock ? ' out-of-stock' : ''}">
+      <a class="product-image-link" href="${escapeHTML(getProductLink(product))}">
+        <img src="${primaryImage}" alt="${safeName}" decoding="async" loading="lazy" onload="revealProductImage(this)" onerror="handleProductImageError(this)">
+      </a>
       ${badgeHtml}
       <button class="quick-view-btn" type="button" data-quick-view="${escapeHTML(productId)}" title="${escapeHTML(translate('shop.quickView'))}" aria-label="${escapeHTML(translate('shop.quickView'))}: ${safeName}">
         <i class="fas fa-eye" aria-hidden="true"></i>

@@ -153,7 +153,7 @@ function createSidebar() {
 
   sidebar.innerHTML = `
     <div class="sidebar-top">
-      <div class="sidebar-brand"><a href="index.html"><img src="/logo.png" alt="PAP-JOY" class="logo-img" /><span class="logo-text">PAP-JOY</span></a></div>
+      <div class="sidebar-brand"><a href="index.html"><img src="/logo.png" alt="" class="logo-img" /><span class="logo-text">PAP-JOY</span></a></div>
       <nav class="sidebar-nav">
         <a href="index.html" class="nav-link${isActiveNavPage('index.html') ? ' active' : ''}"${isActiveNavPage('index.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-home"></i><span>Home</span></a>
         <a href="product.html" class="nav-link${isActiveNavPage('product.html') ? ' active' : ''}"${isActiveNavPage('product.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-store"></i><span>Shop</span></a>
@@ -203,12 +203,34 @@ function createSidebar() {
   }
 
   const toggle = document.getElementById('mobile-menu-toggle');
+  if (toggle) {
+    // Guarantee the hamburger button always has an accessible name, even if a
+    // page forgot to declare one in its markup.
+    if (!toggle.getAttribute('aria-label') && !toggle.getAttribute('aria-labelledby')) {
+      toggle.setAttribute('aria-label', 'Open navigation menu');
+    }
+    if (!toggle.getAttribute('title')) {
+      toggle.title = toggle.getAttribute('aria-label') || 'Open navigation menu';
+    }
+    if (!toggle.hasAttribute('aria-expanded')) {
+      toggle.setAttribute('aria-expanded', 'false');
+    }
+    if (!toggle.hasAttribute('aria-controls')) {
+      toggle.setAttribute('aria-controls', 'site-sidebar');
+    }
+    if (!toggle.getAttribute('type')) {
+      toggle.type = 'button';
+    }
+  }
   if (!toggle) {
     const toggleButton = document.createElement('button');
     toggleButton.id = 'mobile-menu-toggle';
     toggleButton.className = 'mobile-menu-toggle';
+    toggleButton.type = 'button';
     toggleButton.setAttribute('aria-expanded', 'false');
+    toggleButton.setAttribute('aria-controls', 'site-sidebar');
     toggleButton.setAttribute('aria-label', 'Open navigation menu');
+    toggleButton.title = 'Open navigation menu';
     toggleButton.innerHTML = '<i class="fas fa-bars"></i>';
     document.body.appendChild(toggleButton);
   }

@@ -43,7 +43,7 @@
   
   <script>
   (function(){
-    var V='papjoy-v39',K='papjoy-sw-version';
+    var V='papjoy-v40',K='papjoy-sw-version';
     try{
       if('serviceWorker'in navigator&&navigator.serviceWorker.controller){
         if(localStorage.getItem(K)!==V){
@@ -76,7 +76,7 @@
   </div>
 
   <aside id="site-sidebar" class="site-sidebar"></aside>
-  <button class="mobile-menu-toggle" id="mobile-menu-toggle"><i class="fas fa-bars"></i></button>
+  <button class="mobile-menu-toggle" id="mobile-menu-toggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="site-sidebar" title="Open navigation menu"><i class="fas fa-bars"></i></button>
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
   <main class="product-section shop-page">
@@ -239,7 +239,7 @@
   <footer class="site-footer">
     <div class="footer-grid">
       <div class="footer-brand">
-        <div class="brand"><a href="index.html"><img src="/logo.png" alt="PAP-JOY" class="logo-img-footer" /><span class="logo-text">PAP-JOY</span></a></div>
+        <div class="brand"><a href="index.html"><img src="/logo.png" alt="" class="logo-img-footer" /><span class="logo-text">PAP-JOY</span></a></div>
         <p>Premium footwear for every journey.</p>
       </div>
 

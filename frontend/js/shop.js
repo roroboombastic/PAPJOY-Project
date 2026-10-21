@@ -567,11 +567,15 @@ function clearShopFilters() {
   shopState.inStock = false;
   shopState.page = 1;
   shopState.unknownCategory = '';
+  // "Clear all" also returns the list to the default ordering.
+  shopState.sort = 'newest';
 
   const input = document.getElementById('search-products');
   if (input) input.value = '';
   const toggle = document.getElementById('in-stock-filter');
   if (toggle) toggle.checked = false;
+  const sortFilter = document.getElementById('sort-filter');
+  if (sortFilter) sortFilter.value = shopState.sort;
 
   syncPriceInputs();
   applyShopFilters();
