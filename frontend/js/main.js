@@ -27,6 +27,8 @@ document.addEventListener('keydown', (e) => {
 });
 
 function initCookieConsent() {
+  // The admin console is a private, authenticated surface — no consent banner.
+  if (window.__papjoyAdminConsole) return;
   if (localStorage.getItem('papjoy-cookie-consent')) return;
   const banner = document.createElement('div');
   banner.id = 'cookie-consent-banner';
