@@ -1,0 +1,212 @@
+/**
+ * PAP-JOY responsive safety net
+ * =============================
+ * Loaded LAST, after style.css (and admin.css on /admin), so these rules win
+ * the cascade without editing the 220KB base sheet.
+ *
+ * Two jobs, both scoped so the desktop design is untouched:
+ *
+ *   1. READABILITY FLOOR  - the base sheet sizes a lot of labels in the
+ *      0.65rem-0.74rem range (10.4px-11.8px). That is legible on a 27" monitor
+ *      but genuinely hard to read on a phone. Anything that carries real words
+ *      is lifted to a 12px floor on narrow viewports and on touch devices.
+ *      Pure glyphs (x-close, cart count, chart axes, icon chips) are left alone.
+ *
+ *   2. TAP TARGET FLOOR   - WCAG 2.5.8 (AA) requires a 24x24 CSS px target.
+ *      Footer links, breadcrumbs and the sign-in checkbox were landing at
+ *      17-22px tall. Inline links get padding to reach 44px on touch (Apple /
+ *      Google guidance) and 24px minimum everywhere else.
+ *
+ * Both blocks are wrapped in media queries so a wide desktop render is
+ * byte-identical to what shipped before.
+ */
+
+/* ------------------------------------------------------------------ *
+ * 1. Readability floor
+ * ------------------------------------------------------------------ */
+
+/* Content-bearing labels: lift anything under 12px on narrow screens. */
+@media (max-width: 768px) {
+  .locale-label,
+  .stock-chip,
+  .detail-copy .eyebrow,
+  .size-eu,
+  .verified-badge,
+  .address-type-tag,
+  .stat-label,
+  .hero-badge,
+  .eyebrow,
+  .product-card-actions .btn,
+  .product-badges .badge,
+  .shop-stat-label,
+  .shop-facet-title,
+  .shop-facet-count,
+  .shop-price-input span,
+  .shop-sidebar .price-chip {
+    font-size: 12px;
+  }
+
+  /* The base sheet tightens these again at 480px / 640px; hold the floor. */
+  .stat-label,
+  .eyebrow,
+  .product-badges .badge,
+  .shop-facet-title,
+  .shop-facet-count {
+    font-size: 12px !important;
+  }
+
+  /* Product-card CTA is a real button - give it readable type and height. */
+  .product-card-actions .btn {
+    font-size: 12px;
+    min-height: 40px;
+  }
+}
+
+/* Same floor for touch devices of any width (iPad landscape, tablets). */
+@media (pointer: coarse) and (min-width: 769px) {
+  .locale-label,
+  .stat-label,
+  .eyebrow,
+  .shop-stat-label,
+  .shop-facet-title,
+  .shop-facet-count,
+  .stock-chip,
+  .hero-badge,
+  .product-card-actions .btn,
+  .product-badges .badge {
+    font-size: 12px;
+  }
+}
+
+/* Admin product editor: buttons must stay readable on a phone. */
+@media (max-width: 768px) {
+  .editor-image-actions button,
+  .editor-preview-tag,
+  .editor-preview-badge {
+    font-size: 12px;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * 2. Tap target floor
+ * ------------------------------------------------------------------ */
+
+/* Inline text links: pad to a real target without breaking the flow layout. */
+@media (max-width: 768px) {
+
+  .footer-col .footer-links a,
+  .footer-quick-links .footer-links a,
+  .contact-item a,
+  .breadcrumb-item,
+  .breadcrumbs a,
+  .footer-col a,
+  .footer-quick-links a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding-block: 10px;
+    box-sizing: border-box;
+  }
+
+  /* Breadcrumbs sit in a horizontal row - keep them compact but tappable. */
+  .breadcrumb-item {
+    min-height: 32px;
+    padding: 6px 8px;
+    margin-inline: -8px;
+  }
+
+  /* Sign-in / sign-up extras. */
+  .auth-footnote a,
+  #forgot-password-link,
+  .auth-alt a,
+  .form-hint a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+  }
+
+  /* Checkboxes render at 17-18px. WCAG 2.5.8 requires a 24x24 minimum target,
+     so grow the box and give the wrapping label a padded hit area. */
+  input[type="checkbox"] {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+  }
+
+  .checkbox-group input[type="checkbox"],
+  input[type="checkbox"],
+  input#remember,
+  input#pref-notifications,
+  input#pref-marketing {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    margin: 0;
+    accent-color: var(--accent);
+  }
+
+  .checkbox-group label,
+  label:has(input[type="checkbox"]) {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+}
+
+/* Touch devices of any width get a 44px floor on the footer link lists. */
+@media (pointer: coarse) {
+  .footer-col .footer-links a,
+  .footer-quick-links .footer-links a,
+  .contact-item a {
+    min-height: 44px;
+    padding-block: 12px;
+  }
+}
+
+/* Admin: the smallest icon buttons were 30x30 and 36x36. */
+@media (max-width: 768px) {
+  .btn-store,
+  .btn-logout,
+  .adm-topbar__toggle,
+  .adm-icon-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .adm-btn--sm {
+    min-height: 40px;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * 3. Layout guards
+ * ------------------------------------------------------------------ */
+
+@media (max-width: 768px) {
+
+  /* Long unbroken strings (emails, SKUs, order ids) must not force a
+     horizontal scrollbar on a 360px phone. */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Tables scroll sideways inside their own box instead of widening the page. */
+  .admin-table,
+  .table-responsive,
+  table:not(.leaflet-table) {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Very wide screens: stop content from stretching to an unreadable line length. */
+@media (min-width: 1600px) {
+  .container,
+  .section-container {
+    max-width: 1440px;
+  }
+}
