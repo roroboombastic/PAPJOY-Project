@@ -9,10 +9,15 @@
 const mongoose = require('mongoose');
 const { MONGO_URI } = require('./config');
 
-// Category IDs (from database)
+// Category IDs (from database).
+// These MUST be ObjectId instances, not strings: this script writes through the
+// raw driver (`db.collection('products').updateOne`), which bypasses Mongoose
+// casting. A raw string here would be stored as a BSON string while the Product
+// schema declares `categoryId` as an ObjectId - populate() hides the mismatch but
+// every ObjectId-filtered query silently misses those documents.
 const CATEGORY = {
-  heels: '6a6cc1960175df8439a16764',
-  flat: '6a6cc32e0175df8439a16765',
+  heels: new mongoose.Types.ObjectId('6a6cc1960175df8439a16764'),
+  flat: new mongoose.Types.ObjectId('6a6cc32e0175df8439a16765'),
 };
 
 const STYLES = [

@@ -58,9 +58,11 @@ async function main() {
   console.log(`Found ${categories.length} categories`);
 
   // Use first category or create a default one
+  // Note: only `_id` is safe here - Mongoose's `.id` virtual is a STRING, and a
+  // string ref would silently skip casting if this payload ever hits the raw driver.
   let categoryId;
   if (categories.length > 0) {
-    categoryId = categories[0]._id || categories[0].id;
+    categoryId = categories[0]._id;
   } else {
     console.log('No categories found, creating "Footwear" category...');
     const catRes = await fetch(`${API_URL}/api/v1/categories`, {
