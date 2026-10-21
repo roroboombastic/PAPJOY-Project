@@ -49,6 +49,8 @@
   --accent-soft: rgba(92, 124, 99, 0.18);
   --accent-border: rgba(92, 124, 99, 0.28);
   --accent-subtle: rgba(92, 124, 99, 0.08);
+  /* Announcement bar background — dark enough for white text to clear WCAG AA (4.5:1) */
+  --announcement-bg: #4e6b54;
   --shadow: 0 26px 90px rgba(66, 83, 72, 0.15);
   --danger: #dc3545;
   --danger-soft: rgba(220, 53, 69, 0.12);
@@ -389,7 +391,7 @@ body.has-global-nav {
   left: 280px;
   right: 0;
   z-index: 110;
-  background: var(--accent);
+  background: var(--announcement-bg, #4e6b54);
   color: #fff;
   overflow: hidden;
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
@@ -425,11 +427,11 @@ body.has-global-nav {
 }
 
 .announcement-text {
-  opacity: 0.95;
+  opacity: 1;
 }
 
 .announcement-separator {
-  opacity: 0.35;
+  opacity: 0.9;
   margin: 0 2px;
 }
 
@@ -1408,6 +1410,22 @@ body.mobile-nav-open .mobile-nav-overlay {
 
 .product-image img.img-loaded {
   opacity: 1;
+}
+
+/* The product image is wrapped in a real link so that assistive technology
+   gets a proper accessible name (the image alt text) instead of an
+   aria-label that clashes with the visible badge/chip text. */
+.product-image-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  text-decoration: none;
+}
+
+.product-image-link:focus-visible {
+  outline: 3px solid var(--accent-strong, #8ca993);
+  outline-offset: -3px;
 }
 
 .product-image:not(.img-has-image)::before {
@@ -6919,6 +6937,7 @@ a.breadcrumb-item:hover {
     --nav-hover-bg: rgba(122, 171, 133, 0.1);
     --accent-border: rgba(122, 171, 133, 0.25);
     --accent-subtle: rgba(122, 171, 133, 0.08);
+    --announcement-bg: #2f4a37;
     --cart-toast-bg: rgba(18, 28, 22, 0.97);
     --cart-toast-text: #d4e8d8;
     --cart-toast-shadow: 0 30px 70px rgba(0, 0, 0, 0.4);
@@ -7005,6 +7024,7 @@ a.breadcrumb-item:hover {
   --nav-hover-bg: rgba(122, 171, 133, 0.1);
   --accent-border: rgba(122, 171, 133, 0.25);
   --accent-subtle: rgba(122, 171, 133, 0.08);
+  --announcement-bg: #2f4a37;
   --cart-toast-bg: rgba(18, 28, 22, 0.97);
   --cart-toast-text: #d4e8d8;
   --cart-toast-shadow: 0 30px 70px rgba(0, 0, 0, 0.4);
@@ -7090,6 +7110,7 @@ a.breadcrumb-item:hover {
   --nav-hover-bg: rgba(92, 124, 99, 0.12);
   --accent-border: rgba(92, 124, 99, 0.28);
   --accent-subtle: rgba(92, 124, 99, 0.08);
+  --announcement-bg: #4e6b54;
   --cart-toast-bg: rgba(36, 50, 37, 0.97);
   --cart-toast-text: #f7f7f2;
   --cart-toast-shadow: 0 30px 70px rgba(34, 50, 38, 0.2);

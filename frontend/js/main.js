@@ -30,8 +30,12 @@ function initCookieConsent() {
   if (localStorage.getItem('papjoy-cookie-consent')) return;
   const banner = document.createElement('div');
   banner.id = 'cookie-consent-banner';
-  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:var(--bg-secondary,#1a1a1a);color:var(--text-primary,#e0e0e0);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;z-index:100;font-size:0.9rem;border-top:1px solid var(--border,#333);flex-wrap:wrap;pointer-events:none;';
-  banner.innerHTML = '<span>We use cookies to improve your experience. By continuing, you agree to our use of cookies.</span><div style="display:flex;gap:8px;flex-shrink:0;pointer-events:auto;"><button id="cookie-accept" style="background:var(--primary,#7c9a72);color:#fff;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-weight:500;">Accept</button><button id="cookie-dismiss" style="background:transparent;color:var(--text-muted,#999);border:1px solid var(--border,#444);padding:8px 16px;border-radius:6px;cursor:pointer;">Dismiss</button></div>';
+  banner.setAttribute('role', 'region');
+  banner.setAttribute('aria-label', 'Cookie consent');
+  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:var(--surface-strong,#fff);color:var(--text,#243225);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;z-index:100;font-size:0.9rem;border-top:1px solid var(--border,#6c8172);flex-wrap:wrap;pointer-events:none;box-shadow:0 -12px 34px rgba(0,0,0,0.12);';
+  // Button colours are hard-coded (not theme tokens) so the contrast ratio
+  // against the white label is guaranteed to pass WCAG AA in both themes.
+  banner.innerHTML = '<span>We use cookies to improve your experience. By continuing, you agree to our use of cookies.</span><div style="display:flex;gap:8px;flex-shrink:0;pointer-events:auto;"><button id="cookie-accept" style="background:#4e6b54;color:#fff;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-weight:600;">Accept</button><button id="cookie-dismiss" style="background:transparent;color:var(--text,#243225);border:1px solid var(--border,#6c8172);padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:500;">Dismiss</button></div>';
   document.body.appendChild(banner);
   const accept = () => { localStorage.setItem('papjoy-cookie-consent', 'accepted'); banner.remove(); };
   const dismiss = () => { localStorage.setItem('papjoy-cookie-consent', 'dismissed'); banner.remove(); };
@@ -47,6 +51,11 @@ function initAnnouncementBar() {
     bar.remove();
     return;
   }
+
+  // The bar sits outside the page landmarks, so it is exposed as its own
+  // labelled region instead of leaving its text stranded outside any landmark.
+  if (!bar.getAttribute('role')) bar.setAttribute('role', 'region');
+  if (!bar.getAttribute('aria-label')) bar.setAttribute('aria-label', 'Site announcement');
 
   bar.classList.add('visible');
   document.body.classList.add('has-announcement');
