@@ -171,9 +171,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   warmBackend();
   setInterval(warmBackend, 480000);
   if (typeof restoreSessionFromStorage === 'function') await restoreSessionFromStorage();
-  if (typeof refreshAdminLink === 'function') await refreshAdminLink();
   initAnnouncementBar();
   if (typeof createSidebar === 'function') createSidebar();
+  // Must run after createSidebar(), which is what puts .sidebar-nav in the
+  // DOM. Calling it earlier makes updateAdminLink() bail out on a missing nav
+  // and the Admin link never appears.
+  if (typeof refreshAdminLink === 'function') await refreshAdminLink();
   if (typeof createFooterQuickLinks === 'function') createFooterQuickLinks();
   if (typeof createLocaleSwitcher === 'function') createLocaleSwitcher();
   if (typeof updateUserLinks === 'function') updateUserLinks();
