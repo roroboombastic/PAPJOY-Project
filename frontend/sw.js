@@ -1,4 +1,4 @@
-const CACHE = 'papjoy-v44';
+const CACHE = 'papjoy-v45';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
