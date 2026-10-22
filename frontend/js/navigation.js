@@ -46,12 +46,37 @@ function updateAdminLink() {
 // The stored session is restored asynchronously, so the sidebar can render
 // before the admin role is available and the link would never appear. Refresh
 // the profile once and re-evaluate the link.
+//
+// A cached role can also be stale (an older build wrote 'customer' for admins
+// whose profile response omitted the field). Ask the guarded admin endpoint
+// instead: a 200 means the server agrees this user is an admin, which repairs
+// a wrong stored role rather than trusting it.
 async function refreshAdminLink() {
   try {
-    if (typeof syncUserProfile === 'function' && getAuthToken()) {
-      await syncUserProfile();
+    if (typeof isAdminRole === 'function' && isAdminRole((getCurrentUser() || {}).role)) {
+      updateAdminLink();
+      return;
     }
-  } catch (e) { /* keep whatever we already have */ }
+  } catch (e) { /* fall through to the server probe */ }
+
+  const token = typeof getAuthToken === 'function' ? getAuthToken() : null;
+  if (token) {
+    try {
+      const res = await fetch(apiUrl('/api/v1/admin/summary'), {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        // Server confirms admin: persist the corrected role so every other
+        // check (requireAdmin, isStoreAdmin) agrees from here on.
+        const user = getCurrentUser();
+        if (user && user.role !== 'admin' && user.role !== 'super_admin') {
+          const remember = !!localStorage.getItem(AUTH_TOKEN_KEY);
+          setCurrentUser({ ...user, role: 'admin' }, remember);
+        }
+      }
+    } catch (e) { /* offline: keep the cached state */ }
+  }
+
   updateAdminLink();
 }
 
