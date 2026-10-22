@@ -250,15 +250,38 @@ async function restoreSessionFromStorage() {
   const storedUser = getCurrentUser();
   const storedToken = localStorage.getItem(AUTH_TOKEN_KEY) || sessionStorage.getItem(AUTH_TOKEN_KEY);
   const storedRefreshToken = localStorage.getItem(AUTH_REFRESH_TOKEN_KEY) || sessionStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
-  
-  if ((storedUser && !storedToken) || (!storedUser && storedToken)) {
+
+  // A user object may carry its own token. getAuthToken() already treats
+  // user.token as a valid source, so a session in that shape is usable and
+  // must not be destroyed. Only a user with no token anywhere, or a token
+  // with no user, is genuinely unrecoverable.
+  const userToken = storedUser && typeof storedUser.token === 'string' ? storedUser.token : null;
+  const effectiveToken = storedToken || userToken;
+
+  if (!storedUser && storedToken) {
+    // Token without a user cannot be attributed to anyone.
     setCurrentUser(null);
     return;
   }
 
-  if (storedUser && storedToken) {
-    const remember = !!localStorage.getItem(AUTH_TOKEN_KEY);
-    const user = { ...storedUser, token: storedToken };
+  if (!storedUser) return;
+
+  if (!effectiveToken) {
+    // User object with nothing to authenticate with: drop it.
+    setCurrentUser(null);
+    return;
+  }
+
+  {
+    // Keep the original persistence: a remembered login lives in localStorage,
+    // a non-remembered one in sessionStorage. Fall back to where the user
+    // object itself was found so a token carried inside it is not silently
+    // downgraded to a session-only login on every page load.
+    const remember =
+      !!localStorage.getItem(AUTH_TOKEN_KEY) ||
+      !!localStorage.getItem(AUTH_REFRESH_TOKEN_KEY) ||
+      !!localStorage.getItem(AUTH_USER_KEY);
+    const user = { ...storedUser, token: effectiveToken };
     if (storedRefreshToken) {
       user.refreshToken = storedRefreshToken;
     }
