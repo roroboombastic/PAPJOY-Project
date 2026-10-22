@@ -510,4 +510,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initPasswordStrength();
   }
+
+  // If admin.html bounced us here, say why. Otherwise an admin just sees the
+  // sign-in page again and assumes the dashboard is broken.
+  try {
+    const reason = new URLSearchParams(window.location.search).get('admin');
+    if (reason) {
+      const messageEl = document.getElementById('auth-message');
+      if (messageEl) {
+        messageEl.textContent = reason === 'not-admin'
+          ? 'Your account does not have admin access. Please sign in with an admin account.'
+          : 'Please sign in to open the admin dashboard.';
+        messageEl.style.color = '#ff8b94';
+      }
+    }
+  } catch (e) { /* ignore */ }
 });

@@ -171,6 +171,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   warmBackend();
   setInterval(warmBackend, 480000);
   if (typeof restoreSessionFromStorage === 'function') await restoreSessionFromStorage();
+  if (typeof refreshAdminLink === 'function') await refreshAdminLink();
   initAnnouncementBar();
   if (typeof createSidebar === 'function') createSidebar();
   if (typeof createFooterQuickLinks === 'function') createFooterQuickLinks();

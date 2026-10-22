@@ -136,13 +136,19 @@ async function syncUserProfile() {
     if (!profile || !profile.email) return null;
 
     const remember = !!localStorage.getItem('papjoy-token');
+    // Never let a partial profile response demote an admin. If the server
+    // omits `role`, keep the role we already trust instead of falling back to
+    // 'customer', which would silently hide the Admin link and bounce
+    // requireAdmin() back to the sign-in page.
+    const existing = getCurrentUser() || {};
+    const resolvedRole = profile.role || existing.role || 'customer';
     const updatedUser = {
       token,
       id: profile.id || profile._id,
       _id: profile._id || profile.id,
       email: profile.email,
       name: profile.name || '',
-      role: profile.role || 'customer',
+      role: resolvedRole,
       shippingAddress: profile.shippingAddress || {},
       addresses: profile.addresses || [],
       createdAt: profile.createdAt || '',
