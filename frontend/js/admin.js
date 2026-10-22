@@ -29,10 +29,17 @@ function buildPagination(totalPages, currentPage, loadFnName) {
   return html;
 }
 
+function isAdminRole(role) {
+  return role === 'admin' || role === 'super_admin';
+}
+
 function requireAdmin() {
   const user = getCurrentUser();
-  if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
-    window.location.href = 'signin.html';
+  if (!user || !isAdminRole(user.role)) {
+    // Send the reason along so the sign-in page can explain what happened
+    // rather than looking like a random logout.
+    const reason = !user ? 'no-session' : 'not-admin';
+    window.location.href = 'signin.html?admin=' + reason;
     return false;
   }
   return true;
@@ -288,11 +295,11 @@ function handleSidebarToggle() {
 function initAdminShell() {
   const user = getCurrentUser();
   if (!user || !user.token) {
-    window.location.href = 'signin.html';
+    window.location.href = 'signin.html?admin=no-session';
     return false;
   }
-  if (user.role !== 'admin' && user.role !== 'super_admin') {
-    window.location.href = 'signin.html';
+  if (!isAdminRole(user.role)) {
+    window.location.href = 'signin.html?admin=not-admin';
     return false;
   }
 

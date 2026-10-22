@@ -7,7 +7,11 @@ let sseRetryDelay = 1000;
 
 function isStoreAdmin() {
   const user = getCurrentUser();
-  return !!(user && (user.role === 'admin' || user.role === 'super_admin'));
+  if (!user) return false;
+  // admin.js defines the canonical check; fall back to the same rule when it
+  // is not loaded (storefront pages do not include admin.js).
+  if (typeof isAdminRole === 'function') return isAdminRole(user.role);
+  return user.role === 'admin' || user.role === 'super_admin';
 }
 
 function updateAdminLink() {
@@ -23,7 +27,8 @@ function updateAdminLink() {
   if (!link) {
     link = document.createElement('a');
     link.id = 'admin-nav-link';
-    link.href = 'admin.html';
+    // Canonical clean URL. 'admin.html' 308-redirects to '/admin' on Vercel.
+    link.href = '/admin';
     link.className = 'nav-link';
     link.setAttribute('data-no-transition', '');
     link.innerHTML = '<i class="fas fa-cog"></i><span>Admin</span>';
@@ -35,7 +40,19 @@ function updateAdminLink() {
     }
   }
   link.style.display = '';
-  link.classList.toggle('active', (window.location.pathname.split('/').pop() || 'index.html') === 'admin.html');
+  link.classList.toggle('active', /^\/(admin)?\/?$/.test(window.location.pathname) || window.location.pathname.endsWith('/admin'));
+}
+
+// The stored session is restored asynchronously, so the sidebar can render
+// before the admin role is available and the link would never appear. Refresh
+// the profile once and re-evaluate the link.
+async function refreshAdminLink() {
+  try {
+    if (typeof syncUserProfile === 'function' && getAuthToken()) {
+      await syncUserProfile();
+    }
+  } catch (e) { /* keep whatever we already have */ }
+  updateAdminLink();
 }
 
 function updateUserLinks() {
@@ -757,6 +774,7 @@ window.sidebarCreated = sidebarCreated;
 window.navResizeHandler = navResizeHandler;
 window.updateUserLinks = updateUserLinks;
 window.updateAdminLink = updateAdminLink;
+window.refreshAdminLink = refreshAdminLink;
 window.isStoreAdmin = isStoreAdmin;
 window.toggleMobileSidebar = toggleMobileSidebar;
 window.closeMobileSidebar = closeMobileSidebar;
