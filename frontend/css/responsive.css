@@ -184,6 +184,34 @@
  * 3. Layout guards
  * ------------------------------------------------------------------ */
 
+/* The admin workspace: .admin-main is offset from the fixed sidebar with
+   margin-left, but it was never given a width budget. A block child of the
+   896px .admin-container therefore laid out at 896px AND pushed 256px right
+   by its margin, ending at 1152px inside a 904px body. Everything past the
+   viewport edge -- the whole Actions column with Edit/Delete -- was clipped
+   by .adm-table-wrap{overflow:hidden} and unreachable, because the page could
+   not scroll to it either. Constrain the offset so the sidebar eats into the
+   available width instead of adding to it. */
+.admin-container .admin-main,
+.admin-container.adm-sidebar-collapsed .admin-main {
+  width: auto;
+  max-width: 100%;
+}
+
+/* The wrapper must be able to scroll the wide table rather than clip it. */
+.adm-table-wrap {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Keep the table's natural column widths so the Actions column stays intact
+   and reachable by scrolling, instead of being squeezed to a sliver. */
+.adm-table-wrap > .admin-table {
+  width: 100%;
+  min-width: max-content;
+}
+
 @media (max-width: 768px) {
 
   /* Long unbroken strings (emails, SKUs, order ids) must not force a
