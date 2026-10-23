@@ -7,6 +7,38 @@ function onUnhandledRejection(event) {
 window.addEventListener('error', onPageError);
 window.addEventListener('unhandledrejection', onUnhandledRejection);
 
+/* ---------------------------------------------------------------------------
+   AI layer (storefront only)
+   Loaded lazily and only on pages where it makes sense. ai.js does its own
+   /ai/status check, so when the store has no AI key nothing appears.
+   --------------------------------------------------------------------------- */
+(function loadAILayer() {
+  try {
+    if (window.__papjoyAILoaded) return;
+    var page = (document.body && document.body.dataset && document.body.dataset.page) || '';
+    var allowed = ['home', 'shop', 'product-detail', 'cart', 'account', 'tracking'];
+    if (allowed.indexOf(page) === -1) return;
+
+    window.__papjoyAILoaded = true;
+
+    if (!document.querySelector('link[data-pj-ai]')) {
+      var css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = 'css/ai.css';
+      css.setAttribute('data-pj-ai', '');
+      document.head.appendChild(css);
+    }
+
+    if (!document.querySelector('script[data-pj-ai]')) {
+      var script = document.createElement('script');
+      script.src = 'js/ai.js';
+      script.defer = true;
+      script.setAttribute('data-pj-ai', '');
+      document.head.appendChild(script);
+    }
+  } catch (e) { /* the AI layer must never break a page */ }
+})();
+
 window.addEventListener('pagehide', () => {
   window.removeEventListener('error', onPageError);
   window.removeEventListener('unhandledrejection', onUnhandledRejection);

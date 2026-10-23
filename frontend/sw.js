@@ -1,10 +1,11 @@
-const CACHE = 'papjoy-v46';
+const CACHE = 'papjoy-v47';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/style.css',
   '/css/admin.css',
   '/css/responsive.css',
+  '/css/ai.css',
   '/logo.png',
   '/icon-192.png',
   '/icon-512.png',
@@ -27,6 +28,7 @@ const STATIC_ASSETS = [
   '/js/admin.js',
   '/js/account.js',
   '/js/product-editor.js',
+  '/js/ai.js',
   '/js/main.js'
 ];
 

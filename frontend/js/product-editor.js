@@ -84,6 +84,7 @@
     await loadCategories();
     bindEvents();
     updatePreview();
+    initAIEditor();
   });
 
   // =========================================================================
@@ -820,4 +821,173 @@
       if (typeof showToast === 'function') showToast('Failed to delete product');
     }
   }
+  // =========================================================================
+  // AI HELPERS
+  // =========================================================================
+  let aiBindingsDone = false;
+
+  function getSelectedCategoryName() {
+    const select = $('pe-category');
+    if (!select || !select.selectedOptions || !select.selectedOptions[0]) return '';
+    const option = select.selectedOptions[0];
+    return option.value ? option.textContent.trim() : '';
+  }
+
+  function setCategoryByName(name) {
+    if (!name) return false;
+    const select = $('pe-category');
+    if (!select) return false;
+    const wanted = String(name).toLowerCase();
+    const match = Array.from(select.options).find((opt) => opt.value && opt.textContent.trim().toLowerCase() === wanted);
+    if (!match) return false;
+    select.value = match.value;
+    return true;
+  }
+
+  function setButtonBusy(button, busy, busyLabel) {
+    if (!button) return null;
+    if (busy) {
+      const previous = button.innerHTML;
+      button.disabled = true;
+      button.dataset.previousHtml = previous;
+      button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (busyLabel || 'Working...');
+      return previous;
+    }
+    button.disabled = false;
+    if (button.dataset.previousHtml) button.innerHTML = button.dataset.previousHtml;
+    delete button.dataset.previousHtml;
+    return null;
+  }
+
+  function initAIEditor() {
+    if (aiBindingsDone) return;
+    aiBindingsDone = true;
+
+    if (!window.papjoyAI) {
+      document.querySelectorAll('[data-ai-block]').forEach((node) => node.remove());
+      return;
+    }
+
+    window.papjoyAI.status().then((status) => {
+      if (!status || !status.enabled) {
+        document.querySelectorAll('[data-ai-block]').forEach((node) => node.remove());
+      }
+    }).catch(() => {
+      document.querySelectorAll('[data-ai-block]').forEach((node) => node.remove());
+    });
+
+    const generateBtn = $('btn-ai-generate');
+    if (generateBtn) {
+      generateBtn.addEventListener('click', aiDraftProduct);
+    }
+
+    const describeBtn = $('btn-ai-describe');
+    if (describeBtn) {
+      describeBtn.addEventListener('click', aiWriteDescription);
+    }
+  }
+
+  async function aiDraftProduct() {
+    const promptInput = $('pe-ai-prompt');
+    const prompt = promptInput ? promptInput.value.trim() : '';
+
+    if (prompt.length < 4) {
+      if (typeof showToast === 'function') showToast('Describe the product in a few words first');
+      if (promptInput) promptInput.focus();
+      return;
+    }
+
+    const hasWork = ['pe-name', 'pe-description', 'pe-slug', 'pe-short-desc']
+      .some((id) => $(id) && $(id).value.trim());
+
+    if (hasWork && !window.confirm('Replace the current draft fields with the AI version?')) return;
+
+    const button = $('btn-ai-generate');
+    setButtonBusy(button, true, 'Drafting...');
+
+    try {
+      const draft = await window.papjoyAI.generateProduct(prompt);
+
+      if (draft.name) {
+        $('pe-name').value = draft.name;
+        $('pe-slug').value = draft.slug || draft.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      }
+      if (draft.shortDescription) $('pe-short-desc').value = draft.shortDescription;
+      if (draft.description) $('pe-description').value = draft.description;
+      if (draft.brand) $('pe-brand').value = draft.brand;
+
+      if (draft.tags && draft.tags.length) $('pe-tags').value = draft.tags.join(', ');
+
+      if (draft.seo) {
+        if (draft.seo.title) $('pe-seo-title').value = draft.seo.title;
+        if (draft.seo.description) $('pe-seo-desc').value = draft.seo.description;
+        if (draft.seo.keywords && draft.seo.keywords.length) $('pe-seo-keywords').value = draft.seo.keywords.join(', ');
+      }
+
+      if (!Number($('pe-price').value) && Number(draft.suggestedPrice) > 0) {
+        $('pe-price').value = draft.suggestedPrice;
+      }
+
+      if (draft.categoryName) {
+        setCategoryByName(draft.categoryName);
+      }
+
+      updatePreview();
+      if (typeof showToast === 'function') showToast('AI draft ready — review it, then Publish');
+    } catch (err) {
+      console.error('AI draft error:', err);
+      if (typeof showToast === 'function') showToast(err && err.message ? err.message : 'AI drafting failed. Please try again.');
+    } finally {
+      setButtonBusy(button, false);
+    }
+  }
+
+  async function aiWriteDescription() {
+    const name = $('pe-name').value.trim();
+
+    if (!name) {
+      if (typeof showToast === 'function') showToast('Add a product name first');
+      $('pe-name').focus();
+      return;
+    }
+
+    const button = $('btn-ai-describe');
+    setButtonBusy(button, true, 'Writing...');
+
+    try {
+      const copy = await window.papjoyAI.describe({
+        name: name,
+        category: getSelectedCategoryName(),
+        brand: $('pe-brand').value.trim(),
+        price: Number($('pe-price').value) || 0,
+        existingDescription: $('pe-description').value.trim()
+      });
+
+      if (copy.description) $('pe-description').value = copy.description;
+
+      // Only fill the supporting fields when the admin has not already written them.
+      if (copy.shortDescription && !$('pe-short-desc').value.trim()) {
+        $('pe-short-desc').value = copy.shortDescription;
+      }
+      if (copy.tags && copy.tags.length && !$('pe-tags').value.trim()) {
+        $('pe-tags').value = copy.tags.join(', ');
+      }
+      if (copy.seo) {
+        if (copy.seo.title && !$('pe-seo-title').value.trim()) $('pe-seo-title').value = copy.seo.title;
+        if (copy.seo.description && !$('pe-seo-desc').value.trim()) $('pe-seo-desc').value = copy.seo.description;
+        if (copy.seo.keywords && copy.seo.keywords.length && !$('pe-seo-keywords').value.trim()) {
+          $('pe-seo-keywords').value = copy.seo.keywords.join(', ');
+        }
+      }
+
+      updatePreview();
+      if (typeof showToast === 'function') showToast('Description written — review it before publishing');
+    } catch (err) {
+      console.error('AI describe error:', err);
+      if (typeof showToast === 'function') showToast(err && err.message ? err.message : 'AI writing failed. Please try again.');
+    } finally {
+      setButtonBusy(button, false);
+    }
+  }
+
 })();

@@ -27,6 +27,7 @@
   </script>
   <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="css/responsive.css" />
+  <link rel="stylesheet" href="css/ai.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -42,7 +43,7 @@
   
   <script>
   (function(){
-    var V='papjoy-v41',K='papjoy-sw-version';
+    var V='papjoy-v47',K='papjoy-sw-version';
     try{
       if('serviceWorker'in navigator&&navigator.serviceWorker.controller){
         if(localStorage.getItem(K)!==V){
@@ -84,6 +85,19 @@
     <div class="editor-body">
       <!-- Left: Form -->
       <div class="editor-form">
+        <!-- AI drafting -->
+        <section class="editor-section" data-ai-block>
+          <h3 class="editor-section-title"><i class="fas fa-wand-magic-sparkles"></i> Create with AI</h3>
+          <div class="editor-ai-box">
+            <label for="pe-ai-prompt">Describe the product in your own words</label>
+            <textarea id="pe-ai-prompt" placeholder="e.g. Black block heels, 3 inch heel, wedding and party wear, under 1500"></textarea>
+            <div class="editor-ai-row">
+              <button type="button" class="editor-btn-ai" id="btn-ai-generate"><i class="fas fa-wand-magic-sparkles"></i> Draft this product</button>
+              <span class="editor-ai-hint">Fills the form below. Nothing is saved until you press Publish.</span>
+            </div>
+          </div>
+        </section>
+
         <!-- Basic Info -->
         <section class="editor-section">
           <h3 class="editor-section-title"><i class="fas fa-tag"></i> Basic Information</h3>
@@ -106,6 +120,10 @@
           <div class="editor-field">
             <label for="pe-description">Description *</label>
             <textarea id="pe-description" rows="6" placeholder="Detailed product description..." required></textarea>
+            <div class="editor-ai-row" data-ai-block>
+              <button type="button" class="editor-btn-ai" id="btn-ai-describe"><i class="fas fa-pen-nib"></i> Write description with AI</button>
+              <span class="editor-ai-hint">Uses the name, category and price above. Short description, tags and SEO stay untouched if already filled.</span>
+            </div>
           </div>
         </section>
 
@@ -320,6 +338,7 @@
   <script src="js/api.js" defer></script>
   <script src="js/auth.js" defer></script>
   <script src="js/ui.js" defer></script>
+  <script src="js/ai.js" defer></script>
   <script src="js/product-editor.js" defer></script>
   <script src="js/main.js" defer></script>
 </body>

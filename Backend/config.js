@@ -69,6 +69,22 @@ const SMTP_FROM_NAME = process.env.SMTP_FROM_NAME || 'PAP-JOY';
 const SMTP_FROM_ADDRESS = process.env.SMTP_FROM_ADDRESS || CUSTOMER_SUPPORT;
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || CUSTOMER_SUPPORT || 'papp.joyy@gmail.com').split(',').map(email => email.trim().toLowerCase()).filter(Boolean);
 
+// ---------------------------------------------------------------------------
+// AI (Google Gemini)
+// ---------------------------------------------------------------------------
+// The key is server-side only. When it is absent every AI endpoint reports
+// itself as disabled and the frontend hides its AI controls, so the store
+// degrades quietly instead of showing buttons that cannot work.
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+// Comma separated fallbacks, tried in order if the primary model is retired.
+const GEMINI_FALLBACK_MODELS = (process.env.GEMINI_FALLBACK_MODELS || 'gemini-2.5-flash,gemini-2.0-flash')
+  .split(',')
+  .map((m) => m.trim())
+  .filter(Boolean);
+const AI_ENABLED = Boolean(GEMINI_API_KEY);
+const AI_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS) || 25000;
+
 /**
  * Safely retrieve environment variable with validation
  * @param {string} key - Environment variable name
@@ -374,6 +390,11 @@ module.exports = {
   SHIPROCKET_WEBHOOK_SECRET,
   SHIPROCKET_ENABLE_LIVE_RATES,
   ADMIN_EMAILS,
+  GEMINI_API_KEY,
+  GEMINI_MODEL,
+  GEMINI_FALLBACK_MODELS,
+  AI_ENABLED,
+  AI_TIMEOUT_MS,
   SMTP_HOST,
   SMTP_PORT,
   SMTP_USER,
