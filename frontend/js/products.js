@@ -29,6 +29,8 @@ function createProductCardElement(product) {
 
   const imageUrls = getProductImageUrls(product);
   const primaryImage = imageUrls[0] || product.image || getNextFallbackImage();
+  const productVideos = typeof getProductVideos === 'function' ? getProductVideos(product) : [];
+  const hasVideo = Array.isArray(productVideos) && productVideos.length > 0;
   const invStatus = getInventoryStatus(product);
   const productId = product.id || product._id;
   const safeName = escapeHTML(product.name);
@@ -89,6 +91,7 @@ function createProductCardElement(product) {
     <div class="product-image${isOutOfStock ? ' out-of-stock' : ''}">
       <a class="product-image-link" href="${escapeHTML(getProductLink(product))}">
         <img src="${primaryImage}" alt="${safeName}" decoding="async" loading="lazy" onload="revealProductImage(this)" onerror="handleProductImageError(this)">
+        ${hasVideo ? '<span class="product-video-badge" aria-label="Has video"><i class="fas fa-play"></i></span>' : ''}
       </a>
       ${badgeHtml}
       <button class="quick-view-btn" type="button" data-quick-view="${escapeHTML(productId)}" title="${escapeHTML(translate('shop.quickView'))}" aria-label="${escapeHTML(translate('shop.quickView'))}: ${safeName}">
@@ -356,7 +359,12 @@ async function renderProductDetailPage() {
   renderBreadcrumbs(product);
 
   const detailImages = getProductImageUrls(product);
-  const activeImage = detailImages[0] || product.image || PRODUCT_FALLBACK_IMAGE;
+  const detailVideos = typeof getProductVideos === 'function' ? getProductVideos(product) : [];
+  const galleryItems = [];
+  detailImages.forEach((src) => galleryItems.push({ type: 'image', src }));
+  detailVideos.forEach((url, idx) => galleryItems.push({ type: 'video', url, index: idx }));
+  const primaryImage = detailImages[0] || product.image || PRODUCT_FALLBACK_IMAGE;
+  const activeImage = galleryItems.length ? (galleryItems[0].type === 'image' ? galleryItems[0].src : primaryImage) : primaryImage;
   const SIZE_OPTIONS = [
     { uk: 4, eu: 37 },
     { uk: 5, eu: 38 },
@@ -393,16 +401,41 @@ async function renderProductDetailPage() {
   const defaultVariantPrice = product.price + (variantButtons.length ? variantButtons[0].priceDelta : 0);
   const detailsList = (product.details || []).map((detail) => `<li>${escapeHTML(detail)}</li>`).join('');
 
+  const galleryThumbsHtml = galleryItems.length
+    ? galleryItems.map((item, index) => {
+        if (item.type === 'video') {
+          const yt = typeof getYouTubeIdFromUrl === 'function' ? getYouTubeIdFromUrl(item.url) : null;
+          const vm = typeof getVimeoIdFromUrl === 'function' ? getVimeoIdFromUrl(item.url) : null;
+          const thumb = typeof getVideoThumbnailUrl === 'function' ? getVideoThumbnailUrl(item.url) : null;
+          const direct = typeof isDirectVideoUrl === 'function' ? isDirectVideoUrl(item.url) : false;
+          const label = yt ? 'YT' : vm ? 'Vimeo' : direct ? 'MP4' : 'Video';
+          return `
+            <button class="gallery-thumb gallery-thumb--video${index === 0 && galleryItems[0].type === 'video' ? ' active' : ''}" type="button" data-video-url="${escapeHTML(item.url)}" data-video-type="${yt ? 'youtube' : vm ? 'vimeo' : direct ? 'direct' : 'other'}" data-index="${index}">
+              ${thumb ? `<img src="${escapeHTML(thumb)}" alt="Video ${index + 1}" onerror="this.style.display='none'" />` : `<div class="gallery-video-thumb"><i class="fas fa-play"></i></div>`}
+              <span class="gallery-video-badge">${label}</span>
+            </button>
+          `;
+        }
+        return `
+          <button class="gallery-thumb${index === 0 && galleryItems[0].type === 'image' ? ' active' : ''}" type="button" data-image="${escapeHTML(item.src)}" data-index="${index}">
+            <img src="${escapeHTML(item.src)}" alt="${escapeHTML(product.name || 'Product')} image ${index + 1}" onerror="handleProductImageError(this)" />
+          </button>
+        `;
+      }).join('')
+    : (detailImages.length ? detailImages : [product.image || PRODUCT_FALLBACK_IMAGE]).map((src, index) => `
+        <button class="gallery-thumb${index === 0 ? ' active' : ''}" type="button" data-image="${escapeHTML(src)}">
+          <img src="${escapeHTML(src)}" alt="${escapeHTML(product.name || 'Product')} image ${index + 1}" onerror="handleProductImageError(this)" />
+        </button>
+      `).join('');
+
   container.innerHTML = `
     <div class="product-detail-card">
       <div class="product-gallery">
-        <img id="detail-main-image" src="${activeImage}" alt="${escapeHTML(product.name || 'Product')}" onerror="handleProductImageError(this)" />
+        <div class="product-gallery-main" id="product-gallery-main">
+          <img id="detail-main-image" src="${escapeHTML(activeImage)}" alt="${escapeHTML(product.name || 'Product')}" onerror="handleProductImageError(this)" />
+        </div>
         <div class="gallery-thumbs">
-          ${(detailImages.length ? detailImages : [product.image || PRODUCT_FALLBACK_IMAGE]).map((src, index) => `
-            <button class="gallery-thumb${index === 0 ? ' active' : ''}" type="button" data-image="${src}">
-              <img src="${src}" alt="${escapeHTML(product.name || 'Product')} image ${index + 1}" onerror="handleProductImageError(this)" />
-            </button>
-          `).join('')}
+          ${galleryThumbsHtml}
         </div>
       </div>
       <div class="detail-copy">
@@ -445,6 +478,7 @@ async function renderProductDetailPage() {
   `;
 
   const mainImage = container.querySelector('#detail-main-image');
+  const galleryMain = container.querySelector('#product-gallery-main');
   const thumbButtons = Array.from(container.querySelectorAll('.gallery-thumb'));
   const variantOptionButtons = Array.from(container.querySelectorAll('.variant-option'));
   const detailPrice = container.querySelector('#detail-price');
@@ -481,7 +515,7 @@ async function renderProductDetailPage() {
     '@type': 'Product',
     name: product.name,
     description: product.description || product.subtitle || '',
-    image: detailImages.length ? detailImages : [product.image || ''],
+    image: galleryItems.length && galleryItems[0].type === 'image' ? galleryItems.map(i => i.type === 'image' ? i.src : null).filter(Boolean) : (detailImages.length ? detailImages : [product.image || '']),
     sku: product.sku || (product.id || product._id),
     brand: { '@type': 'Brand', name: product.brand || 'PAP-JOY' },
     offers: {
@@ -491,18 +525,86 @@ async function renderProductDetailPage() {
       price: product.price || 0,
       availability: inv.outOfStock ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
       itemCondition: 'https://schema.org/NewCondition'
-    }
+    },
+    video: detailVideos.length ? detailVideos.slice(0, 3) : undefined
   });
   document.head.appendChild(ldScript);
+
+  function showImage(src) {
+    if (!galleryMain || !mainImage) return;
+    const existingVideo = galleryMain.querySelector('.product-video-player');
+    if (existingVideo) existingVideo.remove();
+    mainImage.style.display = '';
+    mainImage.src = src;
+  }
+
+  function showVideo(url) {
+    if (!galleryMain) return;
+    const existingVideo = galleryMain.querySelector('.product-video-player');
+    if (existingVideo) existingVideo.remove();
+    if (mainImage) mainImage.style.display = 'none';
+
+    const ytId = typeof getYouTubeIdFromUrl === 'function' ? getYouTubeIdFromUrl(url) : null;
+    const vmId = typeof getVimeoIdFromUrl === 'function' ? getVimeoIdFromUrl(url) : null;
+    const direct = typeof isDirectVideoUrl === 'function' ? isDirectVideoUrl(url) : false;
+
+    if (ytId) {
+      const iframe = document.createElement('iframe');
+      iframe.className = 'product-video-player';
+      iframe.src = 'https://www.youtube.com/embed/' + ytId + '?rel=0';
+      iframe.title = product.name || 'Product video';
+      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+      iframe.allowFullscreen = true;
+      iframe.frameBorder = '0';
+      galleryMain.appendChild(iframe);
+      return;
+    }
+    if (vmId) {
+      const iframe = document.createElement('iframe');
+      iframe.className = 'product-video-player';
+      iframe.src = 'https://player.vimeo.com/video/' + vmId;
+      iframe.title = product.name || 'Product video';
+      iframe.allow = 'autoplay; fullscreen; picture-in-picture';
+      iframe.allowFullscreen = true;
+      iframe.frameBorder = '0';
+      galleryMain.appendChild(iframe);
+      return;
+    }
+    if (direct) {
+      const video = document.createElement('video');
+      video.className = 'product-video-player';
+      video.src = url;
+      video.controls = true;
+      video.playsInline = true;
+      video.preload = 'metadata';
+      galleryMain.appendChild(video);
+      return;
+    }
+
+    if (mainImage) {
+      mainImage.style.display = '';
+      mainImage.src = url;
+    }
+  }
 
   // Recommendations
   thumbButtons.forEach((button) => {
     button.addEventListener('click', () => {
-      if (!mainImage) return;
-      const imageUrl = button.dataset.image;
-      mainImage.src = imageUrl;
       thumbButtons.forEach((thumb) => thumb.classList.remove('active'));
       button.classList.add('active');
+
+      if (button.dataset.videoUrl) {
+        showVideo(button.dataset.videoUrl);
+        return;
+      }
+      if (button.dataset.image) {
+        showImage(button.dataset.image);
+        return;
+      }
+      if (mainImage && button.dataset.image) {
+        showImage(button.dataset.image);
+        return;
+      }
     });
   });
 

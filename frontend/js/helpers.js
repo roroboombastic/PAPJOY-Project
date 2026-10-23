@@ -117,6 +117,53 @@ function getProductImageUrls(product) {
   return [];
 }
 
+function getYouTubeIdFromUrl(url) {
+  if (!url) return null;
+  const str = String(url);
+  const m = str.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/))([\w-]{11})/i);
+  return m ? m[1] : null;
+}
+
+function getVimeoIdFromUrl(url) {
+  if (!url) return null;
+  const str = String(url);
+  const m = str.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
+  return m ? m[1] : null;
+}
+
+function isDirectVideoUrl(url) {
+  if (!url) return false;
+  return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(String(url));
+}
+
+function getProductVideos(product) {
+  if (!product) return [];
+  if (Array.isArray(product.videos)) {
+    return product.videos
+      .map((v) => (typeof v === 'string' ? v.trim() : v?.url || v?.src || ''))
+      .filter(Boolean);
+  }
+  if (typeof product.video === 'string' && product.video.trim()) {
+    return [product.video.trim()];
+  }
+  return [];
+}
+
+function getVideoEmbedUrl(url) {
+  const ytId = getYouTubeIdFromUrl(url);
+  if (ytId) return `https://www.youtube.com/embed/${ytId}`;
+  const vimeoId = getVimeoIdFromUrl(url);
+  if (vimeoId) return `https://player.vimeo.com/video/${vimeoId}`;
+  if (isDirectVideoUrl(url)) return null;
+  return null;
+}
+
+function getVideoThumbnailUrl(url) {
+  const ytId = getYouTubeIdFromUrl(url);
+  if (ytId) return `https://img.youtube.com/vi/${ytId}/mqdefault.jpg`;
+  return null;
+}
+
 function normalizeVariantName(variantName) {
   return String(variantName || 'Standard').trim() || 'Standard';
 }
@@ -254,6 +301,12 @@ window.fetchWithTimeout = fetchWithTimeout;
 window.handleProductImageError = handleProductImageError;
 window.revealProductImage = revealProductImage;
 window.getProductImageUrls = getProductImageUrls;
+window.getProductVideos = getProductVideos;
+window.getVideoEmbedUrl = getVideoEmbedUrl;
+window.getVideoThumbnailUrl = getVideoThumbnailUrl;
+window.getYouTubeIdFromUrl = getYouTubeIdFromUrl;
+window.getVimeoIdFromUrl = getVimeoIdFromUrl;
+window.isDirectVideoUrl = isDirectVideoUrl;
 window.resolveProductImageUrl = resolveProductImageUrl;
 window.normalizeVariantName = normalizeVariantName;
 window.getItemIdentity = getItemIdentity;
