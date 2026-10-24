@@ -129,7 +129,7 @@
     </header>
 
     <!-- Dynamic Hero Section -->
-    <section class="hero">
+    <section class="hero hero-with-visual">
       <div class="hero-bg">
         <div class="hero-bg-shape shape-1"></div>
         <div class="hero-bg-shape shape-2"></div>
@@ -139,64 +139,112 @@
       <div class="hero-content">
         <div class="hero-badge">
           <i class="fas fa-shoe-prints"></i>
-          <span>Designed for every step</span>
+          <span>New Arrivals</span>
         </div>
-        <p class="eyebrow" data-i18n="hero.eyebrow">Precision Footwear</p>
         <h1 class="hero-title" data-i18n="hero.heading">
-          Move with confidence in shoes made for performance.
+          Step Into Style
         </h1>
         <p class="hero-text" data-i18n="hero.text">
-          Explore premium footwear crafted with clean lines, durable materials, and balanced comfort.
+          Bold, elegant footwear for every occasion. Premium designs that speak for themselves.
         </p>
-
-        <!-- Dynamic Stats -->
-        <div class="hero-stats">
-          <div class="stat">
-            <div class="stat-value">12+</div>
-            <div class="stat-label">Premium styles</div>
-          </div>
-          <div class="stat">
-            <div class="stat-value">3</div>
-            <div class="stat-label">Curated collections</div>
-          </div>
-          <div class="stat">
-            <div class="stat-value">5+</div>
-            <div class="stat-label">Years craft</div>
-          </div>
-        </div>
 
         <div class="hero-actions">
           <a href="product.html" class="btn btn-primary pulse" data-i18n="hero.cta">
             <i class="fas fa-shopping-bag"></i>
-            Shop the collection
+            Shop Now
           </a>
-          <a href="signin.html#signup" class="btn btn-secondary" data-i18n="hero.join">
-            <i class="fas fa-user-plus"></i>
-            Join PAP-JOY
+          <a href="product.html?sort=newest" class="btn btn-secondary">
+            <i class="fas fa-sparkles"></i>
+            View New Arrivals
+          </a>
+        </div>
+
+        <!-- Dynamic Stats -->
+        <div class="hero-stats">
+          <div class="stat">
+            <div class="stat-value">Premium</div>
+            <div class="stat-label">Quality</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">7-Day</div>
+            <div class="stat-label">Returns</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">Secure</div>
+            <div class="stat-label">Checkout</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="hero-image-grid">
+          <a href="product.html" class="hero-img-card hero-img-card-large">
+            <img src="images/products/WhatsApp Image 2026-08-01 at 09.41.48 (1).jpg" alt="PAP-JOY footwear" loading="eager" onerror="this.src='images/products/WhatsApp Image 2026-08-01 at 09.41.47.jpg'">
+          </a>
+          <a href="product.html" class="hero-img-card">
+            <img src="images/products/WhatsApp Image 2026-08-01 at 09.41.46 (1).jpg" alt="PAP-JOY footwear" loading="eager" onerror="this.src='images/products/WhatsApp Image 2026-08-01 at 09.41.45.jpg'">
+          </a>
+          <a href="product.html" class="hero-img-card">
+            <img src="images/products/WhatsApp Image 2026-08-01 at 09.41.50 (1).jpg" alt="PAP-JOY footwear" loading="eager" onerror="this.src='images/products/WhatsApp Image 2026-08-01 at 09.41.49.jpg'">
           </a>
         </div>
       </div>
 
     </section>
 
+    <!-- Visual Category Strip -->
+    <section class="category-strip">
+      <div class="category-strip-inner">
+        <a href="product.html" class="category-tile">
+          <img src="images/products/WhatsApp Image 2026-08-01 at 09.41.47 (1).jpg" alt="Heels" onerror="this.src='images/products/WhatsApp Image 2026-08-01 at 09.41.46.jpg'">
+          <span class="category-tile-label">Heels</span>
+        </a>
+        <a href="product.html" class="category-tile">
+          <img src="images/products/WhatsApp Image 2026-08-01 at 09.41.49 (1).jpg" alt="Flats" onerror="this.src='images/products/WhatsApp Image 2026-08-01 at 09.41.48.jpg'">
+          <span class="category-tile-label">Flats</span>
+        </a>
+        <a href="product.html" class="category-tile">
+          <img src="images/products/WhatsApp Image 2026-08-01 at 09.41.51.jpg" alt="Party Wear" onerror="this.src='images/products/WhatsApp Image 2026-08-01 at 09.41.50.jpg'">
+          <span class="category-tile-label">Party Wear</span>
+        </a>
+        <a href="product.html" class="category-tile">
+          <img src="images/products/WhatsApp Image 2026-08-01 at 09.41.52 (1).jpg" alt="Casual" onerror="this.src='images/products/WhatsApp Image 2026-08-01 at 09.41.51.jpg'">
+          <span class="category-tile-label">Casual</span>
+        </a>
+      </div>
+    </section>
+
     <!-- Featured Products Section -->
     <section class="featured-section">
       <div class="section-header">
-        <p class="eyebrow" data-i18n="featured.eyebrow">Featured styles</p>
-        <h2 data-i18n="featured.heading">Explore featured styles</h2>
-        <div class="section-controls">
-          <button class="control-btn active" data-filter="all">All</button>
-          <button class="control-btn" data-filter="featured">Featured</button>
-          <button class="control-btn" data-filter="new">New Arrivals</button>
-        </div>
+        <h2>Our Collection</h2>
+        <a class="section-link" href="product.html">View All <i class="fas fa-arrow-right"></i></a>
       </div>
       <div class="product-grid" id="featured-products">
         <!-- Featured products will be loaded here by JavaScript -->
       </div>
-      <div class="section-actions">
-        <a href="product.html" class="btn btn-primary" data-i18n="featured.viewall">
-          <i class="fas fa-arrow-right"></i>
-          View all products
+    </section>
+
+    <!-- Full Image Showcase -->
+    <section class="showcase-section">
+      <div class="showcase-grid">
+        <a href="product.html" class="showcase-card showcase-card-large">
+          <img src="images/products/WhatsApp Image 2026-08-01 at 09.41.48 (2).jpg" alt="PAP-JOY Collection" onerror="this.src='images/products/WhatsApp Image 2026-08-01 at 09.41.47 (2).jpg'">
+          <div class="showcase-overlay">
+            <span class="showcase-label">Shop Collection</span>
+          </div>
+        </a>
+        <a href="product.html" class="showcase-card">
+          <img src="images/products/WhatsApp Image 2026-08-01 at 09.41.46 (2).jpg" alt="PAP-JOY Heels" onerror="this.src='images/products/WhatsApp Image 2026-08-01 at 09.41.45 (2).jpg'">
+          <div class="showcase-overlay">
+            <span class="showcase-label">Heels</span>
+          </div>
+        </a>
+        <a href="product.html" class="showcase-card">
+          <img src="images/products/WhatsApp Image 2026-08-01 at 09.41.50 (2).jpg" alt="PAP-JOY Flats" onerror="this.src='images/products/WhatsApp Image 2026-08-01 at 09.41.49 (2).jpg'">
+          <div class="showcase-overlay">
+            <span class="showcase-label">Flats</span>
+          </div>
         </a>
       </div>
     </section>
