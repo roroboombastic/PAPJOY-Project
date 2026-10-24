@@ -88,32 +88,22 @@ function createProductCardElement(product) {
     : '';
 
   card.innerHTML = `
-    <div class="product-image${isOutOfStock ? ' out-of-stock' : ''}">
-      <a class="product-image-link" href="${escapeHTML(getProductLink(product))}">
-        <img src="${primaryImage}" alt="${safeName}" decoding="async" loading="lazy" onload="revealProductImage(this)" onerror="handleProductImageError(this)">
-        ${hasVideo ? '<span class="product-video-badge" aria-label="Has video"><i class="fas fa-play"></i></span>' : ''}
-      </a>
-      ${badgeHtml}
-      <button class="quick-view-btn" type="button" data-quick-view="${escapeHTML(productId)}" title="${escapeHTML(translate('shop.quickView'))}" aria-label="${escapeHTML(translate('shop.quickView'))}: ${safeName}">
-        <i class="fas fa-eye" aria-hidden="true"></i>
+    <a class="product-link" href="${escapeHTML(getProductLink(product))}">
+      <div class="product-info">
+        <div class="product-info-top">
+          <span class="category">${safeCategory}</span>
+          <button class="wishlist-heart" data-product-id="${escapeHTML(productId)}" title="Add to wishlist" aria-label="Add ${safeName} to wishlist" onclick="event.preventDefault(); event.stopPropagation();"><i class="${isInWishlist(productId) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
+        </div>
+        <h3 class="product-name">${safeName}</h3>
+        ${ratingRow}
+        ${priceRow}
+        ${stockChip ? stockChip.replace('class="stock-chip', 'class="stock-chip-inline') : ''}
+      </div>
+    </a>
+    <div class="product-actions">
+      <button class="btn btn-primary add-to-cart-btn" type="button" data-product-id="${escapeHTML(productId)}" ${isOutOfStock ? 'disabled' : ''}>
+        ${isOutOfStock ? escapeHTML(translate('product.outOfStock')) : escapeHTML(translate('product.addToCartLabel'))}
       </button>
-      ${stockChip}
-    </div>
-    <div class="product-info">
-      <div class="product-info-top">
-        <button class="wishlist-heart" data-product-id="${escapeHTML(productId)}" title="Add to wishlist" aria-label="Add ${safeName} to wishlist"><i class="${isInWishlist(productId) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
-      </div>
-      <h3 class="product-name">${safeName}</h3>
-      ${ratingRow}
-      ${priceRow}
-      <div class="product-actions">
-        <button class="btn btn-primary add-to-cart-btn" type="button" data-product-id="${escapeHTML(productId)}" ${isOutOfStock ? 'disabled' : ''}>
-          ${isOutOfStock ? escapeHTML(translate('product.outOfStock')) : escapeHTML(translate('product.addToCartLabel'))}
-        </button>
-        <button class="btn btn-secondary buy-now-btn" type="button" data-product-id="${escapeHTML(productId)}" ${isOutOfStock ? 'disabled' : ''}>
-          <i class="fas fa-bolt"></i> ${escapeHTML(translate('product.buyNow'))}
-        </button>
-      </div>
     </div>
   `;
   return card;
