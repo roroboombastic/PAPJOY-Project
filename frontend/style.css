@@ -1340,9 +1340,9 @@ body.mobile-nav-open .mobile-nav-overlay {
 .product-grid {
   display: grid;
   align-items: stretch;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
-  margin-top: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
 }
 
 .featured-section .section-actions {
@@ -1354,10 +1354,9 @@ body.mobile-nav-open .mobile-nav-overlay {
 .product-card {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   gap: 12px;
-  min-height: 220px;
-  border-radius: 10px;
+  min-height: 380px;
+  border-radius: 12px;
   overflow: hidden;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -1367,7 +1366,7 @@ body.mobile-nav-open .mobile-nav-overlay {
 
 .product-card:hover {
   border-color: rgba(92, 124, 99, 0.4);
-  box-shadow: 0 4px 16px rgba(32, 48, 38, 0.1);
+  box-shadow: 0 8px 24px rgba(32, 48, 38, 0.12);
 }
 
 .product-card {
@@ -1393,18 +1392,17 @@ body.mobile-nav-open .mobile-nav-overlay {
 /* ---- Product stock chip (low stock / out of stock) ---- */
 
 .stock-chip {
-  display: none;
-}
-
-.stock-chip-inline {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
+  padding: 6px 10px;
   border-radius: 999px;
   font-size: 0.7rem;
   font-weight: 700;
-  width: fit-content;
 }
 
 .stock-chip .stock-chip-dot {
@@ -1453,7 +1451,10 @@ body.mobile-nav-open .mobile-nav-overlay {
 }
 
 .product-image {
-  display: none;
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--surface-muted, #e8ede9);
 }
 
 .product-image img {
@@ -1527,37 +1528,29 @@ body.mobile-nav-open .mobile-nav-overlay {
 }
 
 .badge {
-  display: none;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #111;
+  background: rgba(140, 169, 147, 0.95);
+  z-index: 2;
 }
 
 .product-info {
-  padding: 14px;
+  padding: 12px 14px 14px;
   display: grid;
-  gap: 8px;
-  flex: 1;
-}
-
-.product-link {
-  text-decoration: none;
-  color: inherit;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+  gap: 6px;
 }
 
 .product-info-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
-}
-
-.product-info .category {
-  color: var(--accent);
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
 .wishlist-heart {
@@ -1565,21 +1558,27 @@ body.mobile-nav-open .mobile-nav-overlay {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--card-border, rgba(0, 0, 0, 0.1));
+  border-radius: 999px;
+  background: var(--surface, #fff);
+  color: var(--accent);
   font-size: 0.95rem;
   cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+  margin-top: -18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 .wishlist-heart:hover {
   color: var(--danger, #e74c3c);
+  transform: scale(1.05);
 }
 
 .wishlist-heart.active {
   color: var(--danger, #e74c3c);
+  border-color: var(--danger, #e74c3c);
 }
 
 .detail-meta {
@@ -1862,10 +1861,10 @@ body.mobile-nav-open .mobile-nav-overlay {
 }
 
 .product-name {
-  margin: 0;
+  margin: -10px 0 0;
   font-size: 0.9rem;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.5;
   color: var(--text);
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1916,15 +1915,16 @@ body.mobile-nav-open .mobile-nav-overlay {
 
 .product-actions {
   display: flex;
+  gap: 8px;
   padding: 0 14px 14px;
 }
 
 .product-actions .btn {
-  flex: 1;
+  flex: 1 1 auto;
   justify-content: center;
   padding: 9px 12px;
-  font-size: 0.82rem;
-  border-radius: 8px;
+  font-size: 0.8rem;
+  border-radius: 10px;
 }
 
 /* Cards and inputs */
