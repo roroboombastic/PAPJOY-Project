@@ -101,17 +101,14 @@ function createProductCardElement(product) {
     </div>
     <div class="product-info">
       <div class="product-info-top">
-        <div class="category">${safeCategory}</div>
         <button class="wishlist-heart" data-product-id="${escapeHTML(productId)}" title="Add to wishlist" aria-label="Add ${safeName} to wishlist"><i class="${isInWishlist(productId) ? 'fas fa-heart' : 'far fa-heart'}"></i></button>
       </div>
       <h3 class="product-name">${safeName}</h3>
       ${ratingRow}
-      <p class="product-subtitle">${escapeHTML(subtitle)}</p>
       ${priceRow}
-      <div class="tax-included">All taxes included</div>
       <div class="product-actions">
         <button class="btn btn-primary add-to-cart-btn" type="button" data-product-id="${escapeHTML(productId)}" ${isOutOfStock ? 'disabled' : ''}>
-          <i class="fas fa-cart-plus"></i> ${isOutOfStock ? escapeHTML(translate('product.outOfStock')) : escapeHTML(translate('product.addToCartLabel'))}
+          ${isOutOfStock ? escapeHTML(translate('product.outOfStock')) : escapeHTML(translate('product.addToCartLabel'))}
         </button>
         <button class="btn btn-secondary buy-now-btn" type="button" data-product-id="${escapeHTML(productId)}" ${isOutOfStock ? 'disabled' : ''}>
           <i class="fas fa-bolt"></i> ${escapeHTML(translate('product.buyNow'))}
