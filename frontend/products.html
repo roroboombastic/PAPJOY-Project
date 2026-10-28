@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <script>
+  (function(){
+    try{
+      var t=localStorage.getItem("papjoy-theme");
+      if(t==="dark"){document.documentElement.setAttribute("data-theme","dark");}
+      else if(t==="light"){document.documentElement.setAttribute("data-theme","light");}
+      else if(window.matchMedia("(prefers-color-scheme: dark)").matches){
+        document.documentElement.setAttribute("data-theme","dark");
+      }
+    }catch(e){}
+  })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Shop PAP-JOY - Premium footwear collection." />
+  <meta name="theme-color" content="#0a0a0a" />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  <title>PAP-JOY | Shop</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/ai.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <script src="js/i18n.js"></script>
+  <script src="js/auth.js" defer></script>
+  <script src="js/api.js" defer></script>
+  <script src="js/translation-helper.js" defer></script>
+  <script src="js/wishlist.js" defer></script>
+  <script src="js/cart.js" defer></script>
+  <script src="js/navigation.js" defer></script>
+  <script src="js/main.js" defer></script>
+  <script src="js/products.js" defer></script>
+  <script src="js/shop.js" defer></script>
+  <script src="js/ai.js" defer></script>
+</head>
+<body data-page="products" class="has-global-nav">
+  <div class="announcement-bar" id="announcement-bar" role="status" aria-live="polite">
+    <div class="announcement-bar-inner">
+      <button class="announcement-close" id="announcement-close" aria-label="Dismiss announcement"><i class="fas fa-times"></i></button>
+      <div class="announcement-content" id="announcement-content"></div>
+    </div>
+  </div>
+
+  <aside id="site-sidebar" class="site-sidebar"></aside>
+  <button class="mobile-menu-toggle" id="mobile-menu-toggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="site-sidebar">
+    <i class="fas fa-bars"></i>
+  </button>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <main class="shop-page-new">
+    <header class="shop-header">
+      <div class="shop-header-top">
+        <div>
+          <p class="shop-eyebrow">Collection</p>
+          <h1 class="shop-title">All Products</h1>
+          <p class="shop-subtitle">Discover our curated selection of premium footwear</p>
+        </div>
+        <div class="shop-header-meta">
+          <div class="shop-count-pill">
+            <span id="shop-stat-total">0</span> products
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="shop-toolbar-new">
+      <div class="shop-search-new">
+        <i class="fas fa-search"></i>
+        <input id="search-products" type="search" placeholder="Search products..." autocomplete="off">
+      </div>
+      <div class="shop-toolbar-actions">
+        <select id="sort-filter" class="shop-select">
+          <option value="newest">Newest</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+          <option value="name-asc">Name: A - Z</option>
+          <option value="discount">Best Discount</option>
+        </select>
+        <select id="per-page-select" class="shop-select"></select>
+        <div class="shop-view-toggle" id="shop-view-toggle">
+          <button data-view="grid" class="active"><i class="fas fa-th"></i></button>
+          <button data-view="list"><i class="fas fa-list"></i></button>
+        </div>
+        <button class="shop-filter-btn" id="shop-filter-open">
+          <i class="fas fa-sliders"></i> Filters
+        </button>
+      </div>
+    </div>
+
+    <div class="shop-layout-new">
+      <aside class="shop-filters" id="shop-sidebar">
+        <div class="shop-filters-header">
+          <h2>Filters</h2>
+          <button id="shop-sidebar-close"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="shop-filters-body">
+          <section class="filter-section">
+            <h3>Categories</h3>
+            <div id="facet-categories" class="filter-list"></div>
+          </section>
+          <section class="filter-section">
+            <h3>Price Range</h3>
+            <div class="price-range-inputs">
+              <input type="number" id="price-min" placeholder="Min">
+              <span>-</span>
+              <input type="number" id="price-max" placeholder="Max">
+            </div>
+            <div id="price-quick-select" class="price-chips">
+              <button data-price="all" class="active">All</button>
+              <button data-price="0-499">&lt; 500</button>
+              <button data-price="500-999">500-999</button>
+              <button data-price="1000-1499">1000-1499</button>
+              <button data-price="1500-999999">1500+</button>
+            </div>
+          </section>
+          <section class="filter-section">
+            <h3>Brand</h3>
+            <div id="facet-brands" class="filter-list"></div>
+          </section>
+          <section class="filter-section">
+            <h3>Size</h3>
+            <div id="facet-sizes" class="filter-chips"></div>
+          </section>
+          <section class="filter-section">
+            <h3>Availability</h3>
+            <label class="checkbox-filter">
+              <input type="checkbox" id="in-stock-filter">
+              <span>In Stock Only</span>
+            </label>
+          </section>
+        </div>
+        <div class="shop-filters-footer">
+          <button id="shop-filter-reset" class="btn-reset">Clear All</button>
+          <button id="shop-sidebar-apply" class="btn-apply">Apply</button>
+        </div>
+      </aside>
+      <div class="shop-sidebar-backdrop" id="shop-sidebar-backdrop"></div>
+
+      <section class="shop-main">
+        <div class="active-filters-bar" id="active-filters"></div>
+        <p class="product-status" id="product-status"></p>
+        <div class="product-grid" id="product-grid"></div>
+        <nav class="pagination" id="shop-pagination"></nav>
+      </section>
+    </div>
+  </main>
+
+  <button id="back-to-top" class="back-to-top" aria-label="Back to top"><i class="fas fa-chevron-up"></i></button>
+  <div id="toast-container" class="toast-container"></div>
+</body>
+</html>

@@ -369,9 +369,9 @@ function initQuickView() {
 function enhanceAllEmptyStates() {
   var page = document.body.dataset.page;
   if (page === 'cart') {
-    enhanceEmptyState('cart-items', '\ud83d\uded2', 'Your cart is empty', 'Looks like you haven\'t added anything yet. Browse our collection and find your perfect pair.', 'Start Shopping', 'shop.html');
+    enhanceEmptyState('cart-items', '\ud83d\uded2', 'Your cart is empty', 'Looks like you haven\'t added anything yet. Browse our collection and find your perfect pair.', 'Start Shopping', 'products.html');
   } else if (page === 'product' || page === 'shop') {
-    enhanceEmptyState('product-grid', '\ud83d\udc5e', 'No products found', 'Try adjusting your filters or search terms.', 'Clear Filters', 'shop.html');
+    enhanceEmptyState('product-grid', '\ud83d\udc5e', 'No products found', 'Try adjusting your filters or search terms.', 'Clear Filters', 'products.html');
   }
 }
 

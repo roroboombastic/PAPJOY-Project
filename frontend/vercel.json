@@ -4,23 +4,23 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".",
   "rewrites": [
-    { "source": "/shop
-    { "source": "/shop
-    { "source": "/shop
-    { "source": "/shop
-    { "source": "/shop
-    { "source": "/shop
-    { "source": "/shop
-    { "source": "/shop
-    { "source": "/shop
-    { "source": "/shop
-    { "source": "/shop
-    { "source": "/shop
-    { "source": "/shop
-    { "source": "/shop
-    { "source": "/shop
-    { "source": "/shop
-    { "source": "/shop
-    { "source": "/shop
+    { "source": "/products
+    { "source": "/products
+    { "source": "/products
+    { "source": "/products
+    { "source": "/products
+    { "source": "/products
+    { "source": "/products
+    { "source": "/products
+    { "source": "/products
+    { "source": "/products
+    { "source": "/products
+    { "source": "/products
+    { "source": "/products
+    { "source": "/products
+    { "source": "/products
+    { "source": "/products
+    { "source": "/products
+    { "source": "/products
   ]
 }

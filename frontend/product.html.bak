@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <script>
+  (function(){
+    try{
+      var t=localStorage.getItem("papjoy-theme");
+      if(t==="dark"){document.documentElement.setAttribute("data-theme","dark");}
+      else if(t==="light"){document.documentElement.setAttribute("data-theme","light");}
+      else if(window.matchMedia("(prefers-color-scheme: dark)").matches){
+        document.documentElement.setAttribute("data-theme","dark");
+      }
+    }catch(e){}
+  })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Browse the complete PAP-JOY collection. Filter by category, brand and price, sort the results and compare every style before you add it to your cart." />
+  <meta name="theme-color" content="#0a0a0a" />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  <title>PAP-JOY | Shop Footwear Collection</title>
+  <script>
+    // Configure API base URL for production
+    if (window.location.hostname === 'papjoy-project.vercel.app' || window.location.hostname === 'papjoy.com' || window.location.hostname === 'www.papjoy.com') {
+      window.API_BASE_URL = 'https://papjoy-project.onrender.com';
+    }
+  </script>
+  <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="css/responsive.css" />
+  <link rel="preconnect" href="https://papjoy-project.onrender.com" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="manifest" href="/manifest.json" />
+  
+  <meta property="og:title" content="PAP-JOY | Shop Footwear Collection" />
+  <meta property="og:description" content="Browse the complete PAP-JOY collection. Filter by category, brand and price, sort the results and compare every style before you add it to your cart." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="PAP-JOY" />
+  <meta property="og:image" content="https://papjoy.com/logo.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  
+  <script>
+  (function(){
+    var V='papjoy-v47',K='papjoy-sw-version';
+    try{
+      if('serviceWorker'in navigator&&navigator.serviceWorker.controller){
+        if(localStorage.getItem(K)!==V){
+          localStorage.setItem(K,V);
+          navigator.serviceWorker.getRegistrations().then(function(list){
+            var ps=[];for(var i=0;i<list.length;i++){ps.push(list[i].unregister());}
+            return Promise.all(ps);
+          }).catch(function(){}).then(function(){location.reload();});
+        }
+      }else{
+        localStorage.setItem(K,V);
+      }
+    }catch(e){}
+  })();
+  </script>
+</head>
+<body data-page="shop">
+  <!-- Global Error Notification -->
+  <div id="global-error" class="global-error" style="display: none;"></div>
+  <!-- Announcement / Status Bar -->
+  <div id="announcement-bar" class="announcement-bar">
+    <div class="announcement-bar-inner">
+      <span class="announcement-icon"><i class="fas fa-shipping-fast"></i></span>
+      <span class="announcement-text">All prices include all taxes</span>
+      <span class="announcement-separator">|</span>
+      <span class="announcement-icon"><i class="fas fa-undo-alt"></i></span>
+      <span class="announcement-text">Easy 7-day returns</span>
+      <button class="announcement-close" id="announcement-close" aria-label="Close announcement"><i class="fas fa-times"></i></button>
+    </div>
+  </div>
+
+  <aside id="site-sidebar" class="site-sidebar"></aside>
+  <button class="mobile-menu-toggle" id="mobile-menu-toggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="site-sidebar" title="Open navigation menu"><i class="fas fa-bars"></i></button>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <main class="product-section shop-page">
+    <nav class="breadcrumbs" id="breadcrumbs" aria-label="Breadcrumb"></nav>
+
+    <!-- ============ HERO ============ -->
+    <section class="shop-hero">
+      <div class="shop-hero-copy">
+        <h1 class="shop-hero-title" data-i18n="shop.heroTitle">All Products</h1>
+      </div>
+      <div class="shop-hero-stats" id="shop-stats">
+        <div class="shop-stat">
+          <span class="shop-stat-value" id="shop-stat-total">0</span>
+          <span class="shop-stat-label" data-i18n="shop.statStyles">items</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ LAYOUT ============ -->
+    <div class="shop-layout">
+      <!-- Filter sidebar (sticky on desktop, drawer on mobile) -->
+      <aside class="shop-sidebar" id="shop-sidebar" aria-label="Product filters">
+        <div class="shop-sidebar-head">
+          <h2 class="shop-sidebar-title">
+            <i class="fas fa-sliders" aria-hidden="true"></i>
+            <span data-i18n="shop.filters">Filters</span>
+          </h2>
+          <button type="button" class="shop-sidebar-close" id="shop-sidebar-close" title="Close filters" data-i18n-aria-label="shop.closeFilters">
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <div class="shop-sidebar-body">
+          <section class="shop-facet-group">
+            <h3 class="shop-facet-title" data-i18n="shop.category">Category</h3>
+            <div class="shop-facet-list" id="facet-categories"></div>
+          </section>
+
+          <section class="shop-facet-group">
+            <h3 class="shop-facet-title" data-i18n="shop.price">Price</h3>
+            <div class="shop-price-range">
+              <label class="shop-price-input">
+                <span data-i18n="shop.priceMin">Min</span>
+                <input type="number" id="price-min" min="0" step="1" inputmode="numeric" placeholder="0" />
+              </label>
+              <span class="shop-price-dash" aria-hidden="true">&ndash;</span>
+              <label class="shop-price-input">
+                <span data-i18n="shop.priceMax">Max</span>
+                <input type="number" id="price-max" min="0" step="1" inputmode="numeric" placeholder="0" />
+              </label>
+            </div>
+            <div class="price-quick-select" id="price-quick-select">
+              <button type="button" class="price-chip active" data-price="all" data-i18n="shop.allPrices">All prices</button>
+              <button type="button" class="price-chip" data-price="0-499">&lt; 500</button>
+              <button type="button" class="price-chip" data-price="500-999">500 &ndash; 999</button>
+              <button type="button" class="price-chip" data-price="1000-1499">1000 &ndash; 1499</button>
+              <button type="button" class="price-chip" data-price="1500-999999">1500+</button>
+            </div>
+          </section>
+
+          <section class="shop-facet-group">
+            <h3 class="shop-facet-title" data-i18n="shop.brand">Brand</h3>
+            <div class="shop-facet-list" id="facet-brands"></div>
+          </section>
+
+          <section class="shop-facet-group" data-facet-group="sizes">
+            <h3 class="shop-facet-title" data-i18n="shop.size">Size</h3>
+            <div class="shop-facet-chips" id="facet-sizes"></div>
+          </section>
+
+          <section class="shop-facet-group" data-facet-group="colors" hidden>
+            <h3 class="shop-facet-title" data-i18n="shop.color">Colour</h3>
+            <div class="shop-facet-chips" id="facet-colors"></div>
+          </section>
+
+          <section class="shop-facet-group">
+            <h3 class="shop-facet-title" data-i18n="shop.availability">Availability</h3>
+            <label class="toggle-filter">
+              <input type="checkbox" id="in-stock-filter" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span data-i18n="shop.inStock">In stock only</span>
+            </label>
+          </section>
+        </div>
+
+        <div class="shop-sidebar-foot">
+          <button type="button" class="shop-reset-btn" id="shop-filter-reset">
+            <i class="fas fa-rotate-left" aria-hidden="true"></i>
+            <span data-i18n="shop.clearAll">Clear all</span>
+          </button>
+          <button type="button" class="shop-apply-btn" id="shop-sidebar-apply" data-i18n="shop.viewResults">View results</button>
+        </div>
+      </aside>
+      <div class="shop-sidebar-backdrop" id="shop-sidebar-backdrop"></div>
+
+      <!-- Results -->
+      <section class="shop-results">
+        <div class="shop-toolbar">
+          <button type="button" class="shop-filter-open" id="shop-filter-open" aria-expanded="false" aria-controls="shop-sidebar">
+            <i class="fas fa-sliders" aria-hidden="true"></i>
+            <span data-i18n="shop.filters">Filters</span>
+          </button>
+
+          <div class="search-autocomplete-wrapper shop-search">
+            <i class="fas fa-search shop-search-icon" aria-hidden="true"></i>
+            <input id="search-products" type="search" autocomplete="off"
+                   data-i18n-placeholder="shop.searchPlaceholder"
+                   placeholder="Search products..." />
+            <div class="search-autocomplete" id="search-autocomplete"></div>
+          </div>
+
+          <div class="shop-toolbar-controls">
+            <label class="shop-per-page">
+              <span data-i18n="shop.show">Show</span>
+              <select id="per-page-select" aria-label="Products per page"></select>
+            </label>
+            <select id="sort-filter" aria-label="Sort products">
+              <option value="newest" data-i18n="shop.sortNewest">Newest first</option>
+              <option value="price-asc" data-i18n="shop.sortPriceAsc">Price: low to high</option>
+              <option value="price-desc" data-i18n="shop.sortPriceDesc">Price: high to low</option>
+              <option value="rating" data-i18n="shop.sortRating">Best rated</option>
+              <option value="name-asc" data-i18n="shop.sortName">Name: A&ndash;Z</option>
+              <option value="discount" data-i18n="shop.sortDiscount">Biggest discount</option>
+            </select>
+            <div class="shop-view-toggle" id="shop-view-toggle" role="group" aria-label="View mode">
+              <button type="button" data-view="grid" class="active" title="Grid view" data-i18n-title="shop.gridView" data-i18n-aria-label="shop.gridView">
+                <i class="fas fa-th" aria-hidden="true"></i>
+              </button>
+              <button type="button" data-view="list" title="List view" data-i18n-title="shop.listView" data-i18n-aria-label="shop.listView">
+                <i class="fas fa-list" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="shop-notice" id="shop-notice" style="display: none;"></div>
+
+        <div class="shop-results-head">
+          <p class="product-status" id="product-status" role="status" aria-live="polite"></p>
+          <div class="active-filters" id="active-filters"></div>
+        </div>
+
+        <div class="product-grid shop-grid" id="product-grid"></div>
+
+        <nav class="shop-pagination" id="shop-pagination" aria-label="Product pages"></nav>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="brand"><a href="index.html"><img src="/logo.png" alt="" class="logo-img-footer" /><span class="logo-text">PAP-JOY</span></a></div>
+        <p>Premium footwear for every journey.</p>
+      </div>
+
+      <div class="social-section">
+        <h4>Connect With Us</h4>
+        <div class="social-links">
+          <a href="https://www.instagram.com/papjoy_?igsh=cWtuMDJ5dWM0dg==0" class="social-link" title="Instagram" aria-label="Follow us on Instagram" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
+          <a href="https://www.facebook.com/profile.php?id=61592415609500" class="social-link" title="Facebook" aria-label="Follow us on Facebook" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook-f"></i></a>
+          <a href="https://youtube.com/@papjoy_shoes?si=Pl5P9cMTKRX5JV71" class="social-link" title="YouTube" aria-label="Subscribe on YouTube" target="_blank" rel="noopener noreferrer"><i class="fab fa-youtube"></i></a>
+        </div>
+      </div>
+
+      <div class="contact-info">
+        <h4>Contact Us</h4>
+        <div class="contact-item">
+          <i class="fas fa-envelope"></i>
+          <a href="mailto:papp.joyy@gmail.com">papp.joyy@gmail.com</a>
+        </div>
+        <div class="contact-item">
+          <i class="fas fa-phone"></i>
+          <a href="tel:+917206993413">+91 7206993413</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="copyright">
+      <p>&copy; 2026 PAP-JOY. Crafted for every journey. All rights reserved.</p>
+    </div>
+  </footer>
+    <script src="js/config.js" defer></script>
+    <script src="js/helpers.js" defer></script>
+    <script src="js/storage.js" defer></script>
+    <script src="js/i18n.js" defer></script>
+    <script src="js/api.js" defer></script>
+    <script src="js/auth.js" defer></script>
+    <script src="js/navigation.js" defer></script>
+    <script src="js/cart.js" defer></script>
+    <script src="js/wishlist.js" defer></script>
+    <script src="js/ui.js" defer></script>
+    <script src="js/products.js" defer></script>
+    <script src="js/shop.js" defer></script>
+    <script src="js/main.js" defer></script>
+</body>
+</html>

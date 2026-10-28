@@ -928,14 +928,14 @@ function renderCategoryNavLinks() {
   const navEl = document.getElementById('nav-categories');
   if (navEl) {
     navEl.innerHTML = categories.slice(0, 4).map(([name]) =>
-      `<a href="shop.html?category=${encodeURIComponent(name)}" class="header-nav-link">${escapeHTML(name)}</a>`
+      `<a href="products.html?category=${encodeURIComponent(name)}" class="header-nav-link">${escapeHTML(name)}</a>`
     ).join('');
   }
 
   const footerEl = document.getElementById('footer-categories');
   if (footerEl) {
     footerEl.innerHTML = categories.map(([name]) =>
-      `<a href="shop.html?category=${encodeURIComponent(name)}"><i class="fas fa-angle-right"></i>${escapeHTML(name)}</a>`
+      `<a href="products.html?category=${encodeURIComponent(name)}"><i class="fas fa-angle-right"></i>${escapeHTML(name)}</a>`
     ).join('');
   }
 }
@@ -949,13 +949,13 @@ function renderBreadcrumbs(product) {
 
   const crumbs = [
     { label: 'Home', href: 'index.html' },
-    { label: 'Shop', href: 'shop.html' }
+    { label: 'Shop', href: 'products.html' }
   ];
 
   const page = document.body.dataset.page;
   if (page === 'product-detail' && product) {
     if (product.category && product.category !== 'Uncategorized') {
-      crumbs.push({ label: product.category, href: `shop.html?category=${encodeURIComponent(product.category)}` });
+      crumbs.push({ label: product.category, href: `products.html?category=${encodeURIComponent(product.category)}` });
     }
     crumbs.push({ label: product.name, href: null });
   } else if (page === 'shop') {

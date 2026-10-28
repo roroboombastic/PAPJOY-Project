@@ -179,7 +179,7 @@ function createFooterQuickLinks() {
     <h4>Quick Links</h4>
     <div class="footer-links">
       <a href="index.html" data-no-transition>Home</a>
-      <a href="shop.html" data-no-transition>Shop</a>
+      <a href="products.html" data-no-transition>Shop</a>
       <a href="tracking.html" data-no-transition><i class="fas fa-truck"></i> Track Order</a>
       <a href="account.html" data-no-transition>Account</a>
       <a href="cart.html" data-no-transition>Cart</a>
@@ -213,7 +213,7 @@ function createSidebar() {
       <div class="sidebar-brand"><a href="index.html"><img src="/logo.png" alt="" class="logo-img" /><span class="logo-text">PAP-JOY</span></a></div>
       <nav class="sidebar-nav">
         <a href="index.html" class="nav-link${isActiveNavPage('index.html') ? ' active' : ''}"${isActiveNavPage('index.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-home"></i><span>Home</span></a>
-        <a href="shop.html" class="nav-link${isActiveNavPage('shop.html') ? ' active' : ''}"${isActiveNavPage('shop.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-store"></i><span>Shop</span></a>
+        <a href="products.html" class="nav-link${isActiveNavPage('products.html') ? ' active' : ''}"${isActiveNavPage('products.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-store"></i><span>Shop</span></a>
         <a href="cart.html" class="nav-link${isActiveNavPage('cart.html') ? ' active' : ''}"${isActiveNavPage('cart.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-shopping-cart"></i><span>Cart</span><span class="cart-badge" id="cart-count">${currentCartCount}</span></a>
         <a href="tracking.html" class="nav-link${isActiveNavPage('tracking.html') ? ' active' : ''}"${isActiveNavPage('tracking.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-truck"></i><span>Track Order</span></a>
         <a href="account.html" class="nav-link${isActiveNavPage('account.html') ? ' active' : ''}"${isActiveNavPage('account.html') ? ' aria-current="page"' : ''} data-no-transition><i class="fas fa-user"></i><span>Account</span></a>
