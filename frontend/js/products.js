@@ -1,4 +1,4 @@
-ï»¿// Global variables
+// Global variables
 let products = [];
 let productsLoadPromise = null;
 let searchInProgress = false;
@@ -40,7 +40,7 @@ function createProductCardElement(product) {
 
   let subtitle = product.subtitle;
   if (!subtitle && product.description) {
-    subtitle = product.description.length > 80 ? product.description.slice(0, 80) + 'Î“Ã‡Âª' : product.description;
+    subtitle = product.description.length > 80 ? product.description.slice(0, 80) + 'GÇª' : product.description;
   }
 
   const stockChip = (isOutOfStock || isLowStock)
@@ -81,7 +81,7 @@ function createProductCardElement(product) {
   const reviewCount = Number(product.reviewCount || 0);
   const ratingRow = rating > 0
     ? `<div class="product-rating">
-        <span class="product-stars" aria-hidden="true">${'Î“Ã¿Ã '.repeat(Math.round(rating))}${'Î“Ã¿Ã¥'.repeat(5 - Math.round(rating))}</span>
+        <span class="product-stars" aria-hidden="true">${'Gÿà'.repeat(Math.round(rating))}${'Gÿå'.repeat(5 - Math.round(rating))}</span>
         <span class="product-rating-value">${rating.toFixed(1)}</span>
         ${reviewCount > 0 ? `<span class="product-review-count">(${reviewCount})</span>` : ''}
       </div>`
@@ -647,7 +647,7 @@ async function renderProductDetailPage() {
     ratingSummaryEl.innerHTML = `
       <div class="rating-summary">
         <div class="avg-rating">${ratingData.averageRating.toFixed(1)}</div>
-        <div class="rating-text">${'Î“Ã¿Ã '.repeat(Math.round(ratingData.averageRating))}${'Î“Ã¿Ã¥'.repeat(5 - Math.round(ratingData.averageRating))}</div>
+        <div class="rating-text">${'Gÿà'.repeat(Math.round(ratingData.averageRating))}${'Gÿå'.repeat(5 - Math.round(ratingData.averageRating))}</div>
         <div class="total-reviews">(${ratingData.totalReviews} reviews)</div>
       </div>
     `;
@@ -667,7 +667,7 @@ window.renderProductDetailPage = renderProductDetailPage;
 
 function getProductShareData(product) {
   const url = window.location.href.split('#')[0];
-  const title = `${product.name || 'Product'} Î“Ã‡Ã¶ PAP-JOY`;
+  const title = `${product.name || 'Product'} GÇö PAP-JOY`;
   const description = String(product.subtitle || product.description || '').slice(0, 120);
   const image = getProductImageUrls(product)[0] || product.image || window.PRODUCT_FALLBACK_IMAGE || '';
   const absImage = String(image || '').replace(/^https?:\/\/papjoy-project\.onrender\.com/i, 'https://papjoy-project.onrender.com');
@@ -732,7 +732,7 @@ function nativeShare(data) {
 
 function shareProduct(product, action) {
   const data = getProductShareData(product);
-  const text = `${data.title} Î“Ã‡Ã¶ ${data.description}`.trim();
+  const text = `${data.title} GÇö ${data.description}`.trim();
   const enc = {
     url: encodeURIComponent(data.url),
     title: encodeURIComponent(data.title),
@@ -786,7 +786,7 @@ function renderReviewForm(productId) {
         <div class="form-group">
           <label>Rating *</label>
           <div class="rating-input" id="rating-selector">
-            ${[1, 2, 3, 4, 5].map(i => `<span class="star" data-rating="${i}">Î“Ã¿Ã </span>`).join('')}
+            ${[1, 2, 3, 4, 5].map(i => `<span class="star" data-rating="${i}">Gÿà</span>`).join('')}
           </div>
           <input type="hidden" id="review-rating" value="5" required />
         </div>
@@ -852,9 +852,9 @@ function renderReviews(reviews = []) {
       <div class="review-header">
         <div class="review-author">
           <strong>${escapeHTML(review.userId?.name || 'Anonymous')}</strong>
-          ${review.isVerified ? '<span class="verified-badge">Î“Â£Ã´ Verified Purchase</span>' : ''}
+          ${review.isVerified ? '<span class="verified-badge">G£ô Verified Purchase</span>' : ''}
         </div>
-        <div class="review-rating">${'Î“Ã¿Ã '.repeat(review.rating)}${'Î“Ã¿Ã¥'.repeat(5 - review.rating)}</div>
+        <div class="review-rating">${'Gÿà'.repeat(review.rating)}${'Gÿå'.repeat(5 - review.rating)}</div>
       </div>
       ${review.title ? `<h4 class="review-title">${escapeHTML(review.title)}</h4>` : ''}
       <p class="review-comment">${escapeHTML(review.comment)}</p>
@@ -928,14 +928,14 @@ function renderCategoryNavLinks() {
   const navEl = document.getElementById('nav-categories');
   if (navEl) {
     navEl.innerHTML = categories.slice(0, 4).map(([name]) =>
-      `<a href="product.html?category=${encodeURIComponent(name)}" class="header-nav-link">${escapeHTML(name)}</a>`
+      `<a href="shop.html?category=${encodeURIComponent(name)}" class="header-nav-link">${escapeHTML(name)}</a>`
     ).join('');
   }
 
   const footerEl = document.getElementById('footer-categories');
   if (footerEl) {
     footerEl.innerHTML = categories.map(([name]) =>
-      `<a href="product.html?category=${encodeURIComponent(name)}"><i class="fas fa-angle-right"></i>${escapeHTML(name)}</a>`
+      `<a href="shop.html?category=${encodeURIComponent(name)}"><i class="fas fa-angle-right"></i>${escapeHTML(name)}</a>`
     ).join('');
   }
 }
@@ -949,13 +949,13 @@ function renderBreadcrumbs(product) {
 
   const crumbs = [
     { label: 'Home', href: 'index.html' },
-    { label: 'Shop', href: 'product.html' }
+    { label: 'Shop', href: 'shop.html' }
   ];
 
   const page = document.body.dataset.page;
   if (page === 'product-detail' && product) {
     if (product.category && product.category !== 'Uncategorized') {
-      crumbs.push({ label: product.category, href: `product.html?category=${encodeURIComponent(product.category)}` });
+      crumbs.push({ label: product.category, href: `shop.html?category=${encodeURIComponent(product.category)}` });
     }
     crumbs.push({ label: product.name, href: null });
   } else if (page === 'shop') {
