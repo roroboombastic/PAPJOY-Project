@@ -10636,6 +10636,17 @@ body[data-page='shop'] main {
   min-width: 0;
 }
 
+@media (min-width: 1024px) {
+  body[data-page='shop'] main {
+    width: calc(100vw - 320px);
+    margin-left: 320px;
+  }
+
+  .shop-layout {
+    max-width: 1600px;
+  }
+}
+
 /* ---- Hero ---- */
 
 /* The generic `section` rule caps sections at 1120px; the shop page uses the
