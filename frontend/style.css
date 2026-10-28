@@ -230,9 +230,11 @@ textarea {
 
 main {
   position: relative;
-  width: min(1120px, calc(100vw - 340px));
+  width: calc(100vw - 320px);
   margin: 0 0 0 320px;
   padding: 28px 24px 60px;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 section {
@@ -10533,6 +10535,7 @@ body[data-page='shop'] main {
   margin: 0 0 0 320px;
   padding: 28px 32px 60px;
   box-sizing: border-box;
+  min-width: 0;
 }
 
 /* ---- Hero ---- */
