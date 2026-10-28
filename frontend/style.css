@@ -10529,8 +10529,8 @@ html {
 
 body[data-page='shop'] main {
   width: 100%;
-  max-width: 1600px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   padding: 0 24px;
   box-sizing: border-box;
 }
@@ -10633,6 +10633,7 @@ body[data-page='shop'] main {
   gap: 28px;
   align-items: start;
   width: 100%;
+  min-width: 0;
 }
 
 /* ---- Sidebar ---- */
@@ -11151,10 +11152,11 @@ body[data-page='shop'] main {
 /* ---- Grid ---- */
 
 .shop-grid {
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 24px;
   margin-top: 0;
   width: 100%;
+  min-width: 0;
 }
 
 .shop-empty {
@@ -11461,10 +11463,12 @@ body.shop-list-view .product-actions button {
 @media (max-width: 1180px) {
   body[data-page='shop'] main {
     width: 100%;
+    padding: 0 20px;
   }
 
   .shop-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
   }
 
   .shop-sidebar {
