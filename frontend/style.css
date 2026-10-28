@@ -10631,7 +10631,7 @@ body[data-page='shop'] main {
   width: calc(100vw - 320px);
   max-width: none;
   margin: 0 0 0 320px;
-  padding: 28px 32px 60px;
+  padding: 32px 40px 70px;
   box-sizing: border-box;
   min-width: 0;
 }
@@ -10640,10 +10640,26 @@ body[data-page='shop'] main {
   body[data-page='shop'] main {
     width: calc(100vw - 320px);
     margin-left: 320px;
+    padding: 36px 48px 80px;
   }
 
   .shop-layout {
-    max-width: 1600px;
+    max-width: 1700px;
+    gap: 32px;
+  }
+
+  .shop-hero {
+    padding: 28px 32px;
+    border-radius: 16px;
+  }
+
+  .shop-toolbar {
+    padding: 12px 16px;
+    border-radius: 12px;
+  }
+
+  .shop-grid {
+    gap: 24px;
   }
 }
 
