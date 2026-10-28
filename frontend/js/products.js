@@ -1,4 +1,4 @@
-// Global variables
+﻿// Global variables
 let products = [];
 let productsLoadPromise = null;
 let searchInProgress = false;
@@ -40,7 +40,7 @@ function createProductCardElement(product) {
 
   let subtitle = product.subtitle;
   if (!subtitle && product.description) {
-    subtitle = product.description.length > 80 ? product.description.slice(0, 80) + '…' : product.description;
+    subtitle = product.description.length > 80 ? product.description.slice(0, 80) + 'ΓÇª' : product.description;
   }
 
   const stockChip = (isOutOfStock || isLowStock)
@@ -81,7 +81,7 @@ function createProductCardElement(product) {
   const reviewCount = Number(product.reviewCount || 0);
   const ratingRow = rating > 0
     ? `<div class="product-rating">
-        <span class="product-stars" aria-hidden="true">${'★'.repeat(Math.round(rating))}${'☆'.repeat(5 - Math.round(rating))}</span>
+        <span class="product-stars" aria-hidden="true">${'Γÿà'.repeat(Math.round(rating))}${'Γÿå'.repeat(5 - Math.round(rating))}</span>
         <span class="product-rating-value">${rating.toFixed(1)}</span>
         ${reviewCount > 0 ? `<span class="product-review-count">(${reviewCount})</span>` : ''}
       </div>`
@@ -647,7 +647,7 @@ async function renderProductDetailPage() {
     ratingSummaryEl.innerHTML = `
       <div class="rating-summary">
         <div class="avg-rating">${ratingData.averageRating.toFixed(1)}</div>
-        <div class="rating-text">${'★'.repeat(Math.round(ratingData.averageRating))}${'☆'.repeat(5 - Math.round(ratingData.averageRating))}</div>
+        <div class="rating-text">${'Γÿà'.repeat(Math.round(ratingData.averageRating))}${'Γÿå'.repeat(5 - Math.round(ratingData.averageRating))}</div>
         <div class="total-reviews">(${ratingData.totalReviews} reviews)</div>
       </div>
     `;
@@ -667,7 +667,7 @@ window.renderProductDetailPage = renderProductDetailPage;
 
 function getProductShareData(product) {
   const url = window.location.href.split('#')[0];
-  const title = `${product.name || 'Product'} — PAP-JOY`;
+  const title = `${product.name || 'Product'} ΓÇö PAP-JOY`;
   const description = String(product.subtitle || product.description || '').slice(0, 120);
   const image = getProductImageUrls(product)[0] || product.image || window.PRODUCT_FALLBACK_IMAGE || '';
   const absImage = String(image || '').replace(/^https?:\/\/papjoy-project\.onrender\.com/i, 'https://papjoy-project.onrender.com');
@@ -732,7 +732,7 @@ function nativeShare(data) {
 
 function shareProduct(product, action) {
   const data = getProductShareData(product);
-  const text = `${data.title} — ${data.description}`.trim();
+  const text = `${data.title} ΓÇö ${data.description}`.trim();
   const enc = {
     url: encodeURIComponent(data.url),
     title: encodeURIComponent(data.title),
@@ -786,7 +786,7 @@ function renderReviewForm(productId) {
         <div class="form-group">
           <label>Rating *</label>
           <div class="rating-input" id="rating-selector">
-            ${[1, 2, 3, 4, 5].map(i => `<span class="star" data-rating="${i}">★</span>`).join('')}
+            ${[1, 2, 3, 4, 5].map(i => `<span class="star" data-rating="${i}">Γÿà</span>`).join('')}
           </div>
           <input type="hidden" id="review-rating" value="5" required />
         </div>
@@ -852,9 +852,9 @@ function renderReviews(reviews = []) {
       <div class="review-header">
         <div class="review-author">
           <strong>${escapeHTML(review.userId?.name || 'Anonymous')}</strong>
-          ${review.isVerified ? '<span class="verified-badge">✓ Verified Purchase</span>' : ''}
+          ${review.isVerified ? '<span class="verified-badge">Γ£ô Verified Purchase</span>' : ''}
         </div>
-        <div class="review-rating">${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}</div>
+        <div class="review-rating">${'Γÿà'.repeat(review.rating)}${'Γÿå'.repeat(5 - review.rating)}</div>
       </div>
       ${review.title ? `<h4 class="review-title">${escapeHTML(review.title)}</h4>` : ''}
       <p class="review-comment">${escapeHTML(review.comment)}</p>
